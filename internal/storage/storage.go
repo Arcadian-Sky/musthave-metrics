@@ -81,6 +81,7 @@ func (m *MemStorage) GetMetrics() map[MetricType]map[string]interface{} {
 	return m.metrics
 }
 
+// GetMetric возвращает текущие метрики из хранилища для типа
 func (m *MemStorage) GetMetric(mtype MetricType) map[string]interface{} {
 	return m.metrics[mtype]
 }
