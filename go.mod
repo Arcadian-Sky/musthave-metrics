@@ -1,3 +1,3 @@
-module github.com/Arcadian-Sky/musthave-metrics.git
+module github.com/Arcadian-Sky/musthave-metrics
 
 go 1.21
