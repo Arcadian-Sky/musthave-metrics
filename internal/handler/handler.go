@@ -34,21 +34,34 @@ func UpdateMetricsHandler() http.HandlerFunc {
 		// Разбиваем путь на части по слэшам
 		parts := strings.Split(path, "/")
 
-		// fmt.Fprintf(w, "parts %s\n", parts)
-
-		metricType := parts[2]
-		metricName := parts[3]
-		metricValue := parts[4]
-		// fmt.Fprintf(w, "metrics %s %s %s", metricType, metricName, metricValue)
-
+		var nonEmptyParts []string
+		for _, part := range parts {
+			if part != "" {
+				nonEmptyParts = append(nonEmptyParts, part)
+			}
+		}
+		// fmt.Println("nonEmptyParts \n", nonEmptyParts[0], nonEmptyParts[1], len(nonEmptyParts))
+		length := len(nonEmptyParts)
+		metricType := ""
+		metricName := ""
+		metricValue := ""
+		if 2 <= length {
+			metricType = nonEmptyParts[1]
+		}
+		if 3 <= length {
+			metricName = nonEmptyParts[2]
+		}
+		if 4 <= length {
+			metricValue = nonEmptyParts[3]
+		}
 		//Проверяем передачу типа
 		if metricType == "" {
-			http.Error(w, "Metric type not provided", http.StatusNotFound)
+			http.Error(w, "Metric type not provided", http.StatusBadRequest)
 			return
 		}
 		//Проверяем передачу имени
 		if metricName == "" {
-			http.Error(w, "Metric name not provided", http.StatusNotFound)
+			http.Error(w, "Metric name not provided", http.StatusBadRequest)
 			return
 		}
 
