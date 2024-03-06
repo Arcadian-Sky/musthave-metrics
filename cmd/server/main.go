@@ -19,11 +19,6 @@ import (
 // Content-Length: 11
 // Content-Type: text/plain; charset=utf-8
 
-// func main() {
-// 	fmt.Println("Hello from othercmd application!")
-// 	package2.FunctionFromPackage2()
-// }
-
 func main() {
 	server.InitServer()
 }

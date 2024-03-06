@@ -130,7 +130,7 @@ func sendMetricValue(mType string, mName string, mValue interface{}) error {
 		return err
 	}
 
-	// Печатаем результат отправки (для демонстрации, лучше использовать логгер)
+	// Печатаем результат отправки
 	fmt.Printf("Metric sent: %s\n", mName)
 	defer resp.Body.Close()
 
