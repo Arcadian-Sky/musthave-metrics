@@ -46,10 +46,6 @@ func methodCheckerMiddleware() Middleware {
 	}
 }
 
-func rootHandle(w http.ResponseWriter, r *http.Request) {
-	// w.Write([]byte("Привет"))
-}
-
 func сonveyor(h http.Handler, middlewares ...Middleware) http.Handler {
 	for _, middleware := range middlewares {
 		h = middleware(h)
@@ -58,12 +54,13 @@ func сonveyor(h http.Handler, middlewares ...Middleware) http.Handler {
 }
 
 func InitServer() {
+	mux := http.NewServeMux()
 	// Регистрируем обработчики
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Path not allowed", http.StatusBadRequest)
 	})
-	http.HandleFunc("/metrics/", handler.MetricsHandler())
-	http.Handle("/update/", сonveyor(
+	mux.HandleFunc("/metrics/", handler.MetricsHandler())
+	mux.Handle("/update/", сonveyor(
 		http.HandlerFunc(handler.UpdateMetricsHandler()),
 		methodCheckerMiddleware(),
 		сontentTypeCheckerMiddleware("text/plain"),
@@ -71,5 +68,8 @@ func InitServer() {
 
 	// Запускаем сервер на порту 8080
 	fmt.Println("Server is running on http://localhost:8080")
-	http.ListenAndServe(":8080", nil)
+	err := http.ListenAndServe(":8080", mux)
+	if err != nil {
+		panic(err)
+	}
 }
