@@ -11,6 +11,7 @@ import (
 // metricsHandler обрабатывает HTTP запросы для получения текущих метрик
 func MetricsHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 		if storage.Storage == nil {
 			storage.Storage = storage.NewMemStorage()
 		}
@@ -24,6 +25,7 @@ func MetricsHandler() http.HandlerFunc {
 // updateMetricsHandler обрабатывает HTTP запросы для обновления метрик
 func UpdateMetricsHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 
 		if storage.Storage == nil {
 			storage.Storage = storage.NewMemStorage()
