@@ -18,16 +18,20 @@ func TestUpdateMetricsHandler(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Создаем ResponseRecorder для записи ответа сервера
-	rr := httptest.NewRecorder()
+	w := httptest.NewRecorder()
 
 	// Создаем обработчик и вызываем его метод ServeHTTP
-	UpdateMetricsHandler().ServeHTTP(rr, req)
+	UpdateMetricsHandlerFunc(w, req)
+
+	res := w.Result()
+
+	defer res.Body.Close()
 
 	// Проверяем код ответа
-	assert.Equal(t, http.StatusOK, rr.Code)
+	assert.Equal(t, http.StatusOK, w.Code)
 
 	// Проверяем тело ответа
-	assert.Contains(t, rr.Body.String(), "0: map[example_metric:42]\n")
+	assert.Contains(t, w.Body.String(), "0: map[example_metric:42]\n")
 }
 
 func TestUpdateMetricsHandlerBadRequest(t *testing.T) {
@@ -39,13 +43,17 @@ func TestUpdateMetricsHandlerBadRequest(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Создаем ResponseRecorder для записи ответа сервера
-	rr := httptest.NewRecorder()
+	w := httptest.NewRecorder()
 
 	// Создаем обработчик и вызываем его метод ServeHTTP
-	UpdateMetricsHandler().ServeHTTP(rr, req)
+	UpdateMetricsHandlerFunc(w, req)
+
+	res := w.Result()
+
+	defer res.Body.Close()
 
 	// Проверяем код ответа
-	assert.Equal(t, http.StatusBadRequest, rr.Code)
+	assert.Equal(t, http.StatusBadRequest, w.Code)
 
 	// Проверяем тело ответа
 	// assert.Contains(t, rr.Body.String(), "Metric type validation failed")
@@ -60,14 +68,18 @@ func TestUpdateMetricsHandlerNotFound(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Создаем ResponseRecorder для записи ответа сервера
-	rr := httptest.NewRecorder()
+	w := httptest.NewRecorder()
 
 	// Создаем обработчик и вызываем его метод ServeHTTP
-	UpdateMetricsHandler().ServeHTTP(rr, req)
+	UpdateMetricsHandlerFunc(w, req)
+
+	res := w.Result()
+
+	defer res.Body.Close()
 
 	// Проверяем код ответа
-	assert.Equal(t, http.StatusNotFound, rr.Code)
+	assert.Equal(t, http.StatusNotFound, w.Code)
 
 	// Проверяем тело ответа
-	assert.Contains(t, rr.Body.String(), "Metric name not provided")
+	assert.Contains(t, w.Body.String(), "Metric name not provided")
 }
