@@ -56,12 +56,12 @@ func UpdateMetricsHandler() http.HandlerFunc {
 		}
 		//Проверяем передачу типа
 		if metricType == "" {
-			http.Error(w, "Metric type not provided", http.StatusBadRequest)
+			http.Error(w, "Metric type not provided", http.StatusNotFound)
 			return
 		}
 		//Проверяем передачу имени
 		if metricName == "" {
-			http.Error(w, "Metric name not provided", http.StatusBadRequest)
+			http.Error(w, "Metric name not provided", http.StatusNotFound)
 			return
 		}
 

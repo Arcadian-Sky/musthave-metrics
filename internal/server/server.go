@@ -14,13 +14,13 @@ func сontentTypeCheckerMiddleware(expectedContentType string) Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// Получаем значение Content-Type из заголовка
-			contentType := r.Header.Get("Content-Type")
+			// contentType := r.Header.Get("Content-Type")
 
 			// Проверяем, соответствует ли Content-Type ожидаемому значению
-			if contentType != expectedContentType {
-				http.Error(w, "Error in Content-Type", http.StatusBadRequest)
-				return
-			}
+			// if contentType != expectedContentType {
+			// 	http.Error(w, "Error in Content-Type", http.StatusBadRequest)
+			// 	return
+			// }
 
 			// Устанавливаем Content-Type для ответа
 			w.Header().Set("Content-Type", expectedContentType)
