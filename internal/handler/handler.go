@@ -16,7 +16,7 @@ func MetricsHandler() http.HandlerFunc {
 		}
 		currentMetrics := storage.Storage.GetMetrics()
 		for name, value := range currentMetrics {
-			fmt.Fprintf(w, "%s: %v\n", name, value)
+			fmt.Fprintf(w, "%d: %v\n", name, value)
 		}
 	}
 }
@@ -76,7 +76,7 @@ func UpdateMetricsHandler() http.HandlerFunc {
 		// Выводим данные
 		currentMetrics := storage.Storage.GetMetrics()
 		for name, value := range currentMetrics {
-			fmt.Fprintf(w, "%s: %v\n", name, value)
+			fmt.Fprintf(w, "%d: %v\n", name, value)
 		}
 
 		w.WriteHeader(http.StatusOK)
