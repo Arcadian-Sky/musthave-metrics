@@ -99,7 +99,6 @@ func Test_methodCheckerMiddleware(t *testing.T) {
 				methodCheckerMiddleware(),
 				сontentTypeCheckerMiddleware("text/plain"),
 			))
-			request.Body.Close()
 
 			mux.ServeHTTP(w, request)
 
