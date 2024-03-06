@@ -99,26 +99,40 @@ func collectMetrics() map[string]interface{} {
 
 // Отправляем метрики на сервер
 func send(metrics map[string]interface{}) error {
+
+	for metricType, value := range metrics {
+		err := sendMetricValue("gauge", metricType, value)
+		if err != nil {
+			return err
+		}
+	}
+	err := sendMetricValue("count", "PollCount", pollCount)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func sendMetricValue(mType string, mName string, mValue interface{}) error {
 	client := &http.Client{
 		Timeout: 2 * time.Second,
 	}
-	for metricType, value := range metrics {
-		// Формируем адрес запроса
-		url := fmt.Sprintf("%s/update/gauge/%s/%v", serverAddress, metricType, value)
-		// fmt.Println("m: ", url)
 
-		// // Отправляем запрос на сервер
-		resp, err := client.Post(url, "text/plain", nil)
-		if err != nil {
-			fmt.Printf("Metric did not sent: %s\n", metricType)
-			return err
-		}
+	// Формируем адрес запроса
+	url := fmt.Sprintf("%s/update/"+mType+"/%s/%v", serverAddress, mName, mValue)
+	// fmt.Println("m: ", url)
 
-		// Печатаем результат отправки (для демонстрации, лучше использовать логгер)
-		fmt.Printf("Metric sent: %s\n", metricType)
-		defer resp.Body.Close()
-
+	// // Отправляем запрос на сервер
+	resp, err := client.Post(url, "text/plain", nil)
+	if err != nil {
+		fmt.Printf("Metric did not sent: %s\n", mName)
+		return err
 	}
+
+	// Печатаем результат отправки (для демонстрации, лучше использовать логгер)
+	fmt.Printf("Metric sent: %s\n", mName)
+	defer resp.Body.Close()
 
 	return nil
 }
