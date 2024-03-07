@@ -1,6 +1,7 @@
 package server
 
 import (
+	"flag"
 	"log"
 	"net/http"
 
@@ -21,13 +22,6 @@ func сontentTypeCheckerMiddleware(expectedContentType string) Middleware {
 			next.ServeHTTP(w, r)
 		})
 	}
-}
-
-func InitServer() {
-
-	r := InitRouter()
-
-	log.Fatal(http.ListenAndServe(":8080", r))
 }
 
 func InitRouter() chi.Router {
@@ -63,4 +57,15 @@ func InitRouter() chi.Router {
 		})
 	})
 	return r
+}
+
+func InitServer() {
+
+	r := InitRouter()
+
+	end := flag.String("a", ":8080", "endpoint address")
+	flag.Parse()
+	endpoint := *end
+
+	log.Fatal(http.ListenAndServe(endpoint, r))
 }
