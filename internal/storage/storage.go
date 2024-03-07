@@ -34,9 +34,7 @@ func NewMemStorage() *MemStorage {
 	}
 }
 
-// UpdateMetric обновляет значение метрики в хранилище
-func (m *MemStorage) UpdateMetric(mtype string, name string, value string) error {
-
+func GetMetricTypeByCode(mtype string) (MetricType, error) {
 	var metricType MetricType
 	switch mtype {
 	case "gauge":
@@ -44,7 +42,20 @@ func (m *MemStorage) UpdateMetric(mtype string, name string, value string) error
 	case "counter":
 		metricType = Counter
 	default:
-		return fmt.Errorf("invalid metric type")
+		return metricType, fmt.Errorf("invalid metric type")
+	}
+
+	return metricType, nil
+}
+
+// UpdateMetric обновляет значение метрики в хранилище
+func (m *MemStorage) UpdateMetric(mtype string, name string, value string) error {
+
+	// var metricType MetricType
+	metricType, err := GetMetricTypeByCode(mtype)
+
+	if err != nil {
+		return err
 	}
 
 	if _, ok := m.metrics[metricType]; !ok {

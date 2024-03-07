@@ -17,7 +17,6 @@ func сontentTypeCheckerMiddleware(expectedContentType string) Middleware {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// Устанавливаем Content-Type для ответа
 			w.Header().Set("Content-Type", expectedContentType)
-
 			// Вызываем следующий обработчик в цепочке
 			next.ServeHTTP(w, r)
 		})
@@ -42,6 +41,7 @@ func InitRouter() chi.Router {
 	r.Head("/", func(rw http.ResponseWriter, r *http.Request) {
 		r.Header.Set("Content-Type", "text/plain")
 	})
+	// GET http://localhost:8080/value/counter/testSetGet163
 
 	r.Get("/", handler.MetricsHandlerFunc)
 	r.Route("/update", func(r chi.Router) {
@@ -51,6 +51,15 @@ func InitRouter() chi.Router {
 			r.Post("/{name}", handler.UpdateMetricsHandlerFunc)
 			r.Post("/{name}/{value}", handler.UpdateMetricsHandlerFunc)
 			r.Post("/{name}/{value}/", handler.UpdateMetricsHandlerFunc)
+		})
+	})
+
+	r.Route("/value", func(r chi.Router) {
+		r.Get("/", handler.GetMetricsHandlerFunc)
+		r.Route("/{type}", func(r chi.Router) {
+			r.Get("/", handler.GetMetricsHandlerFunc)
+			r.Get("/{name}", handler.GetMetricsHandlerFunc)
+			r.Get("/{name}/", handler.GetMetricsHandlerFunc)
 		})
 	})
 	return r
