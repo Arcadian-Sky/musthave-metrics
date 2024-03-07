@@ -26,13 +26,13 @@ var (
 
 func main() {
 	end := flag.String("a", "localhost:8080", "endpoint")
-	repI := flag.Duration("r", 2, "reportInterval")
-	polI := flag.Duration("p", 10, "pollInterval")
+	repI := flag.Int("r", 2, "reportInterval")
+	polI := flag.Int("p", 10, "pollInterval")
 	flag.Parse()
 
 	serverAddress = "http://" + *end
-	reportInterval = *repI * time.Second
-	pollInterval = *polI * time.Second
+	reportInterval = time.Duration(*repI) * time.Second
+	pollInterval = time.Duration(*polI) * time.Second
 
 	collectAndSendMetrics()
 }
