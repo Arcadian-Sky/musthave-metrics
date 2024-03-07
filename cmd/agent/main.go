@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/rand"
 	"net/http"
+	"os"
 	"runtime"
 	"time"
 )
@@ -20,9 +21,9 @@ var (
 	metrics   map[string]interface{}
 )
 
-// Флаг -a=<ЗНАЧЕНИЕ> отвечает за адрес эндпоинта HTTP-сервера (по умолчанию localhost:8080).
-// Флаг -r=<ЗНАЧЕНИЕ> позволяет переопределять reportInterval — частоту отправки метрик на сервер (по умолчанию 10 секунд).
-// Флаг -p=<ЗНАЧЕНИЕ> позволяет переопределять pollInterval — частоту опроса метрик из пакета runtime (по умолчанию 2 секунды).
+// ADDRESS отвечает за адрес эндпоинта HTTP-сервера.
+// REPORT_INTERVAL позволяет переопределять reportInterval.
+// POLL_INTERVAL позволяет переопределять pollInterval.
 
 func main() {
 	end := flag.String("a", "localhost:8080", "endpoint")
@@ -33,6 +34,28 @@ func main() {
 	serverAddress = "http://" + *end
 	reportInterval = time.Duration(*repI) * time.Second
 	pollInterval = time.Duration(*polI) * time.Second
+
+	if envRunAddr := os.Getenv("ADDRESS"); envRunAddr != "" {
+		serverAddress = envRunAddr
+	}
+
+	if envRepI := os.Getenv("REPORT_INTERVAL"); envRepI != "" {
+		durationRepI, err := time.ParseDuration(envRepI)
+		if err != nil {
+			fmt.Println("Error parsing REPORT_INTERVAL:", err)
+			return
+		}
+		reportInterval = durationRepI
+	}
+
+	if envPolI := os.Getenv("POLL_INTERVAL"); envPolI != "" {
+		durationPolI, err := time.ParseDuration(envPolI)
+		if err != nil {
+			fmt.Println("Error parsing POLL_INTERVAL:", err)
+			return
+		}
+		reportInterval = durationPolI
+	}
 
 	collectAndSendMetrics()
 }
