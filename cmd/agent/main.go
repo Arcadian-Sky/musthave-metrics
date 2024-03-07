@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"runtime"
+	"strconv"
 	"time"
 )
 
@@ -40,21 +41,22 @@ func main() {
 	}
 
 	if envRepI := os.Getenv("REPORT_INTERVAL"); envRepI != "" {
-		durationRepI, err := time.ParseDuration(envRepI)
+		fmt.Printf("envRepI: %v\n", envRepI)
+		durationRepI, err := strconv.Atoi(envRepI)
 		if err != nil {
 			fmt.Println("Error parsing REPORT_INTERVAL:", err)
 			return
 		}
-		reportInterval = durationRepI
+		reportInterval = time.Duration(durationRepI) * time.Second
 	}
 
 	if envPolI := os.Getenv("POLL_INTERVAL"); envPolI != "" {
-		durationPolI, err := time.ParseDuration(envPolI)
+		durationPolI, err := strconv.Atoi(envPolI)
 		if err != nil {
 			fmt.Println("Error parsing POLL_INTERVAL:", err)
 			return
 		}
-		pollInterval = durationPolI
+		pollInterval = time.Duration(durationPolI) * time.Second
 	}
 
 	collectAndSendMetrics()
