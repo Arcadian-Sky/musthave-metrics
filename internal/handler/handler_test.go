@@ -144,6 +144,7 @@ func TestUpdateMetricsHandlers(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 
 			resp, _ := testRequest(t, ts, "POST", tt.requestPath)
+			defer resp.Body.Close()
 			// fmt.Println(resp.StatusCode)
 			assert.Equal(t, tt.expectedCode, resp.StatusCode)
 
