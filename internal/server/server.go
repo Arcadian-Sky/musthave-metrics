@@ -1,10 +1,12 @@
 package server
 
 import (
-	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/Arcadian-Sky/musthave-metrics/internal/handler"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 )
 
 type Middleware func(http.Handler) http.Handler
@@ -22,45 +24,34 @@ func сontentTypeCheckerMiddleware(expectedContentType string) Middleware {
 	}
 }
 
-// methodCheckerMiddleware возвращает middleware, которое проверяет метод
-func methodCheckerMiddleware() Middleware {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if r.Method != http.MethodPost {
-				http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-				return
-			}
-
-			// Вызываем следующий обработчик в цепочке
-			next.ServeHTTP(w, r)
-		})
-	}
-}
-
-func сonveyor(h http.Handler, middlewares ...Middleware) http.Handler {
-	for _, middleware := range middlewares {
-		h = middleware(h)
-	}
-	return h
-}
-
 func InitServer() {
-	mux := http.NewServeMux()
-	// Регистрируем обработчики
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		http.Error(w, "Path not allowed", http.StatusBadRequest)
-	})
-	mux.HandleFunc("/metrics/", handler.MetricsHandler())
-	mux.Handle("/update/", сonveyor(
-		http.HandlerFunc(handler.UpdateMetricsHandler()),
-		methodCheckerMiddleware(),
-		сontentTypeCheckerMiddleware("text/plain"),
-	))
 
-	// Запускаем сервер на порту 8080
-	fmt.Println("Server is running on http://localhost:8080")
-	err := http.ListenAndServe(":8080", mux)
-	if err != nil {
-		panic(err)
-	}
+	r := InitRouter()
+
+	log.Fatal(http.ListenAndServe(":8080", r))
+}
+
+func InitRouter() chi.Router {
+	r := chi.NewRouter()
+
+	r.Use(middleware.RealIP)
+	r.Use(middleware.Logger)
+	r.Use(middleware.Recoverer)
+	r.Use(сontentTypeCheckerMiddleware("text/plain"))
+
+	r.Head("/", func(rw http.ResponseWriter, r *http.Request) {
+		r.Header.Set("Content-Type", "text/plain")
+	})
+
+	r.Get("/", handler.MetricsHandlerFunc)
+	r.Route("/update", func(r chi.Router) {
+		r.Get("/", handler.UpdateMetricsHandlerFunc)
+		r.Route("/{type}", func(r chi.Router) {
+			r.Get("/", handler.UpdateMetricsHandlerFunc)
+			r.Get("/{name}", handler.UpdateMetricsHandlerFunc)
+			r.Get("/{name}/{value}", handler.UpdateMetricsHandlerFunc)
+			r.Get("/{name}/{value}/", handler.UpdateMetricsHandlerFunc)
+		})
+	})
+	return r
 }

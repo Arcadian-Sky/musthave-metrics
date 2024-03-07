@@ -3,9 +3,9 @@ package handler
 import (
 	"fmt"
 	"net/http"
-	"strings"
 
 	"github.com/Arcadian-Sky/musthave-metrics/internal/storage"
+	"github.com/go-chi/chi/v5"
 )
 
 func MetricsHandlerFunc(w http.ResponseWriter, r *http.Request) {
@@ -18,44 +18,20 @@ func MetricsHandlerFunc(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// metricsHandler обрабатывает HTTP запросы для получения текущих метрик
-func MetricsHandler() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		MetricsHandlerFunc(w, r)
-	}
-}
-
 func UpdateMetricsHandlerFunc(w http.ResponseWriter, r *http.Request) {
 
 	if storage.Storage == nil {
 		storage.Storage = storage.NewMemStorage()
 	}
-	// fmt.Fprintf(w, "storage %s\n", memStorage)
 
-	path := r.URL.Path
-	// Разбиваем путь на части по слэшам
-	parts := strings.Split(path, "/")
+	metricType := chi.URLParam(r, "type")
+	metricName := chi.URLParam(r, "name")
+	metricValue := chi.URLParam(r, "value")
 
-	var nonEmptyParts []string
-	for _, part := range parts {
-		if part != "" {
-			nonEmptyParts = append(nonEmptyParts, part)
-		}
-	}
-	// fmt.Println("nonEmptyParts \n", nonEmptyParts[0], nonEmptyParts[1], len(nonEmptyParts))
-	length := len(nonEmptyParts)
-	metricType := ""
-	metricName := ""
-	metricValue := ""
-	if 2 <= length {
-		metricType = nonEmptyParts[1]
-	}
-	if 3 <= length {
-		metricName = nonEmptyParts[2]
-	}
-	if 4 <= length {
-		metricValue = nonEmptyParts[3]
-	}
+	// fmt.Fprintf(w, "storage %s\n", metricType)
+	// fmt.Fprintf(w, "storage %s\n", metricName)
+	// fmt.Fprintf(w, "storage %s\n", metricValue)
+	fmt.Println("nonEmptyParts", metricType, metricName, metricValue, "|")
 	//Проверяем передачу типа
 	if metricType == "" {
 		http.Error(w, "Metric type not provided", http.StatusNotFound)
@@ -82,11 +58,4 @@ func UpdateMetricsHandlerFunc(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-}
-
-// updateMetricsHandler обрабатывает HTTP запросы для обновления метрик
-func UpdateMetricsHandler() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		UpdateMetricsHandlerFunc(w, r)
-	}
 }
