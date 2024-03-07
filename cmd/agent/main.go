@@ -41,7 +41,6 @@ func main() {
 	}
 
 	if envRepI := os.Getenv("REPORT_INTERVAL"); envRepI != "" {
-		fmt.Printf("envRepI: %v\n", envRepI)
 		durationRepI, err := strconv.Atoi(envRepI)
 		if err != nil {
 			fmt.Println("Error parsing REPORT_INTERVAL:", err)
