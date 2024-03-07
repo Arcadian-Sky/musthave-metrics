@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"math/rand"
 	"net/http"
@@ -8,10 +9,10 @@ import (
 	"time"
 )
 
-const (
-	serverAddress  = "http://localhost:8080"
-	pollInterval   = 2 * time.Second
-	reportInterval = 10 * time.Second
+var (
+	serverAddress  = ""
+	pollInterval   = time.Second
+	reportInterval = time.Second
 )
 
 var (
@@ -24,6 +25,15 @@ var (
 // Флаг -p=<ЗНАЧЕНИЕ> позволяет переопределять pollInterval — частоту опроса метрик из пакета runtime (по умолчанию 2 секунды).
 
 func main() {
+	end := flag.String("a", "localhost:8080", "endpoint")
+	repI := flag.Duration("r", 2, "reportInterval")
+	polI := flag.Duration("p", 10, "pollInterval")
+	flag.Parse()
+
+	serverAddress = "http://" + *end
+	reportInterval = *repI * time.Second
+	pollInterval = *polI * time.Second
+
 	collectAndSendMetrics()
 }
 

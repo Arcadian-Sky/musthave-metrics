@@ -2,9 +2,6 @@ package main
 
 import (
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server"
-	// "runtime"
-	// "strconv"
-	// "sync"
 )
 
 // Пример запроса к серверу:
