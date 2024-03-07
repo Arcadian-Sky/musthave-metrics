@@ -59,3 +59,51 @@ func UpdateMetricsHandlerFunc(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 }
+
+func GetMetricsHandlerFunc(w http.ResponseWriter, r *http.Request) {
+
+	if storage.Storage == nil {
+		storage.Storage = storage.NewMemStorage()
+	}
+
+	metricType := chi.URLParam(r, "type")
+	metricName := chi.URLParam(r, "name")
+
+	// fmt.Fprintf(w, "storage %s\n", metricType)
+	// fmt.Fprintf(w, "storage %s\n", metricName)
+	fmt.Println("nonEmptyParts", metricType, metricName, "|")
+	//Проверяем передачу типа
+	if metricType == "" {
+		http.Error(w, "Metric type not provided", http.StatusNotFound)
+		return
+	}
+	//Проверяем передачу имени
+	if metricName == "" {
+		http.Error(w, "Metric name not provided", http.StatusNotFound)
+		return
+	}
+
+	// Выводим данные
+	metricTypeId, err := storage.GetMetricTypeByCode(metricType)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	currentMetrics := storage.Storage.GetMetric(metricTypeId)
+	fmt.Printf("metricName: %v\n", metricName)
+	if metricName != "" {
+		fmt.Printf("currentMetrics[metricName]: %v\n", currentMetrics[metricName])
+		if currentMetrics[metricName] != nil {
+			w.Write([]byte(fmt.Sprintf("%v", currentMetrics[metricName])))
+		} else {
+			http.Error(w, "Metric value not provided", http.StatusNotFound)
+		}
+	} else {
+		for name, value := range currentMetrics {
+			fmt.Fprintf(w, "%s: %v\n", name, value)
+		}
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
