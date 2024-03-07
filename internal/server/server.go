@@ -45,12 +45,12 @@ func InitRouter() chi.Router {
 
 	r.Get("/", handler.MetricsHandlerFunc)
 	r.Route("/update", func(r chi.Router) {
-		r.Get("/", handler.UpdateMetricsHandlerFunc)
+		r.Post("/", handler.UpdateMetricsHandlerFunc)
 		r.Route("/{type}", func(r chi.Router) {
-			r.Get("/", handler.UpdateMetricsHandlerFunc)
-			r.Get("/{name}", handler.UpdateMetricsHandlerFunc)
-			r.Get("/{name}/{value}", handler.UpdateMetricsHandlerFunc)
-			r.Get("/{name}/{value}/", handler.UpdateMetricsHandlerFunc)
+			r.Post("/", handler.UpdateMetricsHandlerFunc)
+			r.Post("/{name}", handler.UpdateMetricsHandlerFunc)
+			r.Post("/{name}/{value}", handler.UpdateMetricsHandlerFunc)
+			r.Post("/{name}/{value}/", handler.UpdateMetricsHandlerFunc)
 		})
 	})
 	return r
