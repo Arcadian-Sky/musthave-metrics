@@ -1,85 +1,149 @@
 package handler
 
 import (
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
-	"github.com/Arcadian-Sky/musthave-metrics/internal/storage"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-func TestUpdateMetricsHandler(t *testing.T) {
-	// Создаем фейковое хранилище
-	storage.Storage = storage.NewMemStorage()
+func TestUpdateMetricsHandlers(t *testing.T) {
+	ts := httptest.NewServer(InitRouter())
+	defer ts.Close()
 
-	// Создаем HTTP запрос для обновления метрики
-	req, err := http.NewRequest("POST", "/update/gauge/example_metric/42", nil)
-	assert.NoError(t, err)
+	tests := []struct {
+		name          string
+		requestPath   string
+		expectedType  string
+		expectedName  string
+		expectedCode  int
+		expectedValue string
+	}{
+		{
+			name:          "valid request gauge",
+			requestPath:   "/update/gauge/someName/100.001",
+			expectedType:  "gauge",
+			expectedName:  "someName",
+			expectedCode:  200,
+			expectedValue: "0: map[someName:100.001]",
+		},
+		{
+			name:          "valid request count",
+			requestPath:   "/update/counter/someName/100",
+			expectedType:  "count",
+			expectedName:  "someName",
+			expectedCode:  200,
+			expectedValue: "0: map[someName:100]",
+		},
+		{
+			name:          "not valid request error counter",
+			requestPath:   "/update/counter/someName/100.001",
+			expectedType:  "count",
+			expectedName:  "someName",
+			expectedCode:  400,
+			expectedValue: "",
+		},
+		{
+			name:          "not valid request",
+			requestPath:   "/update/gauge/someName/",
+			expectedType:  "count",
+			expectedName:  "someName",
+			expectedCode:  404,
+			expectedValue: "Metric value not provided",
+		},
+		{
+			name:          "not valid request",
+			requestPath:   "/update/counter/someName/",
+			expectedType:  "count",
+			expectedName:  "someName",
+			expectedCode:  404,
+			expectedValue: "Metric value not provided",
+		},
+		{
+			name:          "not valid request count no name",
+			requestPath:   "/update/counter/",
+			expectedType:  "count",
+			expectedName:  "",
+			expectedCode:  404,
+			expectedValue: "Metric name not provided",
+		},
+		{
+			name:          "not valid request gauge no name",
+			requestPath:   "/update/gauge/",
+			expectedType:  "gauge",
+			expectedName:  "",
+			expectedCode:  404,
+			expectedValue: "Metric name not provided",
+		},
+		{
+			name:          "not valid request gauge no type",
+			requestPath:   "/update/",
+			expectedType:  "",
+			expectedName:  "",
+			expectedCode:  404,
+			expectedValue: "Metric type not provided",
+		},
+	}
 
-	// Создаем ResponseRecorder для записи ответа сервера
-	w := httptest.NewRecorder()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
 
-	// Создаем обработчик и вызываем его метод ServeHTTP
-	UpdateMetricsHandlerFunc(w, req)
+			resp, _ := testRequest(t, ts, "GET", tt.requestPath)
+			// fmt.Println(resp.StatusCode)
+			assert.Equal(t, tt.expectedCode, resp.StatusCode)
 
-	res := w.Result()
+			// actualType := chi.URLParam(req, "type")
+			// assert.Equal(t, expectedType, actualType)
+			// fmt.Printf("actualType: %v\n", actualType)
 
-	defer res.Body.Close()
+			respBody, _ := io.ReadAll(resp.Body)
+			assert.Contains(t, tt.expectedValue, string(respBody))
 
-	// Проверяем код ответа
-	assert.Equal(t, http.StatusOK, w.Code)
+		})
+	}
 
-	// Проверяем тело ответа
-	assert.Contains(t, w.Body.String(), "0: map[example_metric:42]\n")
 }
 
-func TestUpdateMetricsHandlerBadRequest(t *testing.T) {
-	// Создаем фейковое хранилище
-	storage.Storage = storage.NewMemStorage()
+func testRequest(t *testing.T, ts *httptest.Server, method, path string) (*http.Response, *http.Request) {
+	req, err := http.NewRequest(method, ts.URL+path, nil)
+	require.NoError(t, err)
 
-	// Создаем HTTP запрос с некорректным типом метрики
-	req, err := http.NewRequest("POST", "/update/invalid_type/example_metric/42", nil)
-	assert.NoError(t, err)
+	resp, err := ts.Client().Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
 
-	// Создаем ResponseRecorder для записи ответа сервера
-	w := httptest.NewRecorder()
+	_, err = io.ReadAll(resp.Body)
+	require.NoError(t, err)
 
-	// Создаем обработчик и вызываем его метод ServeHTTP
-	UpdateMetricsHandlerFunc(w, req)
-
-	res := w.Result()
-
-	defer res.Body.Close()
-
-	// Проверяем код ответа
-	assert.Equal(t, http.StatusBadRequest, w.Code)
-
-	// Проверяем тело ответа
-	// assert.Contains(t, rr.Body.String(), "Metric type validation failed")
+	return resp, req //string(respBody)
 }
 
-func TestUpdateMetricsHandlerNotFound(t *testing.T) {
-	// Создаем фейковое хранилище
-	storage.Storage = storage.NewMemStorage()
+func InitRouter() chi.Router {
+	r := chi.NewRouter()
 
-	// Создаем HTTP запрос без имени метрики
-	req, err := http.NewRequest("POST", "/update/gauge/", nil)
-	assert.NoError(t, err)
+	r.Use(middleware.RealIP)
+	r.Use(middleware.Logger)
+	r.Use(middleware.Recoverer)
 
-	// Создаем ResponseRecorder для записи ответа сервера
-	w := httptest.NewRecorder()
+	r.Head("/", func(rw http.ResponseWriter, r *http.Request) {
+		r.Header.Set("Content-Type", "text/plain")
+	})
 
-	// Создаем обработчик и вызываем его метод ServeHTTP
-	UpdateMetricsHandlerFunc(w, req)
+	r.Get("/", MetricsHandlerFunc)
+	r.Route("/update", func(r chi.Router) {
+		r.Get("/", UpdateMetricsHandlerFunc)
+		r.Route("/{type}", func(r chi.Router) {
+			r.Get("/", UpdateMetricsHandlerFunc)
+			r.Get("/{name}", UpdateMetricsHandlerFunc)
+			r.Get("/{name}/{value}", UpdateMetricsHandlerFunc)
+			r.Get("/{name}/{value}/", UpdateMetricsHandlerFunc)
+		})
+	})
 
-	res := w.Result()
-
-	defer res.Body.Close()
-
-	// Проверяем код ответа
-	assert.Equal(t, http.StatusNotFound, w.Code)
-
-	// Проверяем тело ответа
-	assert.Contains(t, w.Body.String(), "Metric name not provided")
+	return r
 }
