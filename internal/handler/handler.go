@@ -84,13 +84,13 @@ func GetMetricsHandlerFunc(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Выводим данные
-	metricTypeId, err := storage.GetMetricTypeByCode(metricType)
+	metricTypeID, err := storage.GetMetricTypeByCode(metricType)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	currentMetrics := storage.Storage.GetMetric(metricTypeId)
+	currentMetrics := storage.Storage.GetMetric(metricTypeID)
 	fmt.Printf("metricName: %v\n", metricName)
 	if metricName != "" {
 		fmt.Printf("currentMetrics[metricName]: %v\n", currentMetrics[metricName])
