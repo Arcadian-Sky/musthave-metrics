@@ -21,7 +21,7 @@ import (
 // 	package2.FunctionFromPackage2()
 // }
 
-// Флаг -a=<ЗНАЧЕНИЕ> отвечает за адрес эндпоинта HTTP-сервера (по умолчанию localhost:8080).
+// ADDRESS отвечает за адрес эндпоинта HTTP-сервера.
 
 func main() {
 	server.InitServer()

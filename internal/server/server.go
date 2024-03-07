@@ -4,6 +4,7 @@ import (
 	"flag"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/Arcadian-Sky/musthave-metrics/internal/handler"
 	"github.com/go-chi/chi/v5"
@@ -66,6 +67,10 @@ func InitServer() {
 	end := flag.String("a", ":8080", "endpoint address")
 	flag.Parse()
 	endpoint := *end
+
+	if envRunAddr := os.Getenv("ADDRESS"); envRunAddr != "" {
+		endpoint = envRunAddr
+	}
 
 	log.Fatal(http.ListenAndServe(endpoint, r))
 }
