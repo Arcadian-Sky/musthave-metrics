@@ -143,7 +143,7 @@ func TestUpdateMetricsHandlers(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			resp, _ := testRequest(t, ts, "GET", tt.requestPath)
+			resp, _ := testRequest(t, ts, "POST", tt.requestPath)
 			// fmt.Println(resp.StatusCode)
 			assert.Equal(t, tt.expectedCode, resp.StatusCode)
 
