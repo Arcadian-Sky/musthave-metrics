@@ -36,7 +36,7 @@ func main() {
 	pollInterval = time.Duration(*polI) * time.Second
 
 	if envRunAddr := os.Getenv("ADDRESS"); envRunAddr != "" {
-		serverAddress = envRunAddr
+		serverAddress = "http://" + envRunAddr
 	}
 
 	if envRepI := os.Getenv("REPORT_INTERVAL"); envRepI != "" {
@@ -54,7 +54,7 @@ func main() {
 			fmt.Println("Error parsing POLL_INTERVAL:", err)
 			return
 		}
-		reportInterval = durationPolI
+		pollInterval = durationPolI
 	}
 
 	collectAndSendMetrics()
