@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/Arcadian-Sky/musthave-metrics/internal/storage"
+
 	"github.com/go-chi/chi/v5"
 )
 
@@ -95,7 +96,11 @@ func GetMetricsHandlerFunc(w http.ResponseWriter, r *http.Request) {
 	if metricName != "" {
 		fmt.Printf("currentMetrics[metricName]: %v\n", currentMetrics[metricName])
 		if currentMetrics[metricName] != nil {
-			w.Write([]byte(fmt.Sprintf("%v", currentMetrics[metricName])))
+			_, err = w.Write([]byte(fmt.Sprintf("%v", currentMetrics[metricName])))
+			if err != nil {
+				http.Error(w, "w.Write Error: "+err.Error(), http.StatusNotFound)
+				//return err
+			}
 		} else {
 			http.Error(w, "Metric value not provided", http.StatusNotFound)
 		}
