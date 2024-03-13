@@ -99,7 +99,6 @@ func GetMetricsHandlerFunc(w http.ResponseWriter, r *http.Request) {
 			_, err = w.Write([]byte(fmt.Sprintf("%v", currentMetrics[metricName])))
 			if err != nil {
 				http.Error(w, "w.Write Error: "+err.Error(), http.StatusNotFound)
-				//return err
 			}
 		} else {
 			http.Error(w, "Metric value not provided", http.StatusNotFound)
