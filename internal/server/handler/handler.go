@@ -98,20 +98,20 @@ func GetMetricsHandlerFunc(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func checkMetricTypeAndName(w http.ResponseWriter, r *http.Request) error {
+func checkMetricTypeAndName(_ http.ResponseWriter, r *http.Request) error {
 	metricType := chi.URLParam(r, "type")
 	metricName := chi.URLParam(r, "name")
 	fmt.Println("metricType = ", metricType)
 	fmt.Println("metricName = ", metricName)
 	//Проверяем передачу типа
 	if metricType == "" {
-		return fmt.Errorf("Metric type not provided")
+		return fmt.Errorf("metric type not provided")
 		// http.Error(w, "Metric type not provided", http.StatusNotFound)
 		// return
 	}
 	//Проверяем передачу имени
 	if metricName == "" {
-		return fmt.Errorf("Metric name not provided")
+		return fmt.Errorf("metric name not provided")
 		// http.Error(w, "Metric name not provided", http.StatusNotFound)
 		// return
 	}
