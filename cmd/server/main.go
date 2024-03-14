@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/Arcadian-Sky/musthave-metrics/internal/server"
+	"github.com/Arcadian-Sky/musthave-metrics/internal/server/server"
 )
 
 // Пример запроса к серверу:
