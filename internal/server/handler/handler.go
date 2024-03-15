@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/Arcadian-Sky/musthave-metrics/internal/server/storage"
 	"github.com/go-chi/chi/v5"
+
+	"github.com/Arcadian-Sky/musthave-metrics/internal/server/storage"
 )
 
 func MetricsHandlerFunc(w http.ResponseWriter, r *http.Request) {
