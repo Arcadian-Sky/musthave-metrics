@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"log"
 	"math/rand"
 	"runtime"
 )
@@ -59,8 +60,10 @@ func (r *InMemoryMetricsRepository) GetMetrics() (map[string]interface{}, error)
 	// Добавляем дополнительные метрики
 	metrics["RandomValue"] = rand.Float64() // Произвольное значение
 
-	r.SaveMetrics(metrics)
-
+	err := r.SaveMetrics(metrics)
+	if err != nil {
+		log.Println("Error saving metrics:", err)
+	}
 	return metrics, nil
 }
 
