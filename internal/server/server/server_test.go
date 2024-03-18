@@ -1,24 +1,18 @@
 package server
 
 import (
-	"reflect"
 	"testing"
 
-	"github.com/go-chi/chi/v5"
+	"github.com/Arcadian-Sky/musthave-metrics/internal/server/handler"
 )
 
 func TestInitRouter(t *testing.T) {
-	tests := []struct {
-		name string
-		want chi.Router
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := InitRouter(); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("InitRouter() = %v, want %v", got, tt.want)
-			}
-		})
-	}
+
+	handler := handler.NewHandler()
+	handler.InitStorage()
+
+	t.Run("TestInitRouter", func(t *testing.T) {
+		InitRouter(*handler)
+	})
+
 }

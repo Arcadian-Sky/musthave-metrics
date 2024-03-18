@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/Arcadian-Sky/musthave-metrics/internal/server/handler"
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/server"
 )
 
@@ -24,5 +25,8 @@ import (
 // ADDRESS отвечает за адрес эндпоинта HTTP-сервера.
 
 func main() {
-	server.InitServer()
+	handler := handler.NewHandler()
+	handler.InitStorage()
+
+	server.InitRouter(*handler)
 }
