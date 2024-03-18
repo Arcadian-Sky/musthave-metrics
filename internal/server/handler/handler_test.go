@@ -175,6 +175,10 @@ func testRequest(t *testing.T, ts *httptest.Server, method, path string) (*http.
 }
 
 func InitRouter() chi.Router {
+
+	handler := NewHandler()
+	handler.InitStorage()
+
 	r := chi.NewRouter()
 
 	r.Use(middleware.RealIP)
@@ -185,14 +189,14 @@ func InitRouter() chi.Router {
 		r.Header.Set("Content-Type", "text/plain")
 	})
 
-	r.Get("/", MetricsHandlerFunc)
+	r.Get("/", handler.MetricsHandlerFunc)
 	r.Route("/update", func(r chi.Router) {
-		r.Post("/", UpdateMetricsHandlerFunc)
+		r.Post("/", handler.UpdateMetricsHandlerFunc)
 		r.Route("/{type}", func(r chi.Router) {
-			r.Post("/", UpdateMetricsHandlerFunc)
-			r.Post("/{name}", UpdateMetricsHandlerFunc)
-			r.Post("/{name}/{value}", UpdateMetricsHandlerFunc)
-			r.Post("/{name}/{value}/", UpdateMetricsHandlerFunc)
+			r.Post("/", handler.UpdateMetricsHandlerFunc)
+			r.Post("/{name}", handler.UpdateMetricsHandlerFunc)
+			r.Post("/{name}/{value}", handler.UpdateMetricsHandlerFunc)
+			r.Post("/{name}/{value}/", handler.UpdateMetricsHandlerFunc)
 		})
 	})
 

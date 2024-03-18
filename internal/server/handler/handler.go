@@ -7,46 +7,66 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/storage"
+	"github.com/Arcadian-Sky/musthave-metrics/internal/server/validate"
 )
 
-func MetricsHandlerFunc(w http.ResponseWriter, r *http.Request) {
-	if storage.Storage == nil {
-		storage.Storage = storage.NewMemStorage()
+type MetricParams struct {
+	Type  string
+	Name  string
+	Value string
+}
+
+// NewMetricParams создает экземпляр MetricParams из объекта *http.Request
+func NewMetricParams(r *http.Request) MetricParams {
+	return MetricParams{
+		Type:  chi.URLParam(r, "type"),
+		Name:  chi.URLParam(r, "name"),
+		Value: chi.URLParam(r, "value"),
 	}
-	currentMetrics := storage.Storage.GetMetrics()
-	for name, value := range currentMetrics {
+}
+
+type Handler struct {
+	s      storage.MetricsStorage
+	params MetricParams
+}
+
+// NewHandler создает экземпляр Handler
+func NewHandler() *Handler {
+	return &Handler{}
+}
+
+func (h *Handler) InitStorage() {
+	if h.s == nil {
+		h.s = storage.NewMemStorage()
+	}
+}
+
+func (h *Handler) MetricsHandlerFunc(w http.ResponseWriter, r *http.Request) {
+	// Выводим данные
+	for name, value := range h.s.GetMetrics() {
 		fmt.Fprintf(w, "%d: %v\n", name, value)
 	}
 }
 
-func UpdateMetricsHandlerFunc(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) UpdateMetricsHandlerFunc(w http.ResponseWriter, r *http.Request) {
+	params := NewMetricParams(r)
 
-	if storage.Storage == nil {
-		storage.Storage = storage.NewMemStorage()
-	}
-
-	metricType := chi.URLParam(r, "type")
-	metricName := chi.URLParam(r, "name")
-	metricValue := chi.URLParam(r, "value")
-
-	fmt.Println("nonEmptyParts", metricType, metricName, metricValue, "|")
-
-	err := checkMetricTypeAndName(w, r)
+	//Проверякм переданные параметры
+	err := validate.CheckMetricTypeAndName(params.Type, params.Name)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
 
 	// Обновляем метрику
-	err = storage.Storage.UpdateMetric(metricType, metricName, metricValue)
-
+	err = h.s.UpdateMetric(params.Type, params.Name, params.Value)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	// Выводим данные
-	currentMetrics := storage.Storage.GetMetrics()
+	currentMetrics := h.s.GetMetrics()
 	for name, value := range currentMetrics {
 		fmt.Fprintf(w, "%d: %v\n", name, value)
 	}
@@ -54,36 +74,30 @@ func UpdateMetricsHandlerFunc(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func GetMetricsHandlerFunc(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) GetMetricsHandlerFunc(w http.ResponseWriter, r *http.Request) {
+	params := NewMetricParams(r)
 
-	if storage.Storage == nil {
-		storage.Storage = storage.NewMemStorage()
-	}
-
-	metricType := chi.URLParam(r, "type")
-	metricName := chi.URLParam(r, "name")
-
-	fmt.Println("nonEmptyParts", metricType, metricName, "|")
-
-	err := checkMetricTypeAndName(w, r)
+	//Проверякм переданные параметры
+	err := validate.CheckMetricTypeAndName(params.Type, params.Name)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
 
-	// Выводим данные
-	metricTypeID, err := storage.GetMetricTypeByCode(metricType)
+	//Получаем данные для вывода
+	metricTypeID, err := storage.GetMetricTypeByCode(params.Type)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	currentMetrics := storage.Storage.GetMetric(metricTypeID)
-	fmt.Printf("metricName: %v\n", metricName)
-	if metricName != "" {
-		fmt.Printf("currentMetrics[metricName]: %v\n", currentMetrics[metricName])
-		if currentMetrics[metricName] != nil {
-			_, err = w.Write([]byte(fmt.Sprintf("%v", currentMetrics[metricName])))
+	// Выводим данные
+	currentMetrics := h.s.GetMetric(metricTypeID)
+	fmt.Printf("metricName: %v\n", params.Name)
+	if params.Name != "" {
+		fmt.Printf("currentMetrics[metricName]: %v\n", currentMetrics[params.Name])
+		if currentMetrics[params.Name] != nil {
+			_, err = w.Write([]byte(fmt.Sprintf("%v", currentMetrics[params.Name])))
 			if err != nil {
 				http.Error(w, "w.Write Error: "+err.Error(), http.StatusNotFound)
 			}
@@ -97,24 +111,4 @@ func GetMetricsHandlerFunc(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-}
-
-func checkMetricTypeAndName(_ http.ResponseWriter, r *http.Request) error {
-	metricType := chi.URLParam(r, "type")
-	metricName := chi.URLParam(r, "name")
-	fmt.Println("metricType = ", metricType)
-	fmt.Println("metricName = ", metricName)
-	//Проверяем передачу типа
-	if metricType == "" {
-		return fmt.Errorf("metric type not provided")
-		// http.Error(w, "Metric type not provided", http.StatusNotFound)
-		// return
-	}
-	//Проверяем передачу имени
-	if metricName == "" {
-		return fmt.Errorf("metric name not provided")
-		// http.Error(w, "Metric name not provided", http.StatusNotFound)
-		// return
-	}
-	return nil
 }

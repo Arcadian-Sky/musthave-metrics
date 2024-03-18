@@ -5,8 +5,6 @@ import (
 	"strconv"
 )
 
-var Storage *MemStorage
-
 // MetricType определяет тип метрики (gauge или counter)
 type MetricType int
 
