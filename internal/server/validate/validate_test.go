@@ -1,15 +1,10 @@
 package validate
 
 import (
-	"net/http"
 	"testing"
 )
 
 func TestCheckMetricTypeAndName(t *testing.T) {
-	type args struct {
-		in0 http.ResponseWriter
-		r   *http.Request
-	}
 	tests := []struct {
 		name       string
 		metricType string

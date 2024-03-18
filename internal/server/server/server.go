@@ -25,7 +25,7 @@ func сontentTypeCheckerMiddleware(expectedContentType string) Middleware {
 	}
 }
 
-func InitRouter(handler handler.Handler) {
+func InitRouter(handler handler.Handler) chi.Router {
 	r := chi.NewRouter()
 
 	r.Use(middleware.RealIP)
@@ -59,5 +59,5 @@ func InitRouter(handler handler.Handler) {
 	})
 
 	log.Fatal(http.ListenAndServe(flags.Parse(), r))
-	// return r
+	return r
 }

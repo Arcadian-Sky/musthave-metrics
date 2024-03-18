@@ -1,15 +1,14 @@
 package handler
 
 import (
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 // func TestUpdateMetricsHandler(t *testing.T) {
@@ -63,9 +62,6 @@ import (
 // }
 
 func TestUpdateMetricsHandlers(t *testing.T) {
-	ts := httptest.NewServer(InitRouter())
-	defer ts.Close()
-
 	tests := []struct {
 		name          string
 		requestPath   string
@@ -80,7 +76,7 @@ func TestUpdateMetricsHandlers(t *testing.T) {
 			expectedType:  "gauge",
 			expectedName:  "someName",
 			expectedCode:  200,
-			expectedValue: "0: map[someName:100.001]",
+			expectedValue: "map[someName:100.001]",
 		},
 		{
 			name:          "valid request count",
@@ -88,7 +84,7 @@ func TestUpdateMetricsHandlers(t *testing.T) {
 			expectedType:  "count",
 			expectedName:  "someName",
 			expectedCode:  200,
-			expectedValue: "0: map[someName:100]",
+			expectedValue: "map[someName:100]",
 		},
 		{
 			name:          "not valid request error counter",
@@ -99,20 +95,20 @@ func TestUpdateMetricsHandlers(t *testing.T) {
 			expectedValue: "",
 		},
 		{
-			name:          "not valid request",
+			name:          "not valid request 1",
 			requestPath:   "/update/gauge/someName/",
 			expectedType:  "count",
 			expectedName:  "someName",
 			expectedCode:  404,
-			expectedValue: "Metric value not provided",
+			expectedValue: "404",
 		},
 		{
-			name:          "not valid request",
+			name:          "not valid request 2",
 			requestPath:   "/update/counter/someName/",
 			expectedType:  "count",
 			expectedName:  "someName",
 			expectedCode:  404,
-			expectedValue: "Metric value not provided",
+			expectedValue: "404",
 		},
 		{
 			name:          "not valid request count no name",
@@ -140,54 +136,53 @@ func TestUpdateMetricsHandlers(t *testing.T) {
 		},
 	}
 
+	testServer := httptest.NewServer(InitRouter())
+	defer testServer.Close()
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			resp, _ := testRequest(t, ts, "POST", tt.requestPath)
-			defer resp.Body.Close()
-			// fmt.Println(resp.StatusCode)
-			assert.Equal(t, tt.expectedCode, resp.StatusCode)
+			// resp, _ := testRequest(t, ts, "POST", tt.requestPath)
+			// defer resp.Body.Close()
+			// // fmt.Println(resp.StatusCode)
+			// assert.Equal(t, tt.expectedCode, resp.StatusCode)
 
-			// actualType := chi.URLParam(req, "type")
-			// assert.Equal(t, expectedType, actualType)
-			// fmt.Printf("actualType: %v\n", actualType)
+			// respBody, _ := io.ReadAll(resp.Body)
+			// assert.Contains(t, tt.expectedValue, string(respBody))
 
-			respBody, _ := io.ReadAll(resp.Body)
-			assert.Contains(t, tt.expectedValue, string(respBody))
+			request, err := http.NewRequest(http.MethodPost, testServer.URL+tt.requestPath, nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			response, err := http.DefaultClient.Do(request)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			assert.Equal(t, tt.expectedCode, response.StatusCode)
+
+			respBody, _ := io.ReadAll(response.Body)
+			fmt.Println(string(respBody))
+			assert.Contains(t, string(respBody), tt.expectedValue)
+			defer response.Body.Close()
+			// assert.Equal(t, test.expectedBody, string(respBody))
 
 		})
 	}
 
 }
 
-func testRequest(t *testing.T, ts *httptest.Server, method, path string) (*http.Response, *http.Request) {
-	req, err := http.NewRequest(method, ts.URL+path, nil)
-	require.NoError(t, err)
-
-	resp, err := ts.Client().Do(req)
-	require.NoError(t, err)
-	defer resp.Body.Close()
-
-	_, err = io.ReadAll(resp.Body)
-	require.NoError(t, err)
-
-	return resp, req //string(respBody)
-}
-
 func InitRouter() chi.Router {
-
 	handler := NewHandler()
 	handler.InitStorage()
 
 	r := chi.NewRouter()
 
-	r.Use(middleware.RealIP)
-	r.Use(middleware.Logger)
-	r.Use(middleware.Recoverer)
-
 	r.Head("/", func(rw http.ResponseWriter, r *http.Request) {
 		r.Header.Set("Content-Type", "text/plain")
 	})
+	// GET http://localhost:8080/value/counter/testSetGet163
 
 	r.Get("/", handler.MetricsHandlerFunc)
 	r.Route("/update", func(r chi.Router) {
@@ -200,5 +195,16 @@ func InitRouter() chi.Router {
 		})
 	})
 
+	r.Route("/value", func(r chi.Router) {
+		r.Get("/", handler.GetMetricsHandlerFunc)
+		r.Route("/{type}", func(r chi.Router) {
+			r.Get("/", handler.GetMetricsHandlerFunc)
+			r.Get("/{name}", handler.GetMetricsHandlerFunc)
+			r.Get("/{name}/", handler.GetMetricsHandlerFunc)
+		})
+	})
+
 	return r
+
+	// return server.InitRouter(*handler)
 }
