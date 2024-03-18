@@ -26,8 +26,7 @@ func NewMetricParams(r *http.Request) MetricParams {
 }
 
 type Handler struct {
-	s      storage.MetricsStorage
-	params MetricParams
+	s storage.MetricsStorage
 }
 
 // NewHandler создает экземпляр Handler
