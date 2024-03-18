@@ -116,7 +116,7 @@ func TestUpdateMetricsHandlers(t *testing.T) {
 			expectedType:  "count",
 			expectedName:  "",
 			expectedCode:  404,
-			expectedValue: "Metric name not provided",
+			expectedValue: "metric name not provided",
 		},
 		{
 			name:          "not valid request gauge no name",
@@ -124,7 +124,7 @@ func TestUpdateMetricsHandlers(t *testing.T) {
 			expectedType:  "gauge",
 			expectedName:  "",
 			expectedCode:  404,
-			expectedValue: "Metric name not provided",
+			expectedValue: "metric name not provided",
 		},
 		{
 			name:          "not valid request gauge no type",
@@ -132,7 +132,7 @@ func TestUpdateMetricsHandlers(t *testing.T) {
 			expectedType:  "",
 			expectedName:  "",
 			expectedCode:  404,
-			expectedValue: "Metric type not provided",
+			expectedValue: "metric type not provided",
 		},
 	}
 
