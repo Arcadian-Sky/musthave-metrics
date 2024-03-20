@@ -6,6 +6,8 @@ import (
 )
 
 func main() {
-	flags.Parse()
-	controller.CollectAndSendMetrics()
+	config, err := flags.Parse()
+	if err == nil {
+		controller.NewCollectAndSendMetricsService(config).Run()
+	}
 }

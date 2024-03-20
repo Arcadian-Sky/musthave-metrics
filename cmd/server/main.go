@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/handler"
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/server"
+	"github.com/Arcadian-Sky/musthave-metrics/internal/server/storage"
 )
 
 // Пример запроса к серверу:
@@ -22,11 +23,7 @@ import (
 // 	package2.FunctionFromPackage2()
 // }
 
-// ADDRESS отвечает за адрес эндпоинта HTTP-сервера.
-
 func main() {
-	handler := handler.NewHandler()
-	handler.InitStorage()
-
-	server.InitRouter(*handler)
+	vhandler := handler.NewHandler(storage.NewMemStorage())
+	server.InitRouter(*vhandler)
 }
