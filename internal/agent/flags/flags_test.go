@@ -13,21 +13,21 @@ func TestParse(t *testing.T) {
 	os.Setenv("REPORT_INTERVAL", "5")
 	os.Setenv("POLL_INTERVAL", "15")
 
-	Parse()
+	config, _ := Parse()
 
 	// Check if the values were correctly parsed
-	if serverAddress != "http://testhost:8080" {
-		t.Errorf("Expected serverAddress to be 'http://testhost:8080', got '%s'", serverAddress)
+	if config.serverAddress != "http://testhost:8080" {
+		t.Errorf("Expected serverAddress to be 'http://testhost:8080', got '%s'", config.serverAddress)
 	}
 
 	expectedReportInterval := 5 * time.Second
-	if reportInterval != expectedReportInterval {
-		t.Errorf("Expected reportInterval to be %v, got %v", expectedReportInterval, reportInterval)
+	if config.reportInterval != expectedReportInterval {
+		t.Errorf("Expected reportInterval to be %v, got %v", expectedReportInterval, config.reportInterval)
 	}
 
 	expectedPollInterval := 15 * time.Second
-	if pollInterval != expectedPollInterval {
-		t.Errorf("Expected pollInterval to be %v, got %v", expectedPollInterval, pollInterval)
+	if config.pollInterval != expectedPollInterval {
+		t.Errorf("Expected pollInterval to be %v, got %v", expectedPollInterval, config.pollInterval)
 	}
 
 	// Очищаем флаги перед каждым тестом

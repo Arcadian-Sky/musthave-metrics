@@ -9,27 +9,34 @@ import (
 	"github.com/Arcadian-Sky/musthave-metrics/internal/agent/repository"
 )
 
-func CollectAndSendMetrics() {
+type CollectAndSendMetricsService struct {
+	config flags.Config
+}
+
+func NewCollectAndSendMetricsService(config flags.Config) *CollectAndSendMetricsService {
+	return &CollectAndSendMetricsService{config}
+}
+
+func (c *CollectAndSendMetricsService) Run() {
 	var pollCount int
 	metricsRepo := repository.NewInMemoryMetricsRepository()
 
-	fmt.Println(flags.GetPollInterval(), flags.GetReportInterval())
 	// Отправляем метрики на сервер
 	go func() {
-		fmt.Println("send")
+		// fmt.Println("send")
 		for {
 			metrics, err := metricsRepo.GetMetrics()
 			if err != nil {
 				fmt.Println("Error collecting metrics:", err)
 				return
 			}
-			err = send(metrics, pollCount)
+			err = c.send(metrics, pollCount)
 			if err != nil {
 				fmt.Println("Error sending metrics:", err)
 			}
 			pollCount = pollCount + 1
 			fmt.Println("send2")
-			time.Sleep(flags.GetReportInterval())
+			time.Sleep(c.config.GetPollInterval())
 		}
 
 	}()
@@ -37,31 +44,28 @@ func CollectAndSendMetrics() {
 	//Собираем метрики
 	go func() {
 		for {
-			fmt.Println("updateMterics")
+			// fmt.Println("updateMterics")
 			_, err := metricsRepo.GetMetrics()
 			if err != nil {
-				fmt.Println("Error collecting metrics:", err)
+				// fmt.Println("Error collecting metrics:", err)
 				return
 			}
-			time.Sleep(flags.GetPollInterval())
+			time.Sleep(c.config.GetPollInterval())
 		}
 	}()
-
-	// go sendMetrics()
-	// go updateMterics()
 
 	select {}
 }
 
-// Отправляем метрики на сервер
-func send(metrics map[string]interface{}, pollCount int) error {
+// Отправляем метрики
+func (c *CollectAndSendMetricsService) send(metrics map[string]interface{}, pollCount int) error {
 	for metricType, value := range metrics {
-		err := sendMetricValue("gauge", metricType, value)
+		err := c.sendMetricValue("gauge", metricType, value)
 		if err != nil {
 			return err
 		}
 	}
-	err := sendMetricValue("count", "PollCount", pollCount)
+	err := c.sendMetricValue("count", "PollCount", pollCount)
 	if err != nil {
 		return err
 	}
@@ -69,13 +73,14 @@ func send(metrics map[string]interface{}, pollCount int) error {
 	return nil
 }
 
-func sendMetricValue(mType string, mName string, mValue interface{}) error {
+// Отправляем запрос на сервер
+func (c *CollectAndSendMetricsService) sendMetricValue(mType string, mName string, mValue interface{}) error {
 	client := &http.Client{
 		Timeout: 2 * time.Second,
 	}
 
 	// Формируем адрес запроса
-	url := fmt.Sprintf("%s/update/"+mType+"/%s/%v", flags.GetServerAddress(), mName, mValue)
+	url := fmt.Sprintf("%s/update/"+mType+"/%s/%v", c.config.GetServerAddress(), mName, mValue)
 
 	// Отправляем запрос на сервер
 	resp, err := client.Post(url, "text/plain", nil)

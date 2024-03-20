@@ -10,6 +10,7 @@ import (
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/validate"
 )
 
+// Сборщик параметров
 type MetricParams struct {
 	Type  string
 	Name  string
@@ -25,18 +26,15 @@ func NewMetricParams(r *http.Request) MetricParams {
 	}
 }
 
+// Server handlers
 type Handler struct {
 	s storage.MetricsStorage
 }
 
 // NewHandler создает экземпляр Handler
-func NewHandler() *Handler {
-	return &Handler{}
-}
-
-func (h *Handler) InitStorage() {
-	if h.s == nil {
-		h.s = storage.NewMemStorage()
+func NewHandler(mStorage storage.MetricsStorage) *Handler {
+	return &Handler{
+		s: mStorage,
 	}
 }
 
