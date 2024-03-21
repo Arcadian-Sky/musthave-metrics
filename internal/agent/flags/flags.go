@@ -8,53 +8,66 @@ import (
 	"time"
 )
 
-var (
-	serverAddress  = ""
-	pollInterval   = time.Second
-	reportInterval = time.Second
-)
+type Config struct {
+	serverAddress  string
+	pollInterval   time.Duration
+	reportInterval time.Duration
+}
 
-func Parse() {
+func (c *Config) GetServerAddress() string {
+	return c.serverAddress
+}
+
+func (c *Config) GetReportInterval() time.Duration {
+	return c.reportInterval
+}
+
+func (c *Config) GetPollInterval() time.Duration {
+	return c.pollInterval
+}
+
+// Дефолтные значения для теста
+func SetDefault() *Config {
+	return &Config{
+		serverAddress:  "http://localhost:8080",
+		reportInterval: time.Second,
+		pollInterval:   time.Second,
+	}
+}
+
+func Parse() (Config, error) {
 	end := flag.String("a", "localhost:8080", "endpoint")
 	repI := flag.Int("r", 2, "reportInterval")
 	polI := flag.Int("p", 10, "pollInterval")
 	flag.Parse()
 
-	serverAddress = "http://" + *end
-	reportInterval = time.Duration(*repI) * time.Second
-	pollInterval = time.Duration(*polI) * time.Second
+	config := Config{
+		serverAddress:  "http://" + *end,
+		reportInterval: time.Duration(*repI) * time.Second,
+		pollInterval:   time.Duration(*polI) * time.Second,
+	}
 
 	if envRunAddr := os.Getenv("ADDRESS"); envRunAddr != "" {
-		serverAddress = "http://" + envRunAddr
+		config.serverAddress = "http://" + envRunAddr
 	}
 
 	if envRepI := os.Getenv("REPORT_INTERVAL"); envRepI != "" {
 		durationRepI, err := strconv.Atoi(envRepI)
 		if err != nil {
 			fmt.Println("Error parsing REPORT_INTERVAL:", err)
-			return
+			return config, err
 		}
-		reportInterval = time.Duration(durationRepI) * time.Second
+		config.reportInterval = time.Duration(durationRepI) * time.Second
 	}
 
 	if envPolI := os.Getenv("POLL_INTERVAL"); envPolI != "" {
 		durationPolI, err := strconv.Atoi(envPolI)
 		if err != nil {
 			fmt.Println("Error parsing POLL_INTERVAL:", err)
-			return
+			return config, err
 		}
-		pollInterval = time.Duration(durationPolI) * time.Second
+		config.pollInterval = time.Duration(durationPolI) * time.Second
 	}
-}
 
-func GetServerAddress() string {
-	return serverAddress
-}
-
-func GetReportInterval() time.Duration {
-	return reportInterval
-}
-
-func GetPollInterval() time.Duration {
-	return pollInterval
+	return config, nil
 }

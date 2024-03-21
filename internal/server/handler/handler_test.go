@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/Arcadian-Sky/musthave-metrics/internal/server/storage"
 	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
 )
@@ -174,8 +175,11 @@ func TestUpdateMetricsHandlers(t *testing.T) {
 }
 
 func InitRouter() chi.Router {
-	handler := NewHandler()
-	handler.InitStorage()
+
+	handler := NewHandler(storage.NewMemStorage())
+
+	// handler := NewHandler()
+	// handler.InitStorage()
 
 	r := chi.NewRouter()
 
