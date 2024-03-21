@@ -7,7 +7,8 @@ import (
 
 func main() {
 	config, err := flags.Parse()
-	if err == nil {
-		controller.NewCollectAndSendMetricsService(config).Run()
+	if err != nil {
+		panic("Panic error in flags parsing")
 	}
+	controller.NewCollectAndSendMetricsService(config).Run()
 }
