@@ -1,10 +1,8 @@
 package server
 
 import (
-	"log"
 	"net/http"
 
-	"github.com/Arcadian-Sky/musthave-metrics/internal/server/flags"
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/handler"
 
 	"github.com/go-chi/chi/v5"
@@ -44,6 +42,7 @@ func InitRouter(handler handler.Handler) chi.Router {
 		r.Route("/{type}", func(r chi.Router) {
 			r.Post("/", handler.UpdateMetricsHandlerFunc)
 			r.Post("/{name}", handler.UpdateMetricsHandlerFunc)
+			r.Post("/{name}/", handler.UpdateMetricsHandlerFunc)
 			r.Post("/{name}/{value}", handler.UpdateMetricsHandlerFunc)
 			r.Post("/{name}/{value}/", handler.UpdateMetricsHandlerFunc)
 		})
@@ -58,6 +57,6 @@ func InitRouter(handler handler.Handler) chi.Router {
 		})
 	})
 
-	log.Fatal(http.ListenAndServe(flags.Parse(), r))
+	// log.Fatal(http.ListenAndServe(flags.Parse(), r))
 	return r
 }

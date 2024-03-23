@@ -3,6 +3,7 @@ package storage
 import (
 	"reflect"
 	"testing"
+	"time"
 )
 
 func TestMemStorage_UpdateMetric(t *testing.T) {
@@ -118,6 +119,7 @@ func TestNewMemStorage(t *testing.T) {
 		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
+		time.Sleep(2 * time.Second) // Sleep for 2 seconds
 		t.Run(tt.name, func(t *testing.T) {
 			if got := NewMemStorage(); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("NewMemStorage() = %v, want %v", got, tt.want)
