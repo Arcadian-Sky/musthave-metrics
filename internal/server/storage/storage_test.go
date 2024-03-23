@@ -3,7 +3,6 @@ package storage
 import (
 	"reflect"
 	"testing"
-	"time"
 )
 
 func TestMemStorage_UpdateMetric(t *testing.T) {
@@ -21,7 +20,42 @@ func TestMemStorage_UpdateMetric(t *testing.T) {
 		args    args
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{
+			name: "UpdateGaugeMetric",
+			fields: fields{
+				metrics: map[MetricType]map[string]interface{}{},
+			},
+			args: args{
+				mtype: "gauge",
+				name:  "testGauge",
+				value: "123",
+			},
+			wantErr: false,
+		},
+		{
+			name: "UpdateCounterMetric",
+			fields: fields{
+				metrics: map[MetricType]map[string]interface{}{},
+			},
+			args: args{
+				mtype: "counter",
+				name:  "testCounter",
+				value: "456",
+			},
+			wantErr: false,
+		},
+		{
+			name: "InvalidMetricType",
+			fields: fields{
+				metrics: map[MetricType]map[string]interface{}{},
+			},
+			args: args{
+				mtype: "invalid",
+				name:  "testInvalid",
+				value: "789",
+			},
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -36,26 +70,56 @@ func TestMemStorage_UpdateMetric(t *testing.T) {
 }
 
 func TestMemStorage_GetMetric(t *testing.T) {
-	type fields struct {
-		metrics map[MetricType]map[string]interface{}
+	// Define some sample data for the test cases
+	gaugeMetrics := map[string]interface{}{
+		"cpu_usage":    0.75,
+		"memory_usage": 0.85,
 	}
-	type args struct {
-		mtype MetricType
+	counterMetrics := map[string]interface{}{
+		"requests_count": 100,
+		"errors_count":   5,
 	}
+
+	// Populate the test cases
 	tests := []struct {
-		name   string
-		fields fields
-		args   args
-		want   map[string]interface{}
+		name    string
+		metrics map[MetricType]map[string]interface{}
+		mtype   MetricType
+		want    map[string]interface{}
 	}{
-		// TODO: Add test cases.
+		{
+			name:    "EmptyStorage",
+			metrics: map[MetricType]map[string]interface{}{},
+			mtype:   Gauge,
+			want:    map[string]interface{}{},
+		},
+		{
+			name: "GaugeMetrics",
+			metrics: map[MetricType]map[string]interface{}{
+				Gauge: gaugeMetrics,
+			},
+			mtype: Gauge,
+			want:  gaugeMetrics,
+		},
+		{
+			name: "CounterMetrics",
+			metrics: map[MetricType]map[string]interface{}{
+				Counter: counterMetrics,
+			},
+			mtype: Counter,
+			want:  counterMetrics,
+		},
 	}
+
+	// Iterate over test cases
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := &MemStorage{
-				metrics: tt.fields.metrics,
+				metrics: tt.metrics,
 			}
-			if got := m.GetMetric(tt.args.mtype); !reflect.DeepEqual(got, tt.want) {
+			got := m.GetMetric(tt.mtype)
+			if len(got) == 0 && len(tt.want) == 0 {
+			} else if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("MemStorage.GetMetric() = %v, want %v", got, tt.want)
 			}
 		})
@@ -71,7 +135,72 @@ func TestMemStorage_GetMetrics(t *testing.T) {
 		fields fields
 		want   map[MetricType]map[string]interface{}
 	}{
-		// TODO: Add test cases.
+		{
+			name: "Empty Metrics Storage",
+			fields: fields{
+				metrics: map[MetricType]map[string]interface{}{},
+			},
+			want: map[MetricType]map[string]interface{}{},
+		},
+		{
+			name: "Metrics Storage with Only Gauge Type Metrics",
+			fields: fields{
+				metrics: map[MetricType]map[string]interface{}{
+					Gauge: {
+						"metric1": 10.5,
+						"metric2": 20.7,
+					},
+				},
+			},
+			want: map[MetricType]map[string]interface{}{
+				Gauge: {
+					"metric1": 10.5,
+					"metric2": 20.7,
+				},
+			},
+		},
+		{
+			name: "Metrics Storage with Only Counter Type Metrics",
+			fields: fields{
+				metrics: map[MetricType]map[string]interface{}{
+					Counter: {
+						"metric1": 5,
+						"metric2": 8,
+					},
+				},
+			},
+			want: map[MetricType]map[string]interface{}{
+				Counter: {
+					"metric1": 5,
+					"metric2": 8,
+				},
+			},
+		},
+		{
+			name: "Metrics Storage with Both Gauge and Counter Type Metrics",
+			fields: fields{
+				metrics: map[MetricType]map[string]interface{}{
+					Gauge: {
+						"metric1": 10.5,
+						"metric2": 20.7,
+					},
+					Counter: {
+						"metric3": 5,
+						"metric4": 8,
+					},
+				},
+			},
+			want: map[MetricType]map[string]interface{}{
+				Gauge: {
+					"metric1": 10.5,
+					"metric2": 20.7,
+				},
+				Counter: {
+					"metric3": 5,
+					"metric4": 8,
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -95,7 +224,24 @@ func TestGetMetricTypeByCode(t *testing.T) {
 		want    MetricType
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{
+			name:    "GaugeMetricType",
+			args:    args{mtype: "gauge"},
+			want:    Gauge,
+			wantErr: false,
+		},
+		{
+			name:    "CounterMetricType",
+			args:    args{mtype: "counter"},
+			want:    Counter,
+			wantErr: false,
+		},
+		{
+			name:    "InvalidMetricType",
+			args:    args{mtype: "invalid"},
+			want:    0,
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -106,23 +252,6 @@ func TestGetMetricTypeByCode(t *testing.T) {
 			}
 			if got != tt.want {
 				t.Errorf("GetMetricTypeByCode() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestNewMemStorage(t *testing.T) {
-	tests := []struct {
-		name string
-		want *MemStorage
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		time.Sleep(2 * time.Second) // Sleep for 2 seconds
-		t.Run(tt.name, func(t *testing.T) {
-			if got := NewMemStorage(); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("NewMemStorage() = %v, want %v", got, tt.want)
 			}
 		})
 	}
