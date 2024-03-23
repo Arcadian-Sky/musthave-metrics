@@ -3,8 +3,9 @@ package controller
 import (
 	"testing"
 
-	"github.com/Arcadian-Sky/musthave-metrics/internal/agent/flags"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/Arcadian-Sky/musthave-metrics/internal/agent/flags"
 )
 
 func Test_Send(t *testing.T) {
