@@ -66,9 +66,6 @@ func InitRouter() chi.Router {
 
 	handler := NewHandler(storage.NewMemStorage())
 
-	// handler := NewHandler()
-	// handler.InitStorage()
-
 	r := chi.NewRouter()
 
 	r.Head("/", func(rw http.ResponseWriter, r *http.Request) {
