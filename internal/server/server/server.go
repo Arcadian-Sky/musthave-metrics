@@ -3,10 +3,13 @@ package server
 import (
 	"net/http"
 
-	"github.com/Arcadian-Sky/musthave-metrics/internal/server/handler"
-
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	httpSwagger "github.com/swaggo/http-swagger/v2"
+
+	_ "github.com/Arcadian-Sky/musthave-metrics/docs"
+
+	"github.com/Arcadian-Sky/musthave-metrics/internal/server/handler"
 )
 
 type Middleware func(http.Handler) http.Handler
@@ -23,6 +26,18 @@ func сontentTypeCheckerMiddleware(expectedContentType string) Middleware {
 	}
 }
 
+// @title           API
+// @version         1.0
+// @openapi         3.1
+// @description     This is a sample server celler server.
+// @license.name  Apache 2.0
+// @license.url   http://www.apache.org/licenses/LICENSE-2.0.html
+
+// @host      localhost:8080
+// @BasePath  /
+
+// @externalDocs.description  OpenAPI
+// @externalDocs.url          https://swagger.io/resources/open-api/
 func InitRouter(handler handler.Handler) chi.Router {
 	r := chi.NewRouter()
 
@@ -56,6 +71,10 @@ func InitRouter(handler handler.Handler) chi.Router {
 			r.Get("/{name}/", handler.GetMetricsHandlerFunc)
 		})
 	})
+
+	r.Get("/swagger/*", httpSwagger.Handler(
+		httpSwagger.URL("./doc.json"), // Ссылка на ваш swagger.json
+	))
 
 	// log.Fatal(http.ListenAndServe(flags.Parse(), r))
 	return r

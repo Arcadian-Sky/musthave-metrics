@@ -7,9 +7,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/Arcadian-Sky/musthave-metrics/internal/server/storage"
 	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/Arcadian-Sky/musthave-metrics/internal/server/storage"
 )
 
 // func TestUpdateMetricsHandler(t *testing.T) {
