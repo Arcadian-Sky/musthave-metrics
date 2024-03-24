@@ -1,0 +1,107 @@
+swagger: "2.0"
+info:
+  title: "Server API"
+  version: "1.0"
+  contact: {}
+paths:
+  /:
+    get:
+      description: Обновляет метрику в хранилище.
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      summary: Получает метрики.
+  /update/{type}:
+    post:
+      description: Обновляет метрику в хранилище.
+      parameters:
+      - description: Тип метрики (gauge или counter)
+        in: path
+        name: type
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "404":
+          description: Error
+          schema:
+            type: string
+      summary: Обновляет метрику.
+  /update/{type}/{name}:
+    post:
+      description: Обновляет метрику в хранилище.
+      parameters:
+      - description: Тип метрики (gauge или counter)
+        in: path
+        name: type
+        required: true
+        type: string
+      - description: Название метрики
+        in: path
+        name: name
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "404":
+          description: Error
+          schema:
+            type: string
+      summary: Обновляет метрику.
+  /update/{type}/{name}/{value}:
+    post:
+      description: Обновляет метрику в хранилище.
+      parameters:
+      - description: Тип метрики (gauge или counter)
+        in: path
+        name: type
+        required: true
+        type: string
+      - description: Название метрики
+        in: path
+        name: name
+        required: true
+        type: string
+      - description: Значение метрики
+        in: path
+        name: value
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "404":
+          description: Error
+          schema:
+            type: string
+      summary: Обновляет метрику.
+  /value/{type}/{name}:
+    get:
+      description: Получает метрику в хранилище.
+      parameters:
+      - description: Тип метрики (gauge или counter)
+        in: path
+        name: type
+        required: true
+        type: string
+      - description: Название метрики
+        in: path
+        name: name
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      summary: Получает метрику.

@@ -5,9 +5,10 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/go-chi/chi/v5"
+
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/handler"
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/storage"
-	"github.com/go-chi/chi/v5"
 )
 
 func Test_сontentTypeCheckerMiddleware(t *testing.T) {
