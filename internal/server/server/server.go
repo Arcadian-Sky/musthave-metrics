@@ -1,7 +1,6 @@
 package server
 
 import (
-	"log"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -10,7 +9,6 @@ import (
 
 	_ "github.com/Arcadian-Sky/musthave-metrics/docs"
 
-	"github.com/Arcadian-Sky/musthave-metrics/internal/server/flags"
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/handler"
 	packmiddleware "github.com/Arcadian-Sky/musthave-metrics/internal/server/middleware"
 )
@@ -34,7 +32,7 @@ func InitRouter(handler handler.Handler) chi.Router {
 	r.Use(packmiddleware.Logger)
 	// r.Use(middleware.RealIP)
 	// r.Use(middleware.Recoverer)
-	r.Use(packmiddleware.ContentTypeChecker("text/plain"))
+	r.Use(packmiddleware.ContentTypeSet("text/plain"))
 
 	r.Head("/", func(rw http.ResponseWriter, r *http.Request) {
 		r.Header.Set("Content-Type", "text/plain")
@@ -68,12 +66,4 @@ func InitRouter(handler handler.Handler) chi.Router {
 
 	// log.Fatal(http.ListenAndServe(flags.Parse(), r))
 	return r
-}
-
-func Run(router chi.Router) {
-
-	logger := packmiddleware.GetLogger()
-	logger.Info("Server started")
-
-	log.Fatal(http.ListenAndServe(flags.Parse(), router))
 }

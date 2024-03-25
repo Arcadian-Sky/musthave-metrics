@@ -1,6 +1,10 @@
 package main
 
 import (
+	"log"
+	"net/http"
+
+	"github.com/Arcadian-Sky/musthave-metrics/internal/server/flags"
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/handler"
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/server"
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/storage"
@@ -20,5 +24,8 @@ import (
 
 func main() {
 	vhandler := handler.NewHandler(storage.NewMemStorage())
-	server.Run(server.InitRouter(*vhandler))
+	// logger := packmiddleware.GetLogger()
+	// logger.Info("Server started")
+
+	log.Fatal(http.ListenAndServe(flags.Parse(), server.InitRouter(*vhandler)))
 }
