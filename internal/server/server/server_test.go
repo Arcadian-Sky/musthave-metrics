@@ -2,7 +2,6 @@ package server
 
 import (
 	"net/http"
-	"reflect"
 	"testing"
 
 	"github.com/go-chi/chi/v5"
@@ -10,26 +9,6 @@ import (
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/handler"
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/storage"
 )
-
-func Test_сontentTypeCheckerMiddleware(t *testing.T) {
-	type args struct {
-		expectedContentType string
-	}
-	tests := []struct {
-		name string
-		args args
-		want Middleware
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := сontentTypeCheckerMiddleware(tt.args.expectedContentType); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("сontentTypeCheckerMiddleware() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
 
 func TestInitRouter(t *testing.T) {
 	fakeHandler := handler.NewHandler(storage.NewMemStorage())
