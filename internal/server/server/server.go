@@ -1,30 +1,19 @@
 package server
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
-	httpSwagger "github.com/swaggo/http-swagger/v2"
+
+	httpSwagger "github.com/swaggo/http-swagger"
 
 	_ "github.com/Arcadian-Sky/musthave-metrics/docs"
 
+	"github.com/Arcadian-Sky/musthave-metrics/internal/server/flags"
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/handler"
+	packmiddleware "github.com/Arcadian-Sky/musthave-metrics/internal/server/middleware"
 )
-
-type Middleware func(http.Handler) http.Handler
-
-// сontentTypeCheckerMiddleware возвращает middleware, которое проверяет тип данных и устанавливает тип для ответа
-func сontentTypeCheckerMiddleware(expectedContentType string) Middleware {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// Устанавливаем Content-Type для ответа
-			w.Header().Set("Content-Type", expectedContentType)
-			// Вызываем следующий обработчик в цепочке
-			next.ServeHTTP(w, r)
-		})
-	}
-}
 
 // @title           API
 // @version         1.0
@@ -41,10 +30,11 @@ func сontentTypeCheckerMiddleware(expectedContentType string) Middleware {
 func InitRouter(handler handler.Handler) chi.Router {
 	r := chi.NewRouter()
 
-	r.Use(middleware.RealIP)
-	r.Use(middleware.Logger)
-	r.Use(middleware.Recoverer)
-	r.Use(сontentTypeCheckerMiddleware("text/plain"))
+	// r.Use(middleware.Logger)
+	r.Use(packmiddleware.Logger)
+	// r.Use(middleware.RealIP)
+	// r.Use(middleware.Recoverer)
+	r.Use(packmiddleware.ContentTypeChecker("text/plain"))
 
 	r.Head("/", func(rw http.ResponseWriter, r *http.Request) {
 		r.Header.Set("Content-Type", "text/plain")
@@ -78,4 +68,12 @@ func InitRouter(handler handler.Handler) chi.Router {
 
 	// log.Fatal(http.ListenAndServe(flags.Parse(), r))
 	return r
+}
+
+func Run(router chi.Router) {
+
+	logger := packmiddleware.GetLogger()
+	logger.Info("Server started")
+
+	log.Fatal(http.ListenAndServe(flags.Parse(), router))
 }
