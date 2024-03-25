@@ -1,26 +1,42 @@
 package middleware
 
 import (
-	"reflect"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 )
 
-func Test_ContentTypeChecker(t *testing.T) {
-	type args struct {
-		expectedContentType string
-	}
+func TestContentTypeSet(t *testing.T) {
 	tests := []struct {
 		name string
-		args args
-		want Middleware
+		args string
+		want string
 	}{
-		// TODO: Add test cases.
+		{
+			name: "Test with text/plain content type",
+			args: "text/plain",
+			want: "text/plain",
+		},
+		{
+			name: "Test with application/json content type",
+			args: "application/json",
+			want: "application/json",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := ContentTypeChecker(tt.args.expectedContentType); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("сontentTypeCheckerMiddleware() = %v, want %v", got, tt.want)
-			}
+			middleware := ContentTypeSet(tt.args)
+			testHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+				contentType := w.Header().Get("Content-Type")
+				if contentType != tt.want {
+					t.Errorf("ContentTypeChecker() Content-Type = %v, want %v", contentType, tt.want)
+				}
+			})
+			handler := middleware(testHandler)
+			req := httptest.NewRequest("GET", "/", nil)
+			recorder := httptest.NewRecorder()
+			handler.ServeHTTP(recorder, req)
 		})
 	}
 }
