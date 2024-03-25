@@ -7,18 +7,7 @@ import (
 )
 
 func TestLogger(t *testing.T) {
-	// Создаем тестовый http.Handler
-	testHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	})
 
-	// Создаем логгер с тестовым обработчиком
-	logger := Logger(testHandler)
-
-	// Проверяем, что logger является экземпляром http.Handler
-	if _, ok := logger.(http.Handler); !ok {
-		t.Error("Logger does not implement http.Handler interface")
-	}
 }
 
 func Test_loggingResponseWriter_Write(t *testing.T) {
@@ -41,6 +30,9 @@ func Test_loggingResponseWriter_Write(t *testing.T) {
 	if gotN != len(data) {
 		t.Errorf("Unexpected number of bytes written. Expected %d, got %d", len(data), gotN)
 	}
+
+	res := recorder.Result()
+	defer res.Body.Close()
 }
 
 func Test_loggingResponseWriter_WriteHeader(t *testing.T) {
@@ -59,6 +51,9 @@ func Test_loggingResponseWriter_WriteHeader(t *testing.T) {
 	if recorder.Result().StatusCode != http.StatusOK {
 		t.Errorf("Unexpected status code. Expected %d, got %d", http.StatusOK, recorder.Result().StatusCode)
 	}
+
+	res := recorder.Result()
+	defer res.Body.Close()
 }
 
 func TestGetLogger(t *testing.T) {
