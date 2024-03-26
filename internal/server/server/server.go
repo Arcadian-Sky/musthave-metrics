@@ -1,37 +1,38 @@
 package server
 
 import (
-	"log"
 	"net/http"
 
-	"github.com/Arcadian-Sky/musthave-metrics/internal/server/flags"
-	"github.com/Arcadian-Sky/musthave-metrics/internal/server/handler"
-
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
+
+	httpSwagger "github.com/swaggo/http-swagger"
+
+	_ "github.com/Arcadian-Sky/musthave-metrics/docs"
+
+	"github.com/Arcadian-Sky/musthave-metrics/internal/server/handler"
+	packmiddleware "github.com/Arcadian-Sky/musthave-metrics/internal/server/middleware"
 )
 
-type Middleware func(http.Handler) http.Handler
+// @title           API
+// @version         1.0
+// @openapi         3.1
+// @description     This is a sample server celler server.
+// @license.name  Apache 2.0
+// @license.url   http://www.apache.org/licenses/LICENSE-2.0.html
 
-// сontentTypeCheckerMiddleware возвращает middleware, которое проверяет тип данных и устанавливает тип для ответа
-func сontentTypeCheckerMiddleware(expectedContentType string) Middleware {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// Устанавливаем Content-Type для ответа
-			w.Header().Set("Content-Type", expectedContentType)
-			// Вызываем следующий обработчик в цепочке
-			next.ServeHTTP(w, r)
-		})
-	}
-}
+// @host      localhost:8080
+// @BasePath  /
 
+// @externalDocs.description  OpenAPI
+// @externalDocs.url          https://swagger.io/resources/open-api/
 func InitRouter(handler handler.Handler) chi.Router {
 	r := chi.NewRouter()
 
-	r.Use(middleware.RealIP)
-	r.Use(middleware.Logger)
-	r.Use(middleware.Recoverer)
-	r.Use(сontentTypeCheckerMiddleware("text/plain"))
+	// r.Use(middleware.Logger)
+	r.Use(packmiddleware.Logger)
+	// r.Use(middleware.RealIP)
+	// r.Use(middleware.Recoverer)
+	r.Use(packmiddleware.ContentTypeSet("text/plain"))
 
 	r.Head("/", func(rw http.ResponseWriter, r *http.Request) {
 		r.Header.Set("Content-Type", "text/plain")
@@ -44,6 +45,7 @@ func InitRouter(handler handler.Handler) chi.Router {
 		r.Route("/{type}", func(r chi.Router) {
 			r.Post("/", handler.UpdateMetricsHandlerFunc)
 			r.Post("/{name}", handler.UpdateMetricsHandlerFunc)
+			r.Post("/{name}/", handler.UpdateMetricsHandlerFunc)
 			r.Post("/{name}/{value}", handler.UpdateMetricsHandlerFunc)
 			r.Post("/{name}/{value}/", handler.UpdateMetricsHandlerFunc)
 		})
@@ -58,6 +60,10 @@ func InitRouter(handler handler.Handler) chi.Router {
 		})
 	})
 
-	log.Fatal(http.ListenAndServe(flags.Parse(), r))
+	r.Get("/swagger/*", httpSwagger.Handler(
+		httpSwagger.URL("./doc.json"), // Ссылка на ваш swagger.json
+	))
+
+	// log.Fatal(http.ListenAndServe(flags.Parse(), r))
 	return r
 }

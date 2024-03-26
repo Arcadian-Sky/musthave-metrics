@@ -10,6 +10,7 @@ import (
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/validate"
 )
 
+// Сборщик параметров
 type MetricParams struct {
 	Type  string
 	Name  string
@@ -25,21 +26,23 @@ func NewMetricParams(r *http.Request) MetricParams {
 	}
 }
 
+// Server handlers
 type Handler struct {
 	s storage.MetricsStorage
 }
 
 // NewHandler создает экземпляр Handler
-func NewHandler() *Handler {
-	return &Handler{}
-}
-
-func (h *Handler) InitStorage() {
-	if h.s == nil {
-		h.s = storage.NewMemStorage()
+func NewHandler(mStorage storage.MetricsStorage) *Handler {
+	return &Handler{
+		s: mStorage,
 	}
 }
 
+// Получает метрики.
+// @Summary Получает метрики.
+// @Description Обновляет метрику в хранилище.
+// @Success 200 {string} string "OK"
+// @Router / [get]
 func (h *Handler) MetricsHandlerFunc(w http.ResponseWriter, r *http.Request) {
 	// Выводим данные
 	for name, value := range h.s.GetMetrics() {
@@ -47,6 +50,19 @@ func (h *Handler) MetricsHandlerFunc(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// Обновляет метрику.
+// @Summary Обновляет метрику.
+// @Description Обновляет метрику в хранилище.
+// @Param type path string true "Тип метрики (gauge или counter)"
+// @Param name path string true "Название метрики"
+// @Param value path string true "Значение метрики"
+// @Router /update/{type} [post]
+// @Failure 404 {string} string "metric name not provided"
+// @Router /update/{type}/{name} [post]
+// @Failure 404 {string} string "metric value not provided"
+// @Router /update/{type}/{name}/{value} [post]
+// @Success 200 {string} string "OK"
+// @Failure 404 {string} string "Error"
 func (h *Handler) UpdateMetricsHandlerFunc(w http.ResponseWriter, r *http.Request) {
 	params := NewMetricParams(r)
 
@@ -73,6 +89,13 @@ func (h *Handler) UpdateMetricsHandlerFunc(w http.ResponseWriter, r *http.Reques
 	w.WriteHeader(http.StatusOK)
 }
 
+// Получает метрику.
+// @Summary Получает метрику.
+// @Description Получает метрику в хранилище.
+// @Param type path string true "Тип метрики (gauge или counter)"
+// @Param name path string true "Название метрики"
+// @Success 200 {string} string "OK"
+// @Router /value/{type}/{name} [get]
 func (h *Handler) GetMetricsHandlerFunc(w http.ResponseWriter, r *http.Request) {
 	params := NewMetricParams(r)
 

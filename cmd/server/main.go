@@ -1,8 +1,13 @@
 package main
 
 import (
+	"log"
+	"net/http"
+
+	"github.com/Arcadian-Sky/musthave-metrics/internal/server/flags"
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/handler"
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/server"
+	"github.com/Arcadian-Sky/musthave-metrics/internal/server/storage"
 )
 
 // Пример запроса к серверу:
@@ -17,16 +22,10 @@ import (
 // Content-Length: 11
 // Content-Type: text/plain; charset=utf-8
 
-// func main() {
-// 	fmt.Println("Hello from othercmd application!")
-// 	package2.FunctionFromPackage2()
-// }
-
-// ADDRESS отвечает за адрес эндпоинта HTTP-сервера.
-
 func main() {
-	handler := handler.NewHandler()
-	handler.InitStorage()
+	vhandler := handler.NewHandler(storage.NewMemStorage())
+	// logger := packmiddleware.GetLogger()
+	// logger.Info("Server started")
 
-	server.InitRouter(*handler)
+	log.Fatal(http.ListenAndServe(flags.Parse(), server.InitRouter(*vhandler)))
 }
