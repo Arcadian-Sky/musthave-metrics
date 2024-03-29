@@ -1,11 +1,14 @@
 package controller
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/Arcadian-Sky/musthave-metrics/internal/agent/flags"
+	"github.com/Arcadian-Sky/musthave-metrics/internal/agent/models"
 	"github.com/Arcadian-Sky/musthave-metrics/internal/agent/repository"
 )
 
@@ -60,12 +63,24 @@ func (c *CollectAndSendMetricsService) Run() {
 // Отправляем метрики
 func (c *CollectAndSendMetricsService) send(metrics map[string]interface{}, pollCount int) error {
 	for metricType, value := range metrics {
-		err := c.sendMetricValue("gauge", metricType, value)
+		mValue := value.(float64)
+		metric := models.Metrics{
+			ID:    metricType,
+			MType: "gauge",
+			Value: &mValue,
+		}
+		err := c.sendMetricJsonValue(metric)
 		if err != nil {
 			return err
 		}
 	}
-	err := c.sendMetricValue("count", "PollCount", pollCount)
+	mValue := int64(pollCount)
+	metric := models.Metrics{
+		ID:    "PollCount",
+		MType: "counter",
+		Delta: &mValue,
+	}
+	err := c.sendMetricJsonValue(metric)
 	if err != nil {
 		return err
 	}
@@ -74,6 +89,32 @@ func (c *CollectAndSendMetricsService) send(metrics map[string]interface{}, poll
 }
 
 // Отправляем запрос на сервер
+func (c *CollectAndSendMetricsService) sendMetricJsonValue(m models.Metrics) error {
+	client := &http.Client{
+		Timeout: 2 * time.Second,
+	}
+
+	jsonData, err := json.Marshal(m)
+	if err != nil {
+		fmt.Println("Error marshaling metrics:", err)
+		return err
+	}
+
+	// Формируем адрес запроса
+	url := fmt.Sprintf("%s/update", c.config.GetServerAddress())
+
+	// Отправляем запрос на сервер
+	resp, err := client.Post(url, "application/json", bytes.NewBuffer(jsonData))
+	if err != nil {
+		fmt.Printf("Metrics did not sent: %s\n", m.ID)
+		return err
+	}
+	fmt.Printf("Metric sent: %s\n", m.ID)
+	defer resp.Body.Close()
+
+	return nil
+}
+
 func (c *CollectAndSendMetricsService) sendMetricValue(mType string, mName string, mValue interface{}) error {
 	client := &http.Client{
 		Timeout: 2 * time.Second,
@@ -83,7 +124,7 @@ func (c *CollectAndSendMetricsService) sendMetricValue(mType string, mName strin
 	url := fmt.Sprintf("%s/update/"+mType+"/%s/%v", c.config.GetServerAddress(), mName, mValue)
 
 	// Отправляем запрос на сервер
-	resp, err := client.Post(url, "text/plain", nil)
+	resp, err := client.Post(url, "application/json", nil)
 	if err != nil {
 		fmt.Printf("Metric did not sent: %s\n", mName)
 		return err

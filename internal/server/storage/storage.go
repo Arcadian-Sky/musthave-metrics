@@ -50,8 +50,6 @@ func GetMetricTypeByCode(mtype string) (MetricType, error) {
 }
 
 func (m *MemStorage) UpdateJsonMetric(metric *models.Metrics) error {
-	fmt.Println(metric)
-	// var metricType MetricType
 	metricType, err := GetMetricTypeByCode(metric.MType)
 
 	if err != nil {

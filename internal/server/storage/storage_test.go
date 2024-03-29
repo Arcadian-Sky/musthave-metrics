@@ -3,6 +3,8 @@ package storage
 import (
 	"reflect"
 	"testing"
+
+	"github.com/Arcadian-Sky/musthave-metrics/internal/server/models"
 )
 
 func TestMemStorage_UpdateMetric(t *testing.T) {
@@ -252,6 +254,33 @@ func TestGetMetricTypeByCode(t *testing.T) {
 			}
 			if got != tt.want {
 				t.Errorf("GetMetricTypeByCode() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestMemStorage_UpdateJsonMetric(t *testing.T) {
+	type fields struct {
+		metrics map[MetricType]map[string]interface{}
+	}
+	type args struct {
+		metric *models.Metrics
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := &MemStorage{
+				metrics: tt.fields.metrics,
+			}
+			if err := m.UpdateJsonMetric(tt.args.metric); (err != nil) != tt.wantErr {
+				t.Errorf("MemStorage.UpdateJsonMetric() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
