@@ -144,7 +144,7 @@ func (h *Handler) GetMetricsHandlerFunc(w http.ResponseWriter, r *http.Request) 
 // @Success 200 {object} string "OK"
 // @Failure 404 {object} string "Error"
 // @Router /value [post]
-func (h *Handler) GetMetricsJsonHandlerFunc(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) GetMetricsJSONHandlerFunc(w http.ResponseWriter, r *http.Request) {
 	var metrics models.Metrics
 
 	if err := json.NewDecoder(r.Body).Decode(&metrics); err != nil {
@@ -184,7 +184,7 @@ func (h *Handler) GetMetricsJsonHandlerFunc(w http.ResponseWriter, r *http.Reque
 // @Success 200 {object} string "OK"
 // @Failure 404 {object} string "Error"
 // @Router /update [post]
-func (h *Handler) UpdateJsonMetricsHandlerFunc(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) UpdateJSONMetricsHandlerFunc(w http.ResponseWriter, r *http.Request) {
 	var metrics models.Metrics
 
 	if err := json.NewDecoder(r.Body).Decode(&metrics); err != nil {
@@ -193,7 +193,7 @@ func (h *Handler) UpdateJsonMetricsHandlerFunc(w http.ResponseWriter, r *http.Re
 	}
 	fmt.Printf("metrics: %v\n", metrics)
 	// Обновляем метрику
-	err := h.s.UpdateJsonMetric(&metrics)
+	err := h.s.UpdateJSONMetric(&metrics)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return

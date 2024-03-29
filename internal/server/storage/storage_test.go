@@ -259,7 +259,7 @@ func TestGetMetricTypeByCode(t *testing.T) {
 	}
 }
 
-func TestMemStorage_UpdateJsonMetric(t *testing.T) {
+func TestMemStorage_UpdateJSONMetric(t *testing.T) {
 	type fields struct {
 		metrics map[MetricType]map[string]interface{}
 	}
@@ -279,8 +279,8 @@ func TestMemStorage_UpdateJsonMetric(t *testing.T) {
 			m := &MemStorage{
 				metrics: tt.fields.metrics,
 			}
-			if err := m.UpdateJsonMetric(tt.args.metric); (err != nil) != tt.wantErr {
-				t.Errorf("MemStorage.UpdateJsonMetric() error = %v, wantErr %v", err, tt.wantErr)
+			if err := m.UpdateJSONMetric(tt.args.metric); (err != nil) != tt.wantErr {
+				t.Errorf("MemStorage.UpdateJSONMetric() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
