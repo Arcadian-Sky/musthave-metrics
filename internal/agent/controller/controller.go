@@ -69,7 +69,7 @@ func (c *CollectAndSendMetricsService) send(metrics map[string]interface{}, poll
 			MType: "gauge",
 			Value: &mValue,
 		}
-		err := c.sendMetricJsonValue(metric)
+		err := c.sendMetricJSONValue(metric)
 		if err != nil {
 			return err
 		}
@@ -80,7 +80,7 @@ func (c *CollectAndSendMetricsService) send(metrics map[string]interface{}, poll
 		MType: "counter",
 		Delta: &mValue,
 	}
-	err := c.sendMetricJsonValue(metric)
+	err := c.sendMetricJSONValue(metric)
 	if err != nil {
 		return err
 	}
@@ -89,7 +89,7 @@ func (c *CollectAndSendMetricsService) send(metrics map[string]interface{}, poll
 }
 
 // Отправляем запрос на сервер
-func (c *CollectAndSendMetricsService) sendMetricJsonValue(m models.Metrics) error {
+func (c *CollectAndSendMetricsService) sendMetricJSONValue(m models.Metrics) error {
 	client := &http.Client{
 		Timeout: 2 * time.Second,
 	}
