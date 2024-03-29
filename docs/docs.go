@@ -243,6 +243,7 @@ const docTemplate = `{
     },
     "definitions": {
         "github_com_Arcadian-Sky_musthave-metrics_internal_server_models.Metrics": {
+            "description": "Структура для передачи метрик",
             "type": "object",
             "properties": {
                 "delta": {

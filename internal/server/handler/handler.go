@@ -161,28 +161,11 @@ func (h *Handler) GetMetricsJsonHandlerFunc(w http.ResponseWriter, r *http.Reque
 	// Выводим данные
 	currentMetrics := h.s.GetMetric(metricTypeID)
 	var res interface{}
-	fmt.Println(metrics.MType, metrics.ID, currentMetrics)
 	if len(metrics.ID) > 0 {
 		res = currentMetrics[metrics.ID]
 	} else {
 		res = currentMetrics
 	}
-	// fmt.Printf("metricName: %v\n", params.Name)
-	// if params.Name != "" {
-	// 	fmt.Printf("currentMetrics[metricName]: %v\n", currentMetrics[params.Name])
-	// 	if currentMetrics[params.Name] != nil {
-	// 		_, err = w.Write([]byte(fmt.Sprintf("%v", currentMetrics[params.Name])))
-	// 		if err != nil {
-	// 			http.Error(w, "w.Write Error: "+err.Error(), http.StatusNotFound)
-	// 		}
-	// 	} else {
-	// 		http.Error(w, "Metric value not provided", http.StatusNotFound)
-	// 	}
-	// } else {
-	// 	for name, value := range currentMetrics {
-	// 		fmt.Fprintf(w, "%s: %v\n", name, value)
-	// 	}
-	// }
 
 	// Отправить ответ в формате JSON
 	if err := json.NewEncoder(w).Encode(res); err != nil {
