@@ -32,16 +32,16 @@ func InitRouter(handler handler.Handler) chi.Router {
 	r.Use(packmiddleware.Logger)
 	// r.Use(middleware.RealIP)
 	// r.Use(middleware.Recoverer)
-	r.Use(packmiddleware.ContentTypeSet("text/plain"))
+	r.Use(packmiddleware.ContentTypeSet("Content-Type: application/json"))
 
 	r.Head("/", func(rw http.ResponseWriter, r *http.Request) {
-		r.Header.Set("Content-Type", "text/plain")
+		r.Header.Set("Content-Type", "Content-Type: application/json")
 	})
 	// GET http://localhost:8080/value/counter/testSetGet163
 
 	r.Get("/", handler.MetricsHandlerFunc)
 	r.Route("/update", func(r chi.Router) {
-		r.Post("/", handler.UpdateMetricsHandlerFunc)
+		r.Post("/", handler.UpdateJsonMetricsHandlerFunc)
 		r.Route("/{type}", func(r chi.Router) {
 			r.Post("/", handler.UpdateMetricsHandlerFunc)
 			r.Post("/{name}", handler.UpdateMetricsHandlerFunc)
@@ -50,8 +50,8 @@ func InitRouter(handler handler.Handler) chi.Router {
 			r.Post("/{name}/{value}/", handler.UpdateMetricsHandlerFunc)
 		})
 	})
-
 	r.Route("/value", func(r chi.Router) {
+		r.Post("/", handler.GetMetricsJsonHandlerFunc)
 		r.Get("/", handler.GetMetricsHandlerFunc)
 		r.Route("/{type}", func(r chi.Router) {
 			r.Get("/", handler.GetMetricsHandlerFunc)

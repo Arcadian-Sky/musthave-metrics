@@ -3,6 +3,8 @@ package storage
 import (
 	"fmt"
 	"strconv"
+
+	"github.com/Arcadian-Sky/musthave-metrics/internal/server/models"
 )
 
 // MetricType определяет тип метрики (gauge или counter)
@@ -15,6 +17,7 @@ const (
 
 // MetricsStorage определяет интерфейс для взаимодействия с хранилищем метрик
 type MetricsStorage interface {
+	UpdateJsonMetric(metric *models.Metrics) error
 	UpdateMetric(mtype string, name string, value string) error
 	GetMetrics() map[MetricType]map[string]interface{}
 	GetMetric(MetricType) map[string]interface{}
@@ -44,6 +47,38 @@ func GetMetricTypeByCode(mtype string) (MetricType, error) {
 	}
 
 	return metricType, nil
+}
+
+func (m *MemStorage) UpdateJsonMetric(metric *models.Metrics) error {
+	fmt.Println(metric)
+	// var metricType MetricType
+	metricType, err := GetMetricTypeByCode(metric.MType)
+
+	if err != nil {
+		return err
+	}
+
+	if _, ok := m.metrics[metricType]; !ok {
+		m.metrics[metricType] = make(map[string]interface{})
+	}
+
+	switch metricType {
+	case Gauge:
+		m.metrics[metricType][metric.ID] = metric.Value
+	case Counter:
+		currentCounter, ok := m.metrics[metricType][metric.ID].(int64)
+		if ok {
+			m.metrics[metricType][metric.ID] = currentCounter + *metric.Delta
+		} else {
+			m.metrics[metricType][metric.ID] = *metric.Delta
+		}
+	default:
+		return fmt.Errorf("invalid metric type")
+	}
+
+	fmt.Println(metricType)
+
+	return nil
 }
 
 // UpdateMetric обновляет значение метрики в хранилище
