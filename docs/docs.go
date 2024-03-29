@@ -29,6 +29,43 @@ const docTemplate = `{
                 }
             }
         },
+        "/update": {
+            "post": {
+                "description": "Обновляет метрику в хранилище через json обьект.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Обновляет метрику.",
+                "parameters": [
+                    {
+                        "description": "Данные в формате JSON",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_Arcadian-Sky_musthave-metrics_internal_server_models.Metrics"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "Error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/update/{type}": {
             "post": {
                 "description": "Обновляет метрику в хранилище.",
@@ -137,6 +174,42 @@ const docTemplate = `{
                 }
             }
         },
+        "/value": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Получает метрики.",
+                "parameters": [
+                    {
+                        "description": "Данные в формате JSON",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_Arcadian-Sky_musthave-metrics_internal_server_models.Metrics"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "Error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/value/{type}/{name}": {
             "get": {
                 "description": "Получает метрику в хранилище.",
@@ -164,6 +237,29 @@ const docTemplate = `{
                             "type": "string"
                         }
                     }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "github_com_Arcadian-Sky_musthave-metrics_internal_server_models.Metrics": {
+            "type": "object",
+            "properties": {
+                "delta": {
+                    "description": "значение метрики в случае передачи counter",
+                    "type": "integer"
+                },
+                "id": {
+                    "description": "имя метрики",
+                    "type": "string"
+                },
+                "type": {
+                    "description": "параметр, принимающий значение gauge или counter",
+                    "type": "string"
+                },
+                "value": {
+                    "description": "значение метрики в случае передачи gauge",
+                    "type": "number"
                 }
             }
         }
