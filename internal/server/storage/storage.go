@@ -17,7 +17,7 @@ const (
 
 // MetricsStorage определяет интерфейс для взаимодействия с хранилищем метрик
 type MetricsStorage interface {
-	UpdateJsonMetric(metric *models.Metrics) error
+	UpdateJSONMetric(metric *models.Metrics) error
 	UpdateMetric(mtype string, name string, value string) error
 	GetMetrics() map[MetricType]map[string]interface{}
 	GetMetric(MetricType) map[string]interface{}
@@ -49,7 +49,7 @@ func GetMetricTypeByCode(mtype string) (MetricType, error) {
 	return metricType, nil
 }
 
-func (m *MemStorage) UpdateJsonMetric(metric *models.Metrics) error {
+func (m *MemStorage) UpdateJSONMetric(metric *models.Metrics) error {
 	metricType, err := GetMetricTypeByCode(metric.MType)
 
 	if err != nil {
