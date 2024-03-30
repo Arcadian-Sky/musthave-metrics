@@ -48,9 +48,12 @@ func NewHandler(mStorage storage.MetricsStorage) *Handler {
 // @Router / [get]
 func (h *Handler) MetricsHandlerFunc(w http.ResponseWriter, r *http.Request) {
 	// Выводим данные
-	for name, value := range h.s.GetMetrics() {
-		fmt.Fprintf(w, "%d: %v\n", name, value)
-	}
+	// for name, value := range h.s.GetMetrics() {
+	// 	fmt.Fprintf(w, "%d: %v\n", name, value)
+	// }
+
+	w.Header().Set("Content-Type", "text/html")
+	w.WriteHeader(http.StatusOK)
 }
 
 // Обновляет метрику.
@@ -89,6 +92,7 @@ func (h *Handler) UpdateMetricsHandlerFunc(w http.ResponseWriter, r *http.Reques
 		fmt.Fprintf(w, "%d: %v\n", name, value)
 	}
 
+	w.Header().Set("Content-Type", "text/html")
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -135,6 +139,7 @@ func (h *Handler) GetMetricsHandlerFunc(w http.ResponseWriter, r *http.Request) 
 		}
 	}
 
+	w.Header().Set("Content-Type", "text/html")
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -179,7 +184,7 @@ func (h *Handler) GetMetricsJSONHandlerFunc(w http.ResponseWriter, r *http.Reque
 		fmt.Println("Ошибка при преобразовании в JSON:", err)
 		return
 	}
-
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	_, err = w.Write(resp)
 	if err != nil {
@@ -237,6 +242,7 @@ func (h *Handler) UpdateJSONMetricsHandlerFunc(w http.ResponseWriter, r *http.Re
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	_, err = w.Write(resp)
 	if err != nil {
