@@ -63,12 +63,12 @@ func (m *MemStorage) UpdateJSONMetric(metric *models.Metrics) error {
 	switch metricType {
 	case Gauge:
 		if metric.Value == nil {
-			return fmt.Errorf("Value must be defined")
+			return fmt.Errorf("value must be defined")
 		}
 		m.metrics[metricType][metric.ID] = metric.Value
 	case Counter:
 		if metric.Delta == nil {
-			return fmt.Errorf("Delta must be defined")
+			return fmt.Errorf("delta must be defined")
 		}
 		currentCounter, ok := m.metrics[metricType][metric.ID].(int64)
 		if ok {
