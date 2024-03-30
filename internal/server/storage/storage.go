@@ -64,15 +64,15 @@ func (m *MemStorage) GetJSONMetric(metric *models.Metrics) error {
 	// fmt.Printf("realVal: %v\n", realVal)
 	switch metricType {
 	case Gauge:
-		if f, ok := realVal.(*float64); ok {
-			metric.Value = f
+		if f, ok := realVal.(float64); ok {
+			metric.Value = &f
 		} else {
 			zeroValue := float64(0)
 			metric.Value = &zeroValue
 		}
 	case Counter:
-		if f, ok := realVal.(*int64); ok {
-			metric.Delta = f
+		if i, ok := realVal.(int64); ok {
+			metric.Delta = &i
 		} else {
 			zeroValue := int64(0)
 			metric.Delta = &zeroValue
@@ -80,8 +80,6 @@ func (m *MemStorage) GetJSONMetric(metric *models.Metrics) error {
 	default:
 		return fmt.Errorf("invalid metric type")
 	}
-
-	fmt.Println(metricType)
 
 	return nil
 }
