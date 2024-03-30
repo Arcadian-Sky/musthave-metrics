@@ -218,7 +218,7 @@ func (h *Handler) UpdateJSONMetricsHandlerFunc(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	fmt.Printf("metrics: %v\n", metrics)
+	// fmt.Printf("metrics: %v\n", metrics)
 	// Обновляем метрику
 	err = h.s.UpdateJSONMetric(&metrics)
 	if err != nil {
@@ -232,7 +232,7 @@ func (h *Handler) UpdateJSONMetricsHandlerFunc(w http.ResponseWriter, r *http.Re
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	fmt.Printf("metrics: %v\n", *metrics.Delta)
+	// fmt.Printf("metrics: %v\n", *metrics.Delta)
 
 	resp, err := json.Marshal(&metrics)
 	if err != nil {

@@ -29,7 +29,7 @@ func InitRouter(handler handler.Handler) chi.Router {
 	r := chi.NewRouter()
 
 	// r.Use(middleware.Logger)
-	r.Use(packmiddleware.Logger)
+	// r.Use(packmiddleware.Logger)
 	// r.Use(middleware.RealIP)
 	// r.Use(middleware.Recoverer)
 	r.Use(packmiddleware.ContentTypeSet("Content-Type: application/json"))
