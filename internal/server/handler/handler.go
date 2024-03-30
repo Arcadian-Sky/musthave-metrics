@@ -151,24 +151,16 @@ func (h *Handler) GetMetricsJSONHandlerFunc(w http.ResponseWriter, r *http.Reque
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	//Получаем данные для вывода
-	metricTypeID, err := storage.GetMetricTypeByCode(metrics.MType)
+
+	// Выводим данные
+	err := h.s.GetJSONMetric(&metrics)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	// Выводим данные
-	currentMetrics := h.s.GetMetric(metricTypeID)
-	var res interface{}
-	if len(metrics.ID) > 0 {
-		res = currentMetrics[metrics.ID]
-	} else {
-		res = currentMetrics
-	}
-
 	// Отправить ответ в формате JSON
-	if err := json.NewEncoder(w).Encode(res); err != nil {
+	if err := json.NewEncoder(w).Encode(metrics); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
