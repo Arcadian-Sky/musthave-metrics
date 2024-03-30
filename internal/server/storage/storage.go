@@ -17,6 +17,7 @@ const (
 
 // MetricsStorage определяет интерфейс для взаимодействия с хранилищем метрик
 type MetricsStorage interface {
+	GetJSONMetric(metric *models.Metrics) error
 	UpdateJSONMetric(metric *models.Metrics) error
 	UpdateMetric(mtype string, name string, value string) error
 	GetMetrics() map[MetricType]map[string]interface{}
@@ -47,6 +48,37 @@ func GetMetricTypeByCode(mtype string) (MetricType, error) {
 	}
 
 	return metricType, nil
+}
+
+func (m *MemStorage) GetJSONMetric(metric *models.Metrics) error {
+	metricType, err := GetMetricTypeByCode(metric.MType)
+
+	if err != nil {
+		return err
+	}
+
+	if _, ok := m.metrics[metricType]; !ok {
+		m.metrics[metricType] = make(map[string]interface{})
+	}
+	var realVal interface{} = int64(0)
+	if m.metrics[metricType][metric.ID] != nil {
+		realVal = m.metrics[metricType][metric.ID]
+	}
+	// fmt.Printf("realVal: %v\n", realVal)
+	switch metricType {
+	case Gauge:
+		intValue := realVal.(float64)
+		metric.Value = &intValue
+	case Counter:
+		intValue := realVal.(int64)
+		metric.Delta = &intValue
+	default:
+		return fmt.Errorf("invalid metric type")
+	}
+
+	fmt.Println(metricType)
+
+	return nil
 }
 
 func (m *MemStorage) UpdateJSONMetric(metric *models.Metrics) error {
