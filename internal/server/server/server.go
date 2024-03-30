@@ -29,10 +29,11 @@ func InitRouter(handler handler.Handler) chi.Router {
 	r := chi.NewRouter()
 
 	// r.Use(middleware.Logger)
-	// r.Use(packmiddleware.Logger)
+	r.Use(packmiddleware.Logger)
+	r.Use(packmiddleware.ContentTypeSet("Content-Type: application/json"))
 	// r.Use(middleware.RealIP)
 	// r.Use(middleware.Recoverer)
-	r.Use(packmiddleware.ContentTypeSet("Content-Type: application/json"))
+	r.Use(packmiddleware.GzipMiddleware)
 
 	r.Head("/", func(rw http.ResponseWriter, r *http.Request) {
 		r.Header.Set("Content-Type", "Content-Type: application/json")
@@ -48,6 +49,7 @@ func InitRouter(handler handler.Handler) chi.Router {
 			r.Post("/{name}/", handler.UpdateMetricsHandlerFunc)
 			r.Post("/{name}/{value}", handler.UpdateMetricsHandlerFunc)
 			r.Post("/{name}/{value}/", handler.UpdateMetricsHandlerFunc)
+
 		})
 	})
 	r.Route("/value", func(r chi.Router) {
