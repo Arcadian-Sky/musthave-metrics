@@ -3,6 +3,7 @@ package handler
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -147,21 +148,41 @@ func (h *Handler) GetMetricsHandlerFunc(w http.ResponseWriter, r *http.Request) 
 func (h *Handler) GetMetricsJSONHandlerFunc(w http.ResponseWriter, r *http.Request) {
 	var metrics models.Metrics
 
-	if err := json.NewDecoder(r.Body).Decode(&metrics); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	// Читаем тело запроса
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, "Failed to read request body: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Проверяем тело запроса на пустоту
+	if len(body) == 0 {
+		http.Error(w, "Request body is empty", http.StatusBadRequest)
+		return
+	}
+
+	// Декодируем JSON из []byte в структуру Metrics
+	if err := json.Unmarshal(body, &metrics); err != nil {
+		http.Error(w, "Failed to decode JSON: "+err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	// Выводим данные
-	err := h.s.GetJSONMetric(&metrics)
+	err = h.s.GetJSONMetric(&metrics)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	// Отправить ответ в формате JSON
-	if err := json.NewEncoder(w).Encode(metrics); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	resp, err := json.Marshal(&metrics)
+	if err != nil {
+		fmt.Println("Ошибка при преобразовании в JSON:", err)
+		return
+	}
+
+	_, err = w.Write(resp)
+	if err != nil {
+		fmt.Println("Ошибка записи Body:", err)
 		return
 	}
 
@@ -179,22 +200,41 @@ func (h *Handler) GetMetricsJSONHandlerFunc(w http.ResponseWriter, r *http.Reque
 func (h *Handler) UpdateJSONMetricsHandlerFunc(w http.ResponseWriter, r *http.Request) {
 	var metrics models.Metrics
 
-	if err := json.NewDecoder(r.Body).Decode(&metrics); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, "Failed to read request body: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Проверяем тело запроса на пустоту
+	if len(body) == 0 {
+		http.Error(w, "Request body is empty", http.StatusBadRequest)
+		return
+	}
+
+	// Декодируем JSON из []byte в структуру Metrics
+	if err := json.Unmarshal(body, &metrics); err != nil {
+		http.Error(w, "Failed to decode JSON: "+err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	fmt.Printf("metrics: %v\n", metrics)
 	// Обновляем метрику
-	err := h.s.UpdateJSONMetric(&metrics)
+	err = h.s.UpdateJSONMetric(&metrics)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	// Отправить ответ в формате JSON
-	if err := json.NewEncoder(w).Encode(metrics); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	resp, err := json.Marshal(&metrics)
+	if err != nil {
+		fmt.Println("Ошибка при преобразовании в JSON:", err)
+		return
+	}
+
+	_, err = w.Write(resp)
+	if err != nil {
+		fmt.Println("Ошибка записи Body:", err)
 		return
 	}
 
