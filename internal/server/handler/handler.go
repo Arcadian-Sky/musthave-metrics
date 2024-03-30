@@ -185,8 +185,7 @@ func (h *Handler) GetMetricsJSONHandlerFunc(w http.ResponseWriter, r *http.Reque
 		fmt.Println("Ошибка записи Body:", err)
 		return
 	}
-
-	w.WriteHeader(http.StatusOK)
+	// w.WriteHeader(http.StatusOK)
 }
 
 // @Summary Обновляет метрику.
@@ -212,11 +211,14 @@ func (h *Handler) UpdateJSONMetricsHandlerFunc(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	// Декодируем JSON из []byte в структуру Metrics
+	// // Декодируем JSON из []byte в структуру Metrics
 	if err := json.Unmarshal(body, &metrics); err != nil {
 		http.Error(w, "Failed to decode JSON: "+err.Error(), http.StatusBadRequest)
 		return
 	}
+
+	// fmt.Printf("metrics: %v\n", metrics.ID)
+	// fmt.Printf("metrics: %v\n", metrics.MType)
 
 	// fmt.Printf("metrics: %v\n", metrics)
 	// Обновляем метрику
@@ -245,6 +247,5 @@ func (h *Handler) UpdateJSONMetricsHandlerFunc(w http.ResponseWriter, r *http.Re
 		fmt.Println("Ошибка записи Body:", err)
 		return
 	}
-
-	w.WriteHeader(http.StatusOK)
+	// w.WriteHeader(http.StatusOK)
 }

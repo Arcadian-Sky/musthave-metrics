@@ -102,7 +102,7 @@ func (m *MemStorage) UpdateJSONMetric(metric *models.Metrics) error {
 			zeroValue := float64(0)
 			metric.Value = &zeroValue
 		}
-		m.metrics[metricType][metric.ID] = metric.Value
+		m.metrics[metricType][metric.ID] = *metric.Value
 	case Counter:
 		if metric.Delta == nil {
 			zeroValue := int64(0)
