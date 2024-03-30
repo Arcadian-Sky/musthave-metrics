@@ -180,12 +180,12 @@ func (h *Handler) GetMetricsJSONHandlerFunc(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	w.WriteHeader(http.StatusOK)
 	_, err = w.Write(resp)
 	if err != nil {
 		fmt.Println("Ошибка записи Body:", err)
 		return
 	}
-	// w.WriteHeader(http.StatusOK)
 }
 
 // @Summary Обновляет метрику.
@@ -216,10 +216,6 @@ func (h *Handler) UpdateJSONMetricsHandlerFunc(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	// fmt.Printf("metrics: %v\n", metrics.ID)
-	// fmt.Printf("metrics: %v\n", metrics.MType)
-
-	// fmt.Printf("metrics: %v\n", metrics)
 	// Обновляем метрику
 	err = h.s.UpdateJSONMetric(&metrics)
 	if err != nil {
@@ -241,10 +237,11 @@ func (h *Handler) UpdateJSONMetricsHandlerFunc(w http.ResponseWriter, r *http.Re
 		return
 	}
 
+	w.WriteHeader(http.StatusOK)
 	_, err = w.Write(resp)
 	if err != nil {
 		fmt.Println("Ошибка записи Body:", err)
 		return
 	}
-	// w.WriteHeader(http.StatusOK)
+
 }
