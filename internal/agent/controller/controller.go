@@ -109,7 +109,7 @@ func (c *CollectAndSendMetricsService) sendMetricJSONValue(m models.Metrics) err
 		fmt.Printf("Metrics did not sent: %s\n", m.ID)
 		return err
 	}
-	fmt.Printf("Metric sent: %s\n", m.ID)
+	// fmt.Printf("Metric sent: %s\n", m.ID)
 	defer resp.Body.Close()
 
 	return nil
@@ -131,7 +131,7 @@ func (c *CollectAndSendMetricsService) sendMetricValue(mType string, mName strin
 	}
 
 	// Печатаем результат отправки (для демонстрации, лучше использовать логгер)
-	fmt.Printf("Metric sent: %s\n", mName)
+	// fmt.Printf("Metric sent: %s\n", mName)
 	defer resp.Body.Close()
 
 	return nil
