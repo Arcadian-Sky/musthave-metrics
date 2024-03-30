@@ -226,6 +226,14 @@ func (h *Handler) UpdateJSONMetricsHandlerFunc(w http.ResponseWriter, r *http.Re
 		return
 	}
 
+	// Выводим данные
+	err = h.s.GetJSONMetric(&metrics)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	fmt.Printf("metrics: %v\n", *metrics.Delta)
+
 	resp, err := json.Marshal(&metrics)
 	if err != nil {
 		fmt.Println("Ошибка при преобразовании в JSON:", err)
