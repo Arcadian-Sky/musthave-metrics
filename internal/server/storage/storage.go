@@ -60,18 +60,23 @@ func (m *MemStorage) GetJSONMetric(metric *models.Metrics) error {
 	if _, ok := m.metrics[metricType]; !ok {
 		m.metrics[metricType] = make(map[string]interface{})
 	}
-	var realVal interface{} = int64(0)
-	if m.metrics[metricType][metric.ID] != nil {
-		realVal = m.metrics[metricType][metric.ID]
-	}
+	realVal := m.metrics[metricType][metric.ID]
 	// fmt.Printf("realVal: %v\n", realVal)
 	switch metricType {
 	case Gauge:
-		intValue := realVal.(float64)
-		metric.Value = &intValue
+		if f, ok := realVal.(*float64); ok {
+			metric.Value = f
+		} else {
+			zeroValue := float64(0)
+			metric.Value = &zeroValue
+		}
 	case Counter:
-		intValue := realVal.(int64)
-		metric.Delta = &intValue
+		if f, ok := realVal.(*int64); ok {
+			metric.Delta = f
+		} else {
+			zeroValue := int64(0)
+			metric.Delta = &zeroValue
+		}
 	default:
 		return fmt.Errorf("invalid metric type")
 	}
