@@ -61,7 +61,6 @@ func (m *MemStorage) GetJSONMetric(metric *models.Metrics) error {
 		m.metrics[metricType] = make(map[string]interface{})
 	}
 	realVal := m.metrics[metricType][metric.ID]
-	// fmt.Printf("realVal: %v\n", realVal)
 	switch metricType {
 	case Gauge:
 		if f, ok := realVal.(float64); ok {
@@ -77,6 +76,8 @@ func (m *MemStorage) GetJSONMetric(metric *models.Metrics) error {
 			zeroValue := int64(0)
 			metric.Delta = &zeroValue
 		}
+		fmt.Printf("realVal: %v\n", realVal)
+		fmt.Printf("metric.Delta: %v\n", *metric.Delta)
 	default:
 		return fmt.Errorf("invalid metric type")
 	}
@@ -98,12 +99,14 @@ func (m *MemStorage) UpdateJSONMetric(metric *models.Metrics) error {
 	switch metricType {
 	case Gauge:
 		if metric.Value == nil {
-			return fmt.Errorf("value must be defined")
+			zeroValue := float64(0)
+			metric.Value = &zeroValue
 		}
 		m.metrics[metricType][metric.ID] = metric.Value
 	case Counter:
 		if metric.Delta == nil {
-			return fmt.Errorf("delta must be defined")
+			zeroValue := int64(0)
+			metric.Delta = &zeroValue
 		}
 		currentCounter, ok := m.metrics[metricType][metric.ID].(int64)
 		if ok {
@@ -114,8 +117,6 @@ func (m *MemStorage) UpdateJSONMetric(metric *models.Metrics) error {
 	default:
 		return fmt.Errorf("invalid metric type")
 	}
-
-	fmt.Println(metricType)
 
 	return nil
 }
