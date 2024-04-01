@@ -18,7 +18,7 @@ type Config struct {
 func (m *MemStorage) SaveMetrics(config Config) {
 	if config.Interval == 0 {
 		// Сохранение синхронно
-		m.SaveToFile(config.FileStoragePath, m)
+		m.SaveToFile(config.FileStoragePath)
 		return
 	}
 
@@ -28,7 +28,7 @@ func (m *MemStorage) SaveMetrics(config Config) {
 	for {
 		select {
 		case <-ticker.C:
-			m.SaveToFile(config.FileStoragePath, m)
+			m.SaveToFile(config.FileStoragePath)
 		}
 	}
 }
