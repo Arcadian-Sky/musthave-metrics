@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 
@@ -23,9 +24,29 @@ import (
 // Content-Type: text/plain; charset=utf-8
 
 func main() {
-	vhandler := handler.NewHandler(storage.NewMemStorage())
+	parsed := flags.Parse()
+	storeMetrics := storage.NewMemStorage()
+	vhandler := handler.NewHandler(storeMetrics)
 	// logger := packmiddleware.GetLogger()
 	// logger.Info("Server started")
 
-	log.Fatal(http.ListenAndServe(flags.Parse(), server.InitRouter(*vhandler)))
+	err := storeMetrics.LoadMetrics(storage.Config{
+		Interval:        parsed.StoreInterval,
+		FileStoragePath: parsed.FileStorage,
+		Restore:         parsed.RestoreMetrics,
+	})
+
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+	go storeMetrics.SaveMetrics(storage.Config{
+		Interval:        parsed.StoreInterval,
+		FileStoragePath: parsed.FileStorage,
+		Restore:         parsed.RestoreMetrics,
+	})
+
+	mType, _ := storage.GetMetricTypeByCode("gauge")
+	fmt.Printf("store.GetMetric(mType): %v\n", storeMetrics.GetMetric(mType))
+
+	log.Fatal(http.ListenAndServe(parsed.Endpoint, server.InitRouter(*vhandler)))
 }

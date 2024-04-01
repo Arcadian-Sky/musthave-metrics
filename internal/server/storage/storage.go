@@ -8,11 +8,11 @@ import (
 )
 
 // MetricType определяет тип метрики (gauge или counter)
-type MetricType int
+type MetricType string
 
 const (
-	Gauge MetricType = iota
-	Counter
+	Gauge   MetricType = "gauge"
+	Counter MetricType = "counter"
 )
 
 // MetricsStorage определяет интерфейс для взаимодействия с хранилищем метрик
@@ -21,6 +21,7 @@ type MetricsStorage interface {
 	UpdateJSONMetric(metric *models.Metrics) error
 	UpdateMetric(mtype string, name string, value string) error
 	GetMetrics() map[MetricType]map[string]interface{}
+	SetMetrics(metrics map[MetricType]map[string]interface{}) map[MetricType]map[string]interface{}
 	GetMetric(MetricType) map[string]interface{}
 }
 
@@ -162,6 +163,12 @@ func (m *MemStorage) UpdateMetric(mtype string, name string, value string) error
 
 // GetMetrics возвращает текущие метрики из хранилища
 func (m *MemStorage) GetMetrics() map[MetricType]map[string]interface{} {
+	return m.metrics
+}
+
+// SetMetrics метод вызывается при инициализации для перезаписи всего хранилища
+func (m *MemStorage) SetMetrics(metrics map[MetricType]map[string]interface{}) map[MetricType]map[string]interface{} {
+	m.metrics = metrics
 	return m.metrics
 }
 
