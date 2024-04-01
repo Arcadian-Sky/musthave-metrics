@@ -234,7 +234,6 @@ func (h *Handler) UpdateJSONMetricsHandlerFunc(w http.ResponseWriter, r *http.Re
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	// fmt.Printf("metrics: %v\n", *metrics.Delta)
 
 	resp, err := json.Marshal(&metrics)
 	if err != nil {

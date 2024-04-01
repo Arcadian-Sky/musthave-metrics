@@ -22,7 +22,7 @@ type InitedFlags struct {
 
 func Parse() *InitedFlags {
 	end := flag.String("a", ":8080", "endpoint address")
-	flagStoreInterval := flag.Int("i", 5*60, "Интервал сохранения метрик на диск")
+	flagStoreInterval := flag.Int("i", 300, "Интервал сохранения метрик на диск")
 	flagFileStorage := flag.String("f", "/tmp/metrics-db.json", "Путь к файлу для хранения метрик")
 	flagRestoreMetrics := flag.Bool("r", true, "Восстановление метрик при старте сервера")
 
@@ -33,7 +33,7 @@ func Parse() *InitedFlags {
 		endpoint = envRunAddr
 	}
 
-	fmt.Printf("flagStoreInterval: %v\n", *flagStoreInterval)
+	// fmt.Printf("flagStoreInterval: %v\n", *flagStoreInterval)
 	interval := time.Duration(*flagStoreInterval) * time.Second
 	if envRunInterv := os.Getenv("STORE_INTERVAL"); envRunInterv != "" {
 		if dur, err := time.ParseDuration(envRunInterv); err == nil {
@@ -52,6 +52,10 @@ func Parse() *InitedFlags {
 			restoreMetrics = val
 		}
 	}
+
+	fmt.Printf("flag interval: %v\n", interval)
+	fmt.Printf("flag fileStorage: %v\n", fileStorage)
+	fmt.Printf("flag restoreMetrics: %v\n", restoreMetrics)
 
 	return &InitedFlags{
 		Endpoint:       endpoint,
