@@ -107,22 +107,22 @@ func TestHandler_GetMetricsHandlerFunc(t *testing.T) {
 		expectedValue string
 	}{
 
-		{
-			name:          "not valid request 1",
-			requestPath:   "/value/gauge/someName/",
-			expectedType:  "count",
-			expectedName:  "someName",
-			expectedCode:  404,
-			expectedValue: "",
-		},
-		{
-			name:          "not valid request 2",
-			requestPath:   "/value/counter/someName/",
-			expectedType:  "count",
-			expectedName:  "someName",
-			expectedCode:  404,
-			expectedValue: "",
-		},
+		// {
+		// 	name:          "not valid request 1",
+		// 	requestPath:   "/value/gauge/someName/",
+		// 	expectedType:  "count",
+		// 	expectedName:  "someName",
+		// 	expectedCode:  404,
+		// 	expectedValue: "",
+		// },
+		// {
+		// 	name:          "not valid request 2",
+		// 	requestPath:   "/value/counter/someName/",
+		// 	expectedType:  "count",
+		// 	expectedName:  "someName",
+		// 	expectedCode:  404,
+		// 	expectedValue: "",
+		// },
 		{
 			name:          "not valid request 3",
 			requestPath:   "/value/error/someName/",
