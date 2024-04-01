@@ -47,13 +47,13 @@ func NewHandler(mStorage storage.MetricsStorage) *Handler {
 // @Success 200 {string} string "OK"
 // @Router / [get]
 func (h *Handler) MetricsHandlerFunc(w http.ResponseWriter, r *http.Request) {
-	// Выводим данные
-	// for name, value := range h.s.GetMetrics() {
-	// 	fmt.Fprintf(w, "%d: %v\n", name, value)
-	// }
-
 	w.Header().Set("Content-Type", "text/html")
 	w.WriteHeader(http.StatusOK)
+
+	// Выводим данные
+	for name, value := range h.s.GetMetrics() {
+		fmt.Fprintf(w, "%s: %v\n", name, value)
+	}
 }
 
 // Обновляет метрику.
@@ -86,14 +86,14 @@ func (h *Handler) UpdateMetricsHandlerFunc(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	w.Header().Set("Content-Type", "text/html")
+	w.WriteHeader(http.StatusOK)
+
 	// Выводим данные
 	currentMetrics := h.s.GetMetrics()
 	for name, value := range currentMetrics {
-		fmt.Fprintf(w, "%d: %v\n", name, value)
+		fmt.Fprintf(w, "%s: %v\n", name, value)
 	}
-
-	w.Header().Set("Content-Type", "text/html")
-	w.WriteHeader(http.StatusOK)
 }
 
 // Получает метрику.
@@ -120,6 +120,9 @@ func (h *Handler) GetMetricsHandlerFunc(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	w.Header().Set("Content-Type", "text/html")
+	w.WriteHeader(http.StatusOK)
+
 	// Выводим данные
 	currentMetrics := h.s.GetMetric(metricTypeID)
 	fmt.Printf("metricName: %v\n", params.Name)
@@ -138,9 +141,6 @@ func (h *Handler) GetMetricsHandlerFunc(w http.ResponseWriter, r *http.Request) 
 			fmt.Fprintf(w, "%s: %v\n", name, value)
 		}
 	}
-
-	w.Header().Set("Content-Type", "text/html")
-	w.WriteHeader(http.StatusOK)
 }
 
 // @Summary Получает метрики.
