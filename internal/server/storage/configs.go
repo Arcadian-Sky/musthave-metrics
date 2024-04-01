@@ -55,7 +55,7 @@ func (m *MemStorage) SaveToFile(filePath string) {
 func (m *MemStorage) LoadMetrics(config Config) error {
 	jsonData, err := os.ReadFile(config.FileStoragePath)
 	if err != nil {
-		return fmt.Errorf("ошибка чтения файла: %v", err)
+		return nil //fmt.Errorf("ошибка чтения файла: %v", err)
 	}
 	var newStore map[MetricType]map[string]interface{}
 	err = json.Unmarshal(jsonData, &newStore)
