@@ -120,9 +120,6 @@ func (h *Handler) GetMetricsHandlerFunc(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	w.Header().Set("Content-Type", "text/html")
-	w.WriteHeader(http.StatusOK)
-
 	// Выводим данные
 	currentMetrics := h.s.GetMetric(metricTypeID)
 	fmt.Printf("metricName: %v\n", params.Name)
@@ -137,6 +134,9 @@ func (h *Handler) GetMetricsHandlerFunc(w http.ResponseWriter, r *http.Request) 
 			http.Error(w, "Metric value not provided", http.StatusNotFound)
 		}
 	} else {
+		w.Header().Set("Content-Type", "text/html")
+		w.WriteHeader(http.StatusOK)
+
 		for name, value := range currentMetrics {
 			fmt.Fprintf(w, "%s: %v\n", name, value)
 		}
