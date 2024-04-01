@@ -38,7 +38,6 @@ func (c *CollectAndSendMetricsService) Run() {
 				fmt.Println("Error sending metrics:", err)
 			}
 			pollCount = pollCount + 1
-			fmt.Println("send2")
 			time.Sleep(c.config.GetPollInterval())
 		}
 

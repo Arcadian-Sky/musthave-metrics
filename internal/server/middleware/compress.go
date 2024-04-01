@@ -21,10 +21,10 @@ func GzipMiddleware(h http.Handler) http.Handler {
 		ow := w
 
 		// проверяем, что клиент умеет получать от сервера сжатые данные в формате gzip
-		acceptContentType := r.Header.Get("Content-Type")
-		// acceptEncoding := r.Header.Get("Accept-Encoding")
-		// supportsGzip := strings.Contains(acceptEncoding, "gzip")
-		if acceptContentType == "application/json" || acceptContentType == "text/html" {
+		acceptContentType := r.Header.Get("Accept")
+		acceptEncoding := r.Header.Get("Accept-Encoding")
+		supportsGzip := strings.Contains(acceptEncoding, "gzip")
+		if supportsGzip && (acceptContentType == "application/json" || acceptContentType == "html/text") {
 			// оборачиваем оригинальный http.ResponseWriter новым с поддержкой сжатия
 			cw := newCompressWriter(w)
 			// меняем оригинальный http.ResponseWriter на новый
