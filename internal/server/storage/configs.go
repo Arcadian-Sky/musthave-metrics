@@ -26,10 +26,8 @@ func (m *MemStorage) SaveMetrics(config Config) {
 	defer ticker.Stop()
 
 	for {
-		select {
-		case <-ticker.C:
-			m.SaveToFile(config.FileStoragePath)
-		}
+		<-ticker.C
+		m.SaveToFile(config.FileStoragePath)
 	}
 }
 
