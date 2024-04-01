@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/flags"
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/handler"
@@ -24,29 +27,32 @@ import (
 // Content-Type: text/plain; charset=utf-8
 
 func main() {
+	// Обработчик сигнала завершения
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
+
 	parsed := flags.Parse()
-	storeMetrics := storage.NewMemStorage()
+	storeMetrics := storage.NewMemStorage(storage.Config{
+		Interval:        parsed.StoreInterval,
+		FileStoragePath: parsed.FileStorage,
+		Restore:         parsed.RestoreMetrics,
+	})
 	vhandler := handler.NewHandler(storeMetrics)
-	// logger := packmiddleware.GetLogger()
-	// logger.Info("Server started")
 
-	err := storeMetrics.LoadMetrics(storage.Config{
-		Interval:        parsed.StoreInterval,
-		FileStoragePath: parsed.FileStorage,
-		Restore:         parsed.RestoreMetrics,
-	})
+	go func() {
+		err := storeMetrics.LoadMetrics()
+		// logger := packmiddleware.GetLogger()
+		// logger.Info("Server started")
 
-	if err != nil {
-		log.Fatal(err.Error())
-	}
-	go storeMetrics.SaveMetrics(storage.Config{
-		Interval:        parsed.StoreInterval,
-		FileStoragePath: parsed.FileStorage,
-		Restore:         parsed.RestoreMetrics,
-	})
+		if err != nil {
+			log.Fatal(err.Error())
+		}
+		go storeMetrics.SaveMetrics()
+		fmt.Println("Server started")
+		log.Fatal(http.ListenAndServe(parsed.Endpoint, server.InitRouter(*vhandler)))
+	}()
 
-	mType, _ := storage.GetMetricTypeByCode("gauge")
-	fmt.Printf("store.GetMetric(mType): %v\n", storeMetrics.GetMetric(mType))
-
-	log.Fatal(http.ListenAndServe(parsed.Endpoint, server.InitRouter(*vhandler)))
+	<-stop
+	storeMetrics.SaveToFile()
+	fmt.Println("Server stopped")
 }

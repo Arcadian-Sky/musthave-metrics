@@ -28,11 +28,13 @@ type MetricsStorage interface {
 // MemStorage представляет хранилище метрик
 type MemStorage struct {
 	metrics map[MetricType]map[string]interface{}
+	conf    Config
 }
 
 // NewMemStorage создает новый экземпляр MemStorage
-func NewMemStorage() *MemStorage {
+func NewMemStorage(conf Config) *MemStorage {
 	return &MemStorage{
+		conf:    conf,
 		metrics: make(map[MetricType]map[string]interface{}),
 	}
 }
@@ -77,8 +79,8 @@ func (m *MemStorage) GetJSONMetric(metric *models.Metrics) error {
 			zeroValue := int64(0)
 			metric.Delta = &zeroValue
 		}
-		fmt.Printf("realVal: %v\n", realVal)
-		fmt.Printf("metric.Delta: %v\n", *metric.Delta)
+		fmt.Printf("Get saved metric.Delta: %v\n", realVal)
+		fmt.Printf("Get returned metric.Delta: %v\n", *metric.Delta)
 	default:
 		return fmt.Errorf("invalid metric type")
 	}
@@ -105,6 +107,7 @@ func (m *MemStorage) UpdateJSONMetric(metric *models.Metrics) error {
 		}
 		m.metrics[metricType][metric.ID] = *metric.Value
 	case Counter:
+		fmt.Printf("Update val metric.Delta: %v\n", *metric.Delta)
 		if metric.Delta == nil {
 			zeroValue := int64(0)
 			metric.Delta = &zeroValue
@@ -115,8 +118,13 @@ func (m *MemStorage) UpdateJSONMetric(metric *models.Metrics) error {
 		} else {
 			m.metrics[metricType][metric.ID] = *metric.Delta
 		}
+		fmt.Printf("Update saved metric.Delta: %v\n", m.metrics[metricType][metric.ID])
 	default:
 		return fmt.Errorf("invalid metric type")
+	}
+
+	if m.conf.Interval == 0 {
+		m.SaveToFile()
 	}
 
 	return nil
@@ -156,6 +164,10 @@ func (m *MemStorage) UpdateMetric(mtype string, name string, value string) error
 		}
 	default:
 		return fmt.Errorf("invalid metric type")
+	}
+
+	if m.conf.Interval == 0 {
+		m.SaveToFile()
 	}
 
 	return nil

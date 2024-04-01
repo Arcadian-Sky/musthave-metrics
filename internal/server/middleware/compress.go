@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"compress/gzip"
-	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -78,7 +77,6 @@ func (c *compressWriter) Write(p []byte) (int, error) {
 func (c *compressWriter) WriteHeader(statusCode int) {
 	// if statusCode < 300 {}
 	c.w.Header().Set("Content-Encoding", "gzip")
-	fmt.Printf("c.w.Header(): %v\n", c.w.Header())
 	c.w.WriteHeader(statusCode)
 }
 
