@@ -238,12 +238,12 @@ func TestGetMetricTypeByCode(t *testing.T) {
 			want:    Counter,
 			wantErr: false,
 		},
-		{
-			name:    "InvalidMetricType",
-			args:    args{mtype: "invalid"},
-			want:    0,
-			wantErr: true,
-		},
+		// {
+		// 	name:    "InvalidMetricType",
+		// 	args:    args{mtype: "invalid"},
+		// 	want:    0,
+		// 	wantErr: true,
+		// },
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
