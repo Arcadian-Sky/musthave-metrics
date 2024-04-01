@@ -59,7 +59,7 @@ func (m *MemStorage) LoadMetrics() error {
 	if m.conf.FileStoragePath == "" {
 		return nil
 	}
-	if m.conf.Restore == false {
+	if !m.conf.Restore {
 		return nil
 	}
 
