@@ -65,7 +65,7 @@ import (
 
 func InitRouter() chi.Router {
 
-	handler := NewHandler(storage.NewMemStorage())
+	handler := NewHandler(storage.NewMemStorage(storage.Config{}))
 
 	r := chi.NewRouter()
 
