@@ -54,6 +54,27 @@ func (m *MemStorage) SaveToFile() {
 	fmt.Println("Server SaveToFile Metrics")
 }
 
+type MetricValue struct {
+	IntValue   int64
+	FloatValue float64
+}
+
+// UnmarshalJSON реализует интерфейс json.Unmarshaler
+func (mv *MetricValue) UnmarshalJSON(data []byte) error {
+	var intValue int64
+	if err := json.Unmarshal(data, &intValue); err == nil {
+		mv.IntValue = intValue
+		return nil
+	}
+
+	var floatValue float64
+	if err := json.Unmarshal(data, &floatValue); err != nil {
+		return err
+	}
+	mv.FloatValue = floatValue
+	return nil
+}
+
 // loadMetrics загружает ранее сохраненные метрики при старте сервера
 func (m *MemStorage) LoadMetrics() error {
 	if m.conf.FileStoragePath == "" {
@@ -67,21 +88,42 @@ func (m *MemStorage) LoadMetrics() error {
 	if err != nil {
 		return nil //fmt.Errorf("ошибка чтения файла: %v", err)
 	}
-	var newStore map[MetricType]map[string]interface{}
+	var newStore map[MetricType]map[string]MetricValue
+
 	err = json.Unmarshal(jsonData, &newStore)
 	if err != nil {
 		return fmt.Errorf("ошибка разбора JSON данных: %v", err)
 	}
-	m.SetMetrics(newStore)
-	// fmt.Printf("newStore: %v\n", newStore)
-	// mType, _ := GetMetricTypeByCode("counter")
-	// metrics := m.GetMetric(mType)
-	// metrics := m.GetMetrics()
-	// for name, value := range metrics {
-	// 	fmt.Printf("LoadMetrics name: %v value: %v\n", name, value)
-	// }
+
+	// Создаем карту для хранения метрик после обработки
+	processedMetrics := make(map[MetricType]map[string]interface{})
+
+	// Конвертируем MetricValue в соответствующий тип в зависимости от метрики
+	for metricType, metrics := range newStore {
+		processedMetrics[metricType] = make(map[string]interface{})
+		for metricName, metricValue := range metrics {
+			switch metricType {
+			case Gauge:
+				metricValueFloat := metricValue.FloatValue
+				processedMetrics[metricType][metricName] = metricValueFloat
+			case Counter:
+				metricValueInt := metricValue.IntValue
+				processedMetrics[metricType][metricName] = metricValueInt
+			}
+		}
+	}
+
+	m.SetMetrics(processedMetrics)
 
 	fmt.Println("Server LoadMetrics")
 
 	return nil
 }
+
+// fmt.Printf("newStore: %v\n", newStore)
+// mType, _ := GetMetricTypeByCode("counter")
+// metrics := m.GetMetric(mType)
+// metrics := m.GetMetrics()
+// for name, value := range metrics {
+// 	fmt.Printf("LoadMetrics name: %v value: %v\n", name, value)
+// }
