@@ -3,7 +3,6 @@ package configs
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"reflect"
 	"testing"
@@ -16,7 +15,7 @@ import (
 // TestSaveToFile проверяет метод SaveToFile, убеждаясь, что метрики сохраняются в файле JSON.
 func TestSaveToFile(t *testing.T) {
 	// Создаем временный файл для сохранения метрик
-	tmpfile, err := ioutil.TempFile("", "test_metrics.json")
+	tmpfile, err := os.CreateTemp("", "testfile")
 	if err != nil {
 		t.Fatalf("ошибка создания временного файла: %v", err)
 	}
