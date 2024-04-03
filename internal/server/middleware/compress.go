@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"compress/gzip"
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -38,6 +39,7 @@ func GzipMiddleware(h http.Handler) http.Handler {
 		if sendsGzip {
 			// оборачиваем тело запроса в io.Reader с поддержкой декомпрессии
 			cr, err := newCompressReader(r.Body)
+			fmt.Printf("err: %v\n", err)
 			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
 				return

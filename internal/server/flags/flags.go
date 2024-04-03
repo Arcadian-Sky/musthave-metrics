@@ -2,7 +2,6 @@ package flags
 
 import (
 	"flag"
-	"fmt"
 	"os"
 	"strconv"
 	"time"
@@ -53,9 +52,9 @@ func Parse() *InitedFlags {
 		}
 	}
 
-	fmt.Printf("flag interval: %v\n", interval)
-	fmt.Printf("flag fileStorage: %v\n", fileStorage)
-	fmt.Printf("flag restoreMetrics: %v\n", restoreMetrics)
+	// fmt.Printf("flag interval: %v\n", interval)
+	// fmt.Printf("flag fileStorage: %v\n", fileStorage)
+	// fmt.Printf("flag restoreMetrics: %v\n", restoreMetrics)
 
 	return &InitedFlags{
 		Endpoint:       endpoint,
