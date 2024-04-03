@@ -11,7 +11,7 @@ import (
 )
 
 func TestInitRouter(t *testing.T) {
-	fakeHandler := handler.NewHandler(storage.NewMemStorage(storage.Config{}))
+	fakeHandler := handler.NewHandler(storage.NewMemStorage())
 	// Получаем роутер с помощью InitRouter
 	router := InitRouter(*fakeHandler)
 	expectedPaths := []string{

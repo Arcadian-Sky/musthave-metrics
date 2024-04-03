@@ -1,13 +1,13 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 
+	"github.com/Arcadian-Sky/musthave-metrics/internal/server/configs"
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/flags"
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/handler"
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/server"
@@ -32,27 +32,32 @@ func main() {
 	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
 
 	parsed := flags.Parse()
-	storeMetrics := storage.NewMemStorage(storage.Config{
+	//Создаем новый конфигуратор
+	app := configs.NewConfig(&configs.Config{
 		Interval:        parsed.StoreInterval,
 		FileStoragePath: parsed.FileStorage,
 		Restore:         parsed.RestoreMetrics,
 	})
+	//Создаем хранилище
+	storeMetrics := storage.NewMemStorage()
+	//Инициируем что будем сохранять
+	app.MetricsStorage = storeMetrics
+
+	//Инициируем хендлеры
 	vhandler := handler.NewHandler(storeMetrics)
 
 	go func() {
-		err := storeMetrics.LoadMetrics()
-		// logger := packmiddleware.GetLogger()
-		// logger.Info("Server started")
+		err := app.LoadMetrics()
 
 		if err != nil {
 			log.Fatal(err.Error())
 		}
-		go storeMetrics.SaveMetrics()
-		fmt.Println("Server started")
+		go app.SaveMetrics()
+		// fmt.Println("Server started")
 		log.Fatal(http.ListenAndServe(parsed.Endpoint, server.InitRouter(*vhandler)))
 	}()
 
 	<-stop
-	storeMetrics.SaveToFile()
-	fmt.Println("Server stopped")
+	app.SaveToFile()
+	// fmt.Println("Server stopped")
 }
