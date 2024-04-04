@@ -112,3 +112,9 @@ func (app *ConfigApp) LoadMetrics() error {
 
 	return nil
 }
+
+func (app *ConfigApp) HandleRequest() {
+	if app.config.Interval == 0 {
+		app.SaveToFile()
+	}
+}

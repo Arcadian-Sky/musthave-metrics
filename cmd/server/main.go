@@ -54,7 +54,7 @@ func main() {
 		}
 		go app.SaveMetrics()
 		// fmt.Println("Server started")
-		log.Fatal(http.ListenAndServe(parsed.Endpoint, server.InitRouter(*vhandler)))
+		log.Fatal(http.ListenAndServe(parsed.Endpoint, server.InitRouter(*vhandler, *app)))
 	}()
 
 	<-stop
