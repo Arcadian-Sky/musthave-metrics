@@ -72,8 +72,11 @@ func (m *Memento) GetMetrics() map[MetricType]map[string]interface{} {
 
 // CreateMemento - создает Memento на основе текущего состояния storage.MemStorage
 func (s *MemStorage) CreateMemento() *Memento {
-	// fmt.Printf("s.GetMetrics(): %v\n", s.GetMetrics())
-	return &Memento{metrics: s.GetMetrics()}
+	metrics := s.GetMetrics()
+	if metrics == nil {
+		return &Memento{metrics: make(map[MetricType]map[string]interface{})}
+	}
+	return &Memento{metrics: metrics}
 }
 
 // RestoreFromMemento - восстанавливает состояние storage.MemStorage из Memento
