@@ -97,50 +97,6 @@ func InitRouter() chi.Router {
 	return r
 }
 
-func TestHandler_GetMetricsHandlerFunc2(t *testing.T) {
-	// Создаем фейковое хранилище метрик
-	storeMetrics := storage.NewMemStorage()
-	m := map[storage.MetricType]map[string]interface{}{
-		storage.Gauge: {
-			"metric1": 10.5,
-			"metric2": 20.7,
-		},
-		storage.Counter: {
-			"metric1": 100,
-			"metric2": 200,
-		},
-	}
-	storeMetrics.SetMetrics(m)
-
-	// Создаем хендлер с фейковым хранилищем метрик
-	handler := &Handler{
-		s: storeMetrics,
-	}
-
-	// Создаем запрос
-	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("/metrics?type=%s&name=%s&value=%s", "gauge", "metric1", "10"), nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Создаем ResponseRecorder для записи ответа
-	rr := httptest.NewRecorder()
-
-	// Вызываем метод хендлера
-	handler.GetMetricsHandlerFunc(rr, req)
-
-	// Проверяем статус код
-	if rr.Code != http.StatusOK {
-		t.Errorf("Expected status code %d, got %d", http.StatusOK, rr.Code)
-	}
-
-	// Проверяем содержимое ответа
-	expected := "metric1: 10\nmetric2: 20\nmetric3: 30\n"
-	if rr.Body.String() != expected {
-		t.Errorf("Expected response body %q, got %q", expected, rr.Body.String())
-	}
-}
-
 func TestHandler_GetMetricsHandlerFunc(t *testing.T) {
 	tests := []struct {
 		name          string
