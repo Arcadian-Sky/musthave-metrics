@@ -1,17 +1,18 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 
-	"github.com/Arcadian-Sky/musthave-metrics/internal/server/configs"
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/flags"
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/handler"
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/server"
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/storage"
+	"github.com/Arcadian-Sky/musthave-metrics/internal/server/storage/config"
 )
 
 // Пример запроса к серверу:
@@ -25,39 +26,39 @@ import (
 // Date: Tue, 21 Feb 2023 02:51:35 GMT
 // Content-Length: 11
 // Content-Type: text/plain; charset=utf-8
-
 func main() {
-	// Обработчик сигнала завершения
+	// Создаем канал для обработки сигнала завершения
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
 
 	parsed := flags.Parse()
-	//Создаем новый конфигуратор
-	app := configs.NewConfig(&configs.Config{
-		Interval:        parsed.StoreInterval,
-		FileStoragePath: parsed.FileStorage,
-		Restore:         parsed.RestoreMetrics,
-	})
+
 	//Создаем хранилище
 	storeMetrics := storage.NewMemStorage()
-	//Инициируем что будем сохранять
-	app.MetricsStorage = storeMetrics
-
+	// m := map[storage.MetricType]map[string]interface{}{
+	// 	storage.Gauge: {
+	// 		"metric1": 10.5,
+	// 		"metric2": 20.7,
+	// 	},
+	// 	storage.Counter: {
+	// 		"metric1": 100,
+	// 		"metric2": 200,
+	// 	},
+	// }
+	// storeMetrics.SetMetrics(m)
+	// Инициализируем конфигурацию
+	err := config.InitConfig(storeMetrics, parsed)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
 	//Инициируем хендлеры
 	vhandler := handler.NewHandler(storeMetrics)
 
 	go func() {
-		err := app.LoadMetrics()
-
-		if err != nil {
-			log.Fatal(err.Error())
-		}
-		go app.SaveMetrics()
-		// fmt.Println("Server started")
-		log.Fatal(http.ListenAndServe(parsed.Endpoint, server.InitRouter(*vhandler, *app)))
+		log.Fatal(http.ListenAndServe(parsed.Endpoint, server.InitRouter(*vhandler)))
 	}()
 
 	<-stop
-	app.SaveToFile()
-	// fmt.Println("Server stopped")
+	config.SaveMetricsToFile(storeMetrics, parsed.FileStorage)
+	fmt.Println("Server stopped gracefully")
 }

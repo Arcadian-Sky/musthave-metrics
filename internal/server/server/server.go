@@ -9,7 +9,6 @@ import (
 
 	_ "github.com/Arcadian-Sky/musthave-metrics/docs"
 
-	"github.com/Arcadian-Sky/musthave-metrics/internal/server/configs"
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/handler"
 	packmiddleware "github.com/Arcadian-Sky/musthave-metrics/internal/server/middleware"
 )
@@ -26,7 +25,7 @@ import (
 
 // @externalDocs.description  OpenAPI
 // @externalDocs.url          https://swagger.io/resources/open-api/
-func InitRouter(handler handler.Handler, app configs.ConfigApp) chi.Router {
+func InitRouter(handler handler.Handler) chi.Router {
 	r := chi.NewRouter()
 
 	// r.Use(middleware.Logger)
@@ -43,10 +42,7 @@ func InitRouter(handler handler.Handler, app configs.ConfigApp) chi.Router {
 	// app.HandleRequest()
 	r.Get("/", handler.MetricsHandlerFunc)
 	r.Route("/update", func(r chi.Router) {
-		r.Post("/", func(w http.ResponseWriter, r *http.Request) {
-			handler.UpdateJSONMetricsHandlerFunc(w, r)
-			app.HandleRequest()
-		})
+		r.Post("/", handler.UpdateJSONMetricsHandlerFunc)
 		r.Route("/{type}", func(r chi.Router) {
 			r.Post("/", handler.UpdateMetricsHandlerFunc)
 			r.Post("/{name}", handler.UpdateMetricsHandlerFunc)
@@ -57,10 +53,7 @@ func InitRouter(handler handler.Handler, app configs.ConfigApp) chi.Router {
 		})
 	})
 	r.Route("/value", func(r chi.Router) {
-		r.Post("/", func(w http.ResponseWriter, r *http.Request) {
-			handler.GetMetricsJSONHandlerFunc(w, r)
-			app.HandleRequest()
-		})
+		r.Post("/", handler.GetMetricsJSONHandlerFunc)
 		// r.Get("/", handler.GetMetricsHandlerFunc)
 		r.Route("/{type}", func(r chi.Router) {
 			r.Get("/", handler.GetMetricsHandlerFunc)

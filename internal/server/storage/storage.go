@@ -20,9 +20,10 @@ type MetricsStorage interface {
 	GetJSONMetric(metric *models.Metrics) error
 	UpdateJSONMetric(metric *models.Metrics) error
 	UpdateMetric(mtype string, name string, value string) error
-	GetMetrics() map[MetricType]map[string]interface{}
-	SetMetrics(metrics map[MetricType]map[string]interface{}) map[MetricType]map[string]interface{}
 	GetMetric(MetricType) map[string]interface{}
+
+	SetMetrics(metrics map[MetricType]map[string]interface{})
+	GetMetrics() map[MetricType]map[string]interface{}
 }
 
 // MemStorage представляет хранилище метрик
@@ -94,11 +95,12 @@ func (m *MemStorage) UpdateJSONMetric(metric *models.Metrics) error {
 	if err != nil {
 		return err
 	}
-
+	if m.metrics == nil {
+		m.metrics = make(map[MetricType]map[string]interface{})
+	}
 	if _, ok := m.metrics[metricType]; !ok {
 		m.metrics[metricType] = make(map[string]interface{})
 	}
-
 	switch metricType {
 	case Gauge:
 		if metric.Value == nil {
@@ -171,17 +173,6 @@ func (m *MemStorage) UpdateMetric(mtype string, name string, value string) error
 	// }
 
 	return nil
-}
-
-// GetMetrics возвращает текущие метрики из хранилища
-func (m *MemStorage) GetMetrics() map[MetricType]map[string]interface{} {
-	return m.metrics
-}
-
-// SetMetrics метод вызывается при инициализации для перезаписи всего хранилища
-func (m *MemStorage) SetMetrics(metrics map[MetricType]map[string]interface{}) map[MetricType]map[string]interface{} {
-	m.metrics = metrics
-	return m.metrics
 }
 
 // GetMetric возвращает текущие метрики из хранилища для типа
