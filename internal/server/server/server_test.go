@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	"github.com/Arcadian-Sky/musthave-metrics/internal/server/configs"
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/handler"
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/storage"
 )
@@ -13,7 +14,11 @@ import (
 func TestInitRouter(t *testing.T) {
 	fakeHandler := handler.NewHandler(storage.NewMemStorage())
 	// Получаем роутер с помощью InitRouter
-	router := InitRouter(*fakeHandler)
+	router := InitRouter(*fakeHandler, *configs.NewConfig(&configs.Config{
+		Interval:        0,
+		FileStoragePath: "/tmp/tmp-gb.json",
+		Restore:         false,
+	}))
 	expectedPaths := []string{
 		"/",
 		"/update/",
