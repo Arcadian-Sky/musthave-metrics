@@ -76,8 +76,8 @@ func (m *MemStorage) CreateMemento() *Memento {
 }
 
 // RestoreFromMemento - восстанавливает состояние storage.MemStorage из Memento
-func (m *MemStorage) RestoreFromMemento(m *Memento) {
-	m.SetMetrics(m.metrics)
+func (m *MemStorage) RestoreFromMemento(s *Memento) {
+	m.SetMetrics(s.metrics)
 }
 
 // GetMetrics возвращает текущие метрики из хранилища == getState
