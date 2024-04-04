@@ -71,17 +71,13 @@ func (m *Memento) GetMetrics() map[MetricType]map[string]interface{} {
 }
 
 // CreateMemento - создает Memento на основе текущего состояния storage.MemStorage
-func (s *MemStorage) CreateMemento() *Memento {
-	metrics := s.GetMetrics()
-	if metrics == nil {
-		return &Memento{metrics: make(map[MetricType]map[string]interface{})}
-	}
-	return &Memento{metrics: metrics}
+func (m *MemStorage) CreateMemento() *Memento {
+	return &Memento{metrics: m.GetMetrics()}
 }
 
 // RestoreFromMemento - восстанавливает состояние storage.MemStorage из Memento
-func (s *MemStorage) RestoreFromMemento(m *Memento) {
-	s.SetMetrics(m.metrics)
+func (m *MemStorage) RestoreFromMemento(m *Memento) {
+	m.SetMetrics(m.metrics)
 }
 
 // GetMetrics возвращает текущие метрики из хранилища == getState
