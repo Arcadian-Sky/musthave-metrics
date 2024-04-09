@@ -2,7 +2,6 @@ package flags
 
 import (
 	"flag"
-	"log"
 	"os"
 	"strconv"
 	"time"
@@ -32,11 +31,7 @@ func Parse() *InitedFlags {
 	flagDBSettings := flag.String("d", "", "Адрес подключения к БД")
 
 	flag.Parse()
-
-	// Загрузка переменных окружения из файла .env
-	if err := godotenv.Load(); err != nil {
-		log.Fatalf("Error loading .env file: %v", err)
-	}
+	_ = godotenv.Load()
 
 	endpoint := *end
 	if envRunAddr := os.Getenv("ADDRESS"); envRunAddr != "" {
