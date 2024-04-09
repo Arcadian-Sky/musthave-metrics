@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"database/sql"
 	"fmt"
 	"io"
 	"net/http"
@@ -65,7 +66,8 @@ import (
 
 func InitRouter() chi.Router {
 
-	handler := NewHandler(storage.NewMemStorage())
+	mockDB := &sql.DB{}
+	handler := NewHandler(storage.NewMemStorage(), mockDB)
 
 	r := chi.NewRouter()
 
