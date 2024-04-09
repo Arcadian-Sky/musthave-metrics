@@ -41,6 +41,8 @@ func InitRouter(handler handler.Handler) chi.Router {
 	// GET http://localhost:8080/value/counter/testSetGet163
 	// app.HandleRequest()
 	r.Get("/", handler.MetricsHandlerFunc)
+	r.Get("/ping", handler.PingDB)
+
 	r.Route("/update", func(r chi.Router) {
 		r.Post("/", handler.UpdateJSONMetricsHandlerFunc)
 		r.Route("/{type}", func(r chi.Router) {

@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -31,13 +32,15 @@ func NewMetricParams(r *http.Request) MetricParams {
 
 // Server handlers
 type Handler struct {
-	s storage.MetricsStorage
+	s  storage.MetricsStorage
+	db *sql.DB
 }
 
 // NewHandler создает экземпляр Handler
-func NewHandler(mStorage storage.MetricsStorage) *Handler {
+func NewHandler(mStorage storage.MetricsStorage, dbStorage *sql.DB) *Handler {
 	return &Handler{
-		s: mStorage,
+		s:  mStorage,
+		db: dbStorage,
 	}
 }
 
@@ -249,4 +252,16 @@ func (h *Handler) UpdateJSONMetricsHandlerFunc(w http.ResponseWriter, r *http.Re
 		return
 	}
 
+}
+
+func (h *Handler) PingDB(w http.ResponseWriter, r *http.Request) {
+	err := h.db.Ping()
+	if err != nil {
+		http.Error(w, "ошибка при проверке подключения к базе данных:"+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	fmt.Fprintf(w, "%s\n", "Подключение к базе данных успешно!")
+	// w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 }

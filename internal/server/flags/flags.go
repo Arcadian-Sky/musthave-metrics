@@ -2,21 +2,26 @@ package flags
 
 import (
 	"flag"
+	"log"
 	"os"
 	"strconv"
 	"time"
+
+	"github.com/joho/godotenv"
 )
 
 // Флаг -a, переменная окружения ADDRESS — endpoint address.
 // Флаг -i, переменная окружения STORE_INTERVAL — интервал времени в секундах, по истечении которого текущие показания сервера сохраняются на диск (по умолчанию 300 секунд, значение 0 делает запись синхронной).
 // Флаг -f, переменная окружения FILE_STORAGE_PATH — полное имя файла, куда сохраняются текущие значения (по умолчанию /tmp/metrics-db.json, пустое значение отключает функцию записи на диск).
 // Флаг -r, переменная окружения RESTORE — булево значение (true/false), определяющее, загружать или нет ранее сохранённые значения из указанного файла при старте сервера (по умолчанию true).
+// Флаг -d, переменная окружения DATABASE_DSN - cтрока с адресом подключения к БД (по умолчанию пусто).
 
 type InitedFlags struct {
 	Endpoint       string
 	StoreInterval  time.Duration
 	FileStorage    string
 	RestoreMetrics bool
+	DBSettings     string
 }
 
 func Parse() *InitedFlags {
@@ -24,8 +29,14 @@ func Parse() *InitedFlags {
 	flagStoreInterval := flag.Int("i", 300, "Интервал сохранения метрик на диск")
 	flagFileStorage := flag.String("f", "/tmp/metrics-db.json", "Путь к файлу для хранения метрик")
 	flagRestoreMetrics := flag.Bool("r", true, "Восстановление метрик при старте сервера")
+	flagDBSettings := flag.String("d", "", "Адрес подключения к БД")
 
 	flag.Parse()
+
+	// Загрузка переменных окружения из файла .env
+	if err := godotenv.Load(); err != nil {
+		log.Fatalf("Error loading .env file: %v", err)
+	}
 
 	endpoint := *end
 	if envRunAddr := os.Getenv("ADDRESS"); envRunAddr != "" {
@@ -52,6 +63,10 @@ func Parse() *InitedFlags {
 		}
 	}
 
+	dbSettings := *flagDBSettings
+	if envRunDBSettings := os.Getenv("DATABASE_DSN"); envRunDBSettings != "" {
+		dbSettings = envRunDBSettings
+	}
 	// fmt.Printf("flag interval: %v\n", interval)
 	// fmt.Printf("flag fileStorage: %v\n", fileStorage)
 	// fmt.Printf("flag restoreMetrics: %v\n", restoreMetrics)
@@ -61,6 +76,7 @@ func Parse() *InitedFlags {
 		StoreInterval:  interval,
 		FileStorage:    fileStorage,
 		RestoreMetrics: restoreMetrics,
+		DBSettings:     dbSettings,
 	}
 
 }
