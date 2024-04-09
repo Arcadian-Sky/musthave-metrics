@@ -1,0 +1,169 @@
+definitions:
+  github_com_Arcadian-Sky_musthave-metrics_internal_server_models.Metrics:
+    description: Структура для передачи метрик
+    properties:
+      delta:
+        description: значение метрики в случае передачи counter
+        type: integer
+      id:
+        description: имя метрики
+        type: string
+      type:
+        description: параметр, принимающий значение gauge или counter
+        type: string
+      value:
+        description: значение метрики в случае передачи gauge
+        type: number
+    type: object
+info:
+  contact: {}
+paths:
+  /:
+    get:
+      description: Обновляет метрику в хранилище.
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      summary: Получает метрики.
+  /update:
+    post:
+      consumes:
+      - application/json
+      description: Обновляет метрику в хранилище через json обьект.
+      parameters:
+      - description: Данные в формате JSON
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_Arcadian-Sky_musthave-metrics_internal_server_models.Metrics'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "404":
+          description: Error
+          schema:
+            type: string
+      summary: Обновляет метрику.
+  /update/{type}:
+    post:
+      description: Обновляет метрику в хранилище.
+      parameters:
+      - description: Тип метрики (gauge или counter)
+        in: path
+        name: type
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "404":
+          description: Error
+          schema:
+            type: string
+      summary: Обновляет метрику.
+  /update/{type}/{name}:
+    post:
+      description: Обновляет метрику в хранилище.
+      parameters:
+      - description: Тип метрики (gauge или counter)
+        in: path
+        name: type
+        required: true
+        type: string
+      - description: Название метрики
+        in: path
+        name: name
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "404":
+          description: Error
+          schema:
+            type: string
+      summary: Обновляет метрику.
+  /update/{type}/{name}/{value}:
+    post:
+      description: Обновляет метрику в хранилище.
+      parameters:
+      - description: Тип метрики (gauge или counter)
+        in: path
+        name: type
+        required: true
+        type: string
+      - description: Название метрики
+        in: path
+        name: name
+        required: true
+        type: string
+      - description: Значение метрики
+        in: path
+        name: value
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "404":
+          description: Error
+          schema:
+            type: string
+      summary: Обновляет метрику.
+  /value:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Данные в формате JSON
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_Arcadian-Sky_musthave-metrics_internal_server_models.Metrics'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "404":
+          description: Error
+          schema:
+            type: string
+      summary: Получает метрики.
+  /value/{type}/{name}:
+    get:
+      description: Получает метрику в хранилище.
+      parameters:
+      - description: Тип метрики (gauge или counter)
+        in: path
+        name: type
+        required: true
+        type: string
+      - description: Название метрики
+        in: path
+        name: name
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      summary: Получает метрику.
+swagger: "2.0"
