@@ -1,6 +1,7 @@
 package server
 
 import (
+	"database/sql"
 	"net/http"
 	"testing"
 
@@ -11,7 +12,8 @@ import (
 )
 
 func TestInitRouter(t *testing.T) {
-	fakeHandler := handler.NewHandler(storage.NewMemStorage())
+	mockDB := &sql.DB{}
+	fakeHandler := handler.NewHandler(storage.NewMemStorage(), mockDB)
 	// Получаем роутер с помощью InitRouter
 	router := InitRouter(*fakeHandler)
 	expectedPaths := []string{
