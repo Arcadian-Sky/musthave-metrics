@@ -1,60 +1,27 @@
-package storage
+package inmemory
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/models"
+	"github.com/Arcadian-Sky/musthave-metrics/internal/server/storage"
 )
 
-// MetricType определяет тип метрики (gauge или counter)
-type MetricType string
-
-const (
-	Gauge   MetricType = "gauge"
-	Counter MetricType = "counter"
-)
-
-// MetricsStorage определяет интерфейс для взаимодействия с хранилищем метрик
-type MetricsStorage interface {
-	GetJSONMetric(metric *models.Metrics) error
-	UpdateJSONMetric(metric *models.Metrics) error
-	UpdateMetric(mtype string, name string, value string) error
-	GetMetric(mtype MetricType) map[string]interface{}
-
-	SetMetrics(metrics map[MetricType]map[string]interface{})
-	GetMetrics() map[MetricType]map[string]interface{}
-
-	Ping() error
-}
-
-func GetMetricTypeByCode(mtype string) (MetricType, error) {
-	var metricType MetricType
-	switch mtype {
-	case "gauge":
-		metricType = Gauge
-	case "counter":
-		metricType = Counter
-	default:
-		return metricType, fmt.Errorf("invalid metric type")
-	}
-
-	return metricType, nil
-}
-
-/*
 // MemStorage представляет хранилище метрик
 type MemStorage struct {
-	metrics map[MetricType]map[string]interface{}
+	metrics map[storage.MetricType]map[string]interface{}
 }
 
+// NewMemStorage создает новый экземпляр MemStorage
 func NewMemStorage() *MemStorage {
 	return &MemStorage{
-		metrics: make(map[MetricType]map[string]interface{}),
+		metrics: make(map[storage.MetricType]map[string]interface{}),
 	}
 }
 
 func (m *MemStorage) GetJSONMetric(metric *models.Metrics) error {
-	metricType, err := GetMetricTypeByCode(metric.MType)
+	metricType, err := storage.GetMetricTypeByCode(metric.MType)
 
 	if err != nil {
 		return err
@@ -65,14 +32,14 @@ func (m *MemStorage) GetJSONMetric(metric *models.Metrics) error {
 	}
 	realVal := m.metrics[metricType][metric.ID]
 	switch metricType {
-	case Gauge:
+	case storage.Gauge:
 		if f, ok := realVal.(float64); ok {
 			metric.Value = &f
 		} else {
 			zeroValue := float64(0)
 			metric.Value = &zeroValue
 		}
-	case Counter:
+	case storage.Counter:
 		if i, ok := realVal.(int64); ok {
 			metric.Delta = &i
 		} else {
@@ -89,26 +56,25 @@ func (m *MemStorage) GetJSONMetric(metric *models.Metrics) error {
 }
 
 func (m *MemStorage) UpdateJSONMetric(metric *models.Metrics) error {
-	metricType, err := GetMetricTypeByCode(metric.MType)
+	metricType, err := storage.GetMetricTypeByCode(metric.MType)
 
 	if err != nil {
 		return err
 	}
 	if m.metrics == nil {
-		m.metrics = make(map[MetricType]map[string]interface{})
+		m.metrics = make(map[storage.MetricType]map[string]interface{})
 	}
 	if _, ok := m.metrics[metricType]; !ok {
 		m.metrics[metricType] = make(map[string]interface{})
 	}
 	switch metricType {
-	case Gauge:
+	case storage.Gauge:
 		if metric.Value == nil {
 			zeroValue := float64(0)
 			metric.Value = &zeroValue
 		}
 		m.metrics[metricType][metric.ID] = *metric.Value
-	case Counter:
-		// fmt.Printf("Update val metric.Delta: %v\n", *metric.Delta)
+	case storage.Counter:
 		if metric.Delta == nil {
 			zeroValue := int64(0)
 			metric.Delta = &zeroValue
@@ -119,24 +85,17 @@ func (m *MemStorage) UpdateJSONMetric(metric *models.Metrics) error {
 		} else {
 			m.metrics[metricType][metric.ID] = *metric.Delta
 		}
-		// fmt.Printf("Update saved metric.Delta: %v\n", m.metrics[metricType][metric.ID])
 	default:
 		return fmt.Errorf("invalid metric type")
 	}
-
-	// if m.conf.Interval == 0 {
-	// 	// m.SaveToFile()
-	// }
 
 	return nil
 }
 
 // UpdateMetric обновляет значение метрики в хранилище
 func (m *MemStorage) UpdateMetric(mtype string, name string, value string) error {
-
 	// var metricType MetricType
-	metricType, err := GetMetricTypeByCode(mtype)
-
+	metricType, err := storage.GetMetricTypeByCode(mtype)
 	if err != nil {
 		return err
 	}
@@ -146,13 +105,13 @@ func (m *MemStorage) UpdateMetric(mtype string, name string, value string) error
 	}
 
 	switch metricType {
-	case Gauge:
+	case storage.Gauge:
 		if floatValue, err := strconv.ParseFloat(value, 64); err == nil {
 			m.metrics[metricType][name] = floatValue
 		} else {
 			return fmt.Errorf("invalid metric value: %v", err)
 		}
-	case Counter:
+	case storage.Counter:
 		if intValue, err := strconv.ParseInt(value, 10, 64); err == nil {
 			currentCounter, ok := m.metrics[metricType][name].(int64)
 			if ok {
@@ -167,15 +126,36 @@ func (m *MemStorage) UpdateMetric(mtype string, name string, value string) error
 		return fmt.Errorf("invalid metric type")
 	}
 
-	// if m.conf.Interval == 0 {
-	// 	// m.SaveToFile()
-	// }
-
 	return nil
 }
 
 // GetMetric возвращает текущие метрики из хранилища для типа
-func (m *MemStorage) GetMetric(mtype MetricType) map[string]interface{} {
+func (m *MemStorage) GetMetric(mtype storage.MetricType) map[string]interface{} {
 	return m.metrics[mtype]
 }
-*/
+
+// GetMetrics возвращает текущие метрики из хранилища == getState
+func (m *MemStorage) GetMetrics() map[storage.MetricType]map[string]interface{} {
+	return m.metrics
+}
+
+// SetMetrics метод вызывается при инициализации для перезаписи всего хранилища == setState
+func (m *MemStorage) SetMetrics(metrics map[storage.MetricType]map[string]interface{}) {
+	m.metrics = metrics
+}
+
+func (m *MemStorage) Ping() error {
+	return fmt.Errorf("формат хранения не поддерживает бд")
+}
+
+// CreateMemento - создает Memento на основе текущего состояния storage.MemStorage
+func (m *MemStorage) CreateMemento() *storage.Memento {
+	s := &storage.Memento{}
+	s.SetMetrics(m.GetMetrics())
+	return s
+}
+
+// RestoreFromMemento - восстанавливает состояние storage.MemStorage из Memento
+func (m *MemStorage) RestoreFromMemento(s *storage.Memento) {
+	m.SetMetrics(s.GetMetrics())
+}

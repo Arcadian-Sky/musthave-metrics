@@ -1,19 +1,17 @@
 package server
 
 import (
-	"database/sql"
 	"net/http"
 	"testing"
 
 	"github.com/go-chi/chi/v5"
 
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/handler"
-	"github.com/Arcadian-Sky/musthave-metrics/internal/server/storage"
+	"github.com/Arcadian-Sky/musthave-metrics/internal/server/storage/inmemory"
 )
 
 func TestInitRouter(t *testing.T) {
-	mockDB := &sql.DB{}
-	fakeHandler := handler.NewHandler(storage.NewMemStorage(), mockDB)
+	fakeHandler := handler.NewHandler(inmemory.NewMemStorage())
 	// Получаем роутер с помощью InitRouter
 	router := InitRouter(*fakeHandler)
 	expectedPaths := []string{

@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -32,15 +31,13 @@ func NewMetricParams(r *http.Request) MetricParams {
 
 // Server handlers
 type Handler struct {
-	s  storage.MetricsStorage
-	db *sql.DB
+	s storage.MetricsStorage
 }
 
 // NewHandler создает экземпляр Handler
-func NewHandler(mStorage storage.MetricsStorage, dbStorage *sql.DB) *Handler {
+func NewHandler(mStorage storage.MetricsStorage) *Handler {
 	return &Handler{
-		s:  mStorage,
-		db: dbStorage,
+		s: mStorage,
 	}
 }
 
@@ -125,7 +122,6 @@ func (h *Handler) GetMetricsHandlerFunc(w http.ResponseWriter, r *http.Request) 
 
 	// Выводим данные
 	currentMetrics := h.s.GetMetric(metricTypeID)
-	fmt.Printf("metricName: %v\n", params.Name)
 	if params.Name != "" {
 		fmt.Printf("currentMetrics[metricName]: %v\n", currentMetrics[params.Name])
 		if currentMetrics[params.Name] != nil {
@@ -255,7 +251,7 @@ func (h *Handler) UpdateJSONMetricsHandlerFunc(w http.ResponseWriter, r *http.Re
 }
 
 func (h *Handler) PingDB(w http.ResponseWriter, r *http.Request) {
-	err := h.db.Ping()
+	err := h.s.Ping()
 	if err != nil {
 		http.Error(w, "ошибка при проверке подключения к базе данных:"+err.Error(), http.StatusInternalServerError)
 		return

@@ -70,24 +70,8 @@ func (m *Memento) GetMetrics() map[MetricType]map[string]interface{} {
 	return m.metrics
 }
 
-// CreateMemento - создает Memento на основе текущего состояния storage.MemStorage
-func (m *MemStorage) CreateMemento() *Memento {
-	return &Memento{metrics: m.GetMetrics()}
-}
-
-// RestoreFromMemento - восстанавливает состояние storage.MemStorage из Memento
-func (m *MemStorage) RestoreFromMemento(s *Memento) {
-	m.SetMetrics(s.metrics)
-}
-
-// GetMetrics возвращает текущие метрики из хранилища == getState
-func (m *MemStorage) GetMetrics() map[MetricType]map[string]interface{} {
-	return m.metrics
-}
-
-// SetMetrics метод вызывается при инициализации для перезаписи всего хранилища == setState
-func (m *MemStorage) SetMetrics(metrics map[MetricType]map[string]interface{}) {
-	m.metrics = metrics
+func (m *Memento) SetMetrics(set map[MetricType]map[string]interface{}) {
+	m.metrics = set
 }
 
 type MetricValue struct {
