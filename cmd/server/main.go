@@ -16,6 +16,8 @@ import (
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/server"
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/storage"
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/storage/config"
+	"github.com/Arcadian-Sky/musthave-metrics/internal/server/storage/inmemory"
+	"github.com/Arcadian-Sky/musthave-metrics/internal/server/storage/postgres"
 )
 
 // Пример запроса к серверу:
@@ -48,29 +50,41 @@ func main() {
 	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
 	parsed := flags.Parse()
 
-	// fmt.Printf("parsed.DBSettings: %v\n", parsed.DBSettings)
 	db, err := sql.Open("pgx", parsed.DBSettings)
 	if err != nil {
 		panic(err)
 	}
 	defer db.Close()
 
+	// NewMemStorage создает новый экземпляр хранилищв
 	//Создаем хранилище
-	storeMetrics := storage.NewMemStorage()
-
-	// Инициализируем конфигурацию
-	err = config.InitConfig(storeMetrics, parsed)
-	if err != nil {
-		log.Fatal(err.Error())
+	storeMetrics := func(cnf *flags.InitedFlags, db *sql.DB) storage.MetricsStorage {
+		if cnf.StorageType == "postgres" {
+			return postgres.NewPostgresStorage(db)
+		}
+		// mementoStore = storeMetrics
+		return inmemory.NewMemStorage()
+	}(parsed, db)
+	memStore, memStoreOk := storeMetrics.(config.MementoStorage)
+	if memStoreOk {
+		// Инициализируем конфигурацию
+		err = config.InitConfig(memStore, parsed)
+		if err != nil {
+			log.Fatal(err.Error())
+		}
 	}
-	//Инициируем хендлеры
-	vhandler := handler.NewHandler(storeMetrics, db)
+	fmt.Println("cnf.StorageType:", parsed.StorageType)
+	fmt.Println("memStoreOk:", memStoreOk)
 
+	//Инициируем хендлеры
+	vhandler := handler.NewHandler(storeMetrics)
 	go func() {
 		log.Fatal(http.ListenAndServe(parsed.Endpoint, server.InitRouter(*vhandler)))
 	}()
 
 	<-stop
-	config.SaveMetricsToFile(storeMetrics, parsed.FileStorage)
+	if memStoreOk {
+		config.SaveMetricsToFile(memStore, parsed.FileStorage)
+	}
 	fmt.Println("Server stopped gracefully")
 }

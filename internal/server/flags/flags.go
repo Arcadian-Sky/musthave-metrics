@@ -21,6 +21,7 @@ type InitedFlags struct {
 	FileStorage    string
 	RestoreMetrics bool
 	DBSettings     string
+	StorageType    string
 }
 
 func Parse() *InitedFlags {
@@ -29,6 +30,7 @@ func Parse() *InitedFlags {
 	flagFileStorage := flag.String("f", "/tmp/metrics-db.json", "Путь к файлу для хранения метрик")
 	flagRestoreMetrics := flag.Bool("r", true, "Восстановление метрик при старте сервера")
 	flagDBSettings := flag.String("d", "", "Адрес подключения к БД")
+	storageType := "inmemory"
 
 	flag.Parse()
 	_ = godotenv.Load()
@@ -62,6 +64,9 @@ func Parse() *InitedFlags {
 	if envRunDBSettings := os.Getenv("DATABASE_DSN"); envRunDBSettings != "" {
 		dbSettings = envRunDBSettings
 	}
+	if dbSettings != "" {
+		storageType = "postgres"
+	}
 	// fmt.Printf("flag interval: %v\n", interval)
 	// fmt.Printf("flag fileStorage: %v\n", fileStorage)
 	// fmt.Printf("flag restoreMetrics: %v\n", restoreMetrics)
@@ -72,6 +77,7 @@ func Parse() *InitedFlags {
 		FileStorage:    fileStorage,
 		RestoreMetrics: restoreMetrics,
 		DBSettings:     dbSettings,
+		StorageType:    storageType,
 	}
 
 }
