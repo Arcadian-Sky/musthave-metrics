@@ -3,6 +3,7 @@ package postgres
 import (
 	"database/sql"
 	"fmt"
+	"log"
 
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/models"
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/storage"
@@ -16,7 +17,10 @@ type PostgresStorage struct {
 // NewPostgresStorage создает новый экземпляр PostgresStorage
 func NewPostgresStorage(db *sql.DB) *PostgresStorage {
 	p := &PostgresStorage{db: db}
-	p.CreateMetricsTable()
+	err := p.CreateMetricsTable()
+	if err != nil {
+		panic(err)
+	}
 	return p
 
 }
@@ -122,6 +126,11 @@ func (p *PostgresStorage) GetMetric(mtype storage.MetricType) map[string]interfa
 		return nil //, fmt.Errorf("ошибка при выполнении запроса: %v", err)
 	}
 	defer rows.Close()
+	// Проверка наличия ошибок при чтении строк результата
+	if rows.Err() != nil {
+		return nil
+		//, fmt.Errorf("ошибка при чтении строк результата: %v", rows.Err())
+	}
 
 	metrics = make(map[string]interface{})
 	for rows.Next() {
@@ -155,7 +164,11 @@ func (p *PostgresStorage) SetMetrics(metrics map[storage.MetricType]map[string]i
 	if err != nil {
 		panic(fmt.Errorf("ошибка при начале транзакции: %v", err))
 	}
-	defer tx.Rollback() // Откат транзакции в случае ошибки
+	defer func() {
+		if err := tx.Rollback(); err != nil {
+			log.Println("Ошибка отката транзакции:", err)
+		}
+	}()
 
 	// Цикл по всем типам метрик
 	for metricType, metricValues := range metrics {
@@ -210,6 +223,11 @@ func (p *PostgresStorage) GetMetrics() map[storage.MetricType]map[string]interfa
 		//, fmt.Errorf("ошибка при выполнении запроса: %v", err)
 	}
 	defer rows.Close()
+	// Проверка наличия ошибок при чтении строк результата
+	if rows.Err() != nil {
+		return nil
+		//, fmt.Errorf("ошибка при чтении строк результата: %v", rows.Err())
+	}
 
 	for rows.Next() {
 		var name string
