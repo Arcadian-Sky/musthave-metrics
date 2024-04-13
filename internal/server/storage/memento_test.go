@@ -1,8 +1,8 @@
 package storage
 
 import (
+	"bytes"
 	"encoding/json"
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -68,8 +68,8 @@ func TestMemento_UnmarshalJSON(t *testing.T) {
 				"metric_name_3": int64(30),
 			},
 		}
-		encoder := json.NewEncoder(os.Stdout)
-
+		var buf bytes.Buffer
+		encoder := json.NewEncoder(&buf)
 		assert.Equal(t, encoder.Encode(expectedMetrics), encoder.Encode(memento.GetMetrics()))
 	})
 }
