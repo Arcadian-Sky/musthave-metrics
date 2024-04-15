@@ -155,7 +155,11 @@ func (p *PostgresStorage) UpdateJSONMetrics(metrics *[]models.Metrics) error {
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback()
+	defer func() {
+		if err := tx.Rollback(); err != nil {
+			log.Println("Ошибка отката транзакции:", err)
+		}
+	}()
 
 	// Создаем карты для хранения сумм дельт метрик типа "counter" и значений метрик типа "gauge"
 	counterDeltas := make(map[string]int64)
