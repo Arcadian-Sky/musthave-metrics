@@ -78,38 +78,45 @@ func (p *PostgresStorage) GetJSONMetrics(metric *[]models.Metrics) error {
 }
 
 func (p *PostgresStorage) UpdateJSONMetric(metric *models.Metrics) error {
-	mType, err := storage.GetMetricTypeByCode(metric.MType)
-	if err != nil {
-		return err
-	}
-	var query string
-	var value interface{}
-	switch mType {
-	case storage.Gauge:
-		query = fmt.Sprintf(`
-				INSERT INTO %s (name, type, gauge)
-				VALUES ($1, 'gauge', $2)
-				ON CONFLICT (name, type) DO UPDATE
-				SET gauge = EXCLUDED.gauge
-			`, p.getTableName())
-		value = metric.Value
-	case storage.Counter:
-		query = fmt.Sprintf(`INSERT INTO %s (name, type, counter)
-			VALUES ($1, 'counter', COALESCE((SELECT counter FROM %s WHERE name = $1 AND type = 'counter'), 0) + $2)
-			ON CONFLICT (name, type) DO UPDATE
-			SET counter = EXCLUDED.counter;
-			`, p.getTableName(), p.getTableName())
-		value = metric.Delta
-	default:
-		return fmt.Errorf("неподдерживаемый тип метрики: %s", mType)
-	}
-
-	// query := fmt.Sprintf("INSERT INTO %s (name, type, counter, gauge) VALUES ($1, $2, $3, $4) ON CONFLICT (name, type) DO UPDATE SET counter = $3, gauge = $4", p.getTableName())
-	_, err = p.db.Exec(query, metric.ID, value)
+	query := fmt.Sprintf("INSERT INTO %s (name, type, counter, gauge) VALUES ($1, $2, $3, $4) ON CONFLICT (name, type) DO UPDATE SET counter = $3, gauge = $4", p.getTableName())
+	_, err := p.db.Exec(query, metric.ID, metric.MType, metric.Delta, metric.Value)
 	if err != nil {
 		return fmt.Errorf("ошибка при обновлении метрики в базе данных: %v", err)
 	}
 	return nil
+
+	// mType, err := storage.GetMetricTypeByCode(metric.MType)
+	// if err != nil {
+	// 	return err
+	// }
+	// var query string
+	// var value interface{}
+	// switch mType {
+	// case storage.Gauge:
+	// 	query = fmt.Sprintf(`
+	// 			INSERT INTO %s (name, type, gauge)
+	// 			VALUES ($1, 'gauge', $2)
+	// 			ON CONFLICT (name, type) DO UPDATE
+	// 			SET gauge = EXCLUDED.gauge
+	// 		`, p.getTableName())
+	// 	value = metric.Value
+	// case storage.Counter:
+	// 	query = fmt.Sprintf(`INSERT INTO %s (name, type, counter)
+	// 		VALUES ($1, 'counter', COALESCE((SELECT counter FROM %s WHERE name = $1 AND type = 'counter'), 0) + $2)
+	// 		ON CONFLICT (name, type) DO UPDATE
+	// 		SET counter = EXCLUDED.counter;
+	// 		`, p.getTableName(), p.getTableName())
+	// 	value = metric.Delta
+	// default:
+	// 	return fmt.Errorf("неподдерживаемый тип метрики: %s", mType)
+	// }
+
+	// // query := fmt.Sprintf("INSERT INTO %s (name, type, counter, gauge) VALUES ($1, $2, $3, $4) ON CONFLICT (name, type) DO UPDATE SET counter = $3, gauge = $4", p.getTableName())
+	// _, err = p.db.Exec(query, metric.ID, value)
+	// if err != nil {
+	// 	return fmt.Errorf("ошибка при обновлении метрики в базе данных: %v", err)
+	// }
+	// return nil
 }
 
 func (p *PostgresStorage) UpdateMetric(mtype string, name string, value string) error {
@@ -130,11 +137,12 @@ func (p *PostgresStorage) UpdateMetric(mtype string, name string, value string) 
             SET gauge = EXCLUDED.gauge
         `, p.getTableName())
 	case storage.Counter:
-		query = fmt.Sprintf(`INSERT INTO %s (name, type, counter)
-		VALUES ($1, 'counter', COALESCE((SELECT counter FROM %s WHERE name = $1 AND type = 'counter'), 0) + $2)
+		query = fmt.Sprintf(`
+		INSERT INTO %s (name, type, counter)
+		VALUES ($1, 'counter', $2)
 		ON CONFLICT (name, type) DO UPDATE
-		SET counter = EXCLUDED.counter;
-        `, p.getTableName(), p.getTableName())
+		SET counter = EXCLUDED.counter
+	`, p.getTableName())
 	default:
 		return fmt.Errorf("неподдерживаемый тип метрики: %s", mtype)
 	}
