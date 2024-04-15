@@ -42,9 +42,10 @@ func InitRouter(handler handler.Handler) chi.Router {
 	// app.HandleRequest()
 	r.Get("/", handler.MetricsHandlerFunc)
 	r.Get("/ping", handler.PingDB)
+	r.Post("/updates/", handler.UpdateJSONMetricsHandlerFunc)
 
 	r.Route("/update", func(r chi.Router) {
-		r.Post("/", handler.UpdateJSONMetricsHandlerFunc)
+		r.Post("/", handler.UpdateJSONMetricHandlerFunc)
 		r.Route("/{type}", func(r chi.Router) {
 			r.Post("/", handler.UpdateMetricsHandlerFunc)
 			r.Post("/{name}", handler.UpdateMetricsHandlerFunc)
@@ -55,14 +56,13 @@ func InitRouter(handler handler.Handler) chi.Router {
 
 		})
 	})
-
 	r.Route("/value", func(r chi.Router) {
 		r.Post("/", handler.GetMetricsJSONHandlerFunc)
 		// r.Get("/", handler.GetMetricsHandlerFunc)
 		r.Route("/{type}", func(r chi.Router) {
-			r.Get("/", handler.GetMetricsHandlerFunc)
-			r.Get("/{name}", handler.GetMetricsHandlerFunc)
-			r.Get("/{name}/", handler.GetMetricsHandlerFunc)
+			r.Get("/", handler.GetMetricHandlerFunc)
+			r.Get("/{name}", handler.GetMetricHandlerFunc)
+			r.Get("/{name}/", handler.GetMetricHandlerFunc)
 		})
 	})
 

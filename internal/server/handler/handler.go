@@ -103,7 +103,7 @@ func (h *Handler) UpdateMetricsHandlerFunc(w http.ResponseWriter, r *http.Reques
 // @Param name path string true "Название метрики"
 // @Success 200 {string} string "OK"
 // @Router /value/{type}/{name} [get]
-func (h *Handler) GetMetricsHandlerFunc(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) GetMetricHandlerFunc(w http.ResponseWriter, r *http.Request) {
 	params := NewMetricParams(r)
 
 	//Проверякм переданные параметры
@@ -174,10 +174,9 @@ func (h *Handler) GetMetricsJSONHandlerFunc(w http.ResponseWriter, r *http.Reque
 	// Выводим данные
 	err = h.s.GetJSONMetric(&metrics)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
-
 	resp, err := json.Marshal(&metrics)
 	if err != nil {
 		fmt.Println("Ошибка при преобразовании в JSON:", err)
@@ -200,7 +199,7 @@ func (h *Handler) GetMetricsJSONHandlerFunc(w http.ResponseWriter, r *http.Reque
 // @Success 200 {object} string "OK"
 // @Failure 404 {object} string "Error"
 // @Router /update [post]
-func (h *Handler) UpdateJSONMetricsHandlerFunc(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) UpdateJSONMetricHandlerFunc(w http.ResponseWriter, r *http.Request) {
 	var metrics models.Metrics
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -214,7 +213,7 @@ func (h *Handler) UpdateJSONMetricsHandlerFunc(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	// // Декодируем JSON из []byte в структуру Metrics
+	// Декодируем JSON из []byte в структуру Metrics
 	if err := json.Unmarshal(body, &metrics); err != nil {
 		http.Error(w, "Failed to decode JSON: "+err.Error(), http.StatusBadRequest)
 		return
@@ -260,4 +259,55 @@ func (h *Handler) PingDB(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "%s\n", "Подключение к базе данных успешно!")
 	// w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
+}
+
+func (h *Handler) UpdateJSONMetricsHandlerFunc(w http.ResponseWriter, r *http.Request) {
+	var metrics []models.Metrics
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, "Failed to read request body: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Проверяем тело запроса на пустоту
+	if len(body) == 0 {
+		http.Error(w, "Request body is empty", http.StatusBadRequest)
+		return
+	}
+
+	// // Декодируем JSON из []byte в структуру Metrics
+	if err := json.Unmarshal(body, &metrics); err != nil {
+		http.Error(w, "Failed to decode JSON: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Обновляем метрики
+	err = h.s.UpdateJSONMetrics(&metrics)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Выводим данные
+	// for range metrics{
+	// 	err = h.s.GetJSONMetrics(&metrics)
+	// 	if err != nil {
+	// 		http.Error(w, err.Error(), http.StatusBadRequest)
+	// 		return
+	// 	}
+	// }
+
+	resp, err := json.Marshal(&metrics)
+	if err != nil {
+		fmt.Println("Ошибка при преобразовании в JSON:", err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_, err = w.Write(resp)
+	if err != nil {
+		fmt.Println("Ошибка записи Body:", err)
+		return
+	}
 }

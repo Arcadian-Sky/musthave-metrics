@@ -16,13 +16,17 @@ const (
 
 // MetricsStorage определяет интерфейс для взаимодействия с хранилищем метрик
 type MetricsStorage interface {
+	GetMetric(mtype MetricType) map[string]interface{}
+	UpdateMetric(mtype string, name string, value string) error
+
 	GetJSONMetric(metric *models.Metrics) error
 	UpdateJSONMetric(metric *models.Metrics) error
-	UpdateMetric(mtype string, name string, value string) error
-	GetMetric(mtype MetricType) map[string]interface{}
 
-	SetMetrics(metrics map[MetricType]map[string]interface{})
+	// GetJSONMetrics(metrics *[]models.Metrics)
+	UpdateJSONMetrics(metrics *[]models.Metrics) error
+
 	GetMetrics() map[MetricType]map[string]interface{}
+	SetMetrics(metrics map[MetricType]map[string]interface{})
 
 	Ping() error
 }

@@ -1,6 +1,7 @@
 package postgres
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"log"
@@ -57,15 +58,54 @@ func (p *PostgresStorage) CreateMetricsTable() error {
 func (p *PostgresStorage) GetJSONMetric(metric *models.Metrics) error {
 	query := fmt.Sprintf("SELECT name, type, counter, gauge FROM %s WHERE name = $1 AND type = $2", p.getTableName())
 	err := p.db.QueryRow(query, metric.ID, metric.MType).Scan(&metric.ID, &metric.MType, &metric.Delta, &metric.Value)
+	if metric.Value != nil {
+		fmt.Printf("get metrics V: %v\n", metric)
+		fmt.Printf("get metrics V: %v\n", *metric.Value)
+	}
+
+	if metric.Delta != nil {
+		fmt.Printf("get metrics V: %v\n", metric)
+		fmt.Printf("get metrics D: %v\n", *metric.Delta)
+	}
 	if err != nil {
 		return fmt.Errorf("ошибка при извлечении метрики из базы данных: %v", err)
 	}
 	return nil
 }
 
+func (p *PostgresStorage) GetJSONMetrics(metric *[]models.Metrics) error {
+	return nil
+}
+
 func (p *PostgresStorage) UpdateJSONMetric(metric *models.Metrics) error {
-	query := fmt.Sprintf("INSERT INTO %s (name, type, counter, gauge) VALUES ($1, $2, $3, $4) ON CONFLICT (name, type) DO UPDATE SET counter = $3, gauge = $4", p.getTableName())
-	_, err := p.db.Exec(query, metric.ID, metric.MType, metric.Delta, metric.Value)
+	mType, err := storage.GetMetricTypeByCode(metric.MType)
+	if err != nil {
+		return err
+	}
+	var query string
+	var value interface{}
+	switch mType {
+	case storage.Gauge:
+		query = fmt.Sprintf(`
+				INSERT INTO %s (name, type, gauge)
+				VALUES ($1, 'gauge', $2)
+				ON CONFLICT (name, type) DO UPDATE
+				SET gauge = EXCLUDED.gauge
+			`, p.getTableName())
+		value = metric.Value
+	case storage.Counter:
+		query = fmt.Sprintf(`INSERT INTO %s (name, type, counter)
+			VALUES ($1, 'counter', COALESCE((SELECT counter FROM %s WHERE name = $1 AND type = 'counter'), 0) + $2)
+			ON CONFLICT (name, type) DO UPDATE
+			SET counter = EXCLUDED.counter;
+			`, p.getTableName(), p.getTableName())
+		value = metric.Delta
+	default:
+		return fmt.Errorf("неподдерживаемый тип метрики: %s", mType)
+	}
+
+	// query := fmt.Sprintf("INSERT INTO %s (name, type, counter, gauge) VALUES ($1, $2, $3, $4) ON CONFLICT (name, type) DO UPDATE SET counter = $3, gauge = $4", p.getTableName())
+	_, err = p.db.Exec(query, metric.ID, value)
 	if err != nil {
 		return fmt.Errorf("ошибка при обновлении метрики в базе данных: %v", err)
 	}
@@ -90,12 +130,11 @@ func (p *PostgresStorage) UpdateMetric(mtype string, name string, value string) 
             SET gauge = EXCLUDED.gauge
         `, p.getTableName())
 	case storage.Counter:
-		query = fmt.Sprintf(`
-            INSERT INTO %s (name, type, counter)
-            VALUES ($1, 'counter', $2)
-            ON CONFLICT (name, type) DO UPDATE
-            SET counter = EXCLUDED.counter
-        `, p.getTableName())
+		query = fmt.Sprintf(`INSERT INTO %s (name, type, counter)
+		VALUES ($1, 'counter', COALESCE((SELECT counter FROM %s WHERE name = $1 AND type = 'counter'), 0) + $2)
+		ON CONFLICT (name, type) DO UPDATE
+		SET counter = EXCLUDED.counter;
+        `, p.getTableName(), p.getTableName())
 	default:
 		return fmt.Errorf("неподдерживаемый тип метрики: %s", mtype)
 	}
@@ -105,6 +144,61 @@ func (p *PostgresStorage) UpdateMetric(mtype string, name string, value string) 
 	if err != nil {
 		return fmt.Errorf("ошибка при обновлении метрики в базе данных: %v", err)
 	}
+	return nil
+}
+
+func (p *PostgresStorage) UpdateJSONMetrics(metrics *[]models.Metrics) error {
+	ctx := context.Background()
+
+	// Начинаем транзакцию
+	tx, err := p.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	// Создаем карты для хранения сумм дельт метрик типа "counter" и значений метрик типа "gauge"
+	counterDeltas := make(map[string]int64)
+	gaugeValues := make(map[string]float64)
+
+	// Обновляем значения в карты в соответствии с типом метрики
+	for _, metric := range *metrics {
+		switch metric.MType {
+		case "counter":
+			counterDeltas[metric.ID] += *metric.Delta
+		case "gauge":
+			gaugeValues[metric.ID] = *metric.Value
+		}
+	}
+
+	// Вставляем значения метрик типа "counter" из карты в базу данных
+	for id, delta := range counterDeltas {
+		_, err := tx.ExecContext(ctx,
+			"INSERT INTO "+p.getTableName()+" (name, type, counter)"+
+				" VALUES ($1, 'counter', $2)"+
+				" ON CONFLICT (name, type) DO UPDATE"+
+				" SET counter = EXCLUDED.counter;", id, delta)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Вставляем значения метрик типа "gauge" из карты в базу данных
+	for id, value := range gaugeValues {
+		_, err := tx.ExecContext(ctx,
+			"INSERT INTO "+p.getTableName()+" (name, type, gauge)"+
+				" VALUES ($1, 'gauge', $2)"+
+				" ON CONFLICT (name, type) DO NOTHING;", id, value)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Коммитим транзакцию
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+
 	return nil
 }
 
