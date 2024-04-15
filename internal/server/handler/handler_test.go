@@ -73,22 +73,20 @@ func InitRouter() chi.Router {
 	})
 	// GET http://localhost:8080/value/counter/testSetGet163
 
-	r.Post("/updates/", handler.UpdateJSONMetricsHandlerFunc)
-
+	r.Get("/", handler.MetricsHandlerFunc)
 	r.Route("/update", func(r chi.Router) {
-		r.Post("/", handler.UpdateJSONMetricHandlerFunc)
+		r.Post("/", handler.UpdateMetricsHandlerFunc)
 		r.Route("/{type}", func(r chi.Router) {
 			r.Post("/", handler.UpdateMetricsHandlerFunc)
 			r.Post("/{name}", handler.UpdateMetricsHandlerFunc)
-			r.Post("/{name}/", handler.UpdateMetricsHandlerFunc)
 			r.Post("/{name}/{value}", handler.UpdateMetricsHandlerFunc)
 			r.Post("/{name}/{value}/", handler.UpdateMetricsHandlerFunc)
-			r.Get("/{name}/{value}/", handler.UpdateMetricsHandlerFunc)
-
 		})
 	})
+
 	r.Route("/value", func(r chi.Router) {
 		r.Post("/", handler.GetMetricsJSONHandlerFunc)
+		r.Get("/", handler.GetMetricHandlerFunc)
 		r.Route("/{type}", func(r chi.Router) {
 			r.Get("/", handler.GetMetricHandlerFunc)
 			r.Get("/{name}", handler.GetMetricHandlerFunc)
@@ -99,7 +97,7 @@ func InitRouter() chi.Router {
 	return r
 }
 
-func TestHandler_GetMetricsHandlerFunc(t *testing.T) {
+func TestHandler_GetMetricHandlerFunc(t *testing.T) {
 	tests := []struct {
 		name          string
 		requestPath   string
