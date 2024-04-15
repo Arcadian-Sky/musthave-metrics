@@ -42,7 +42,7 @@ func (p *PostgresStorage) CreateMetricsTable() error {
 	query := `
 		CREATE TABLE IF NOT EXISTS metrics (
 			"name" varchar NOT NULL,
-			counter int NULL,
+			counter numeric NULL,
 			gauge double precision NULL,
 			"type" varchar NOT NULL,
 			CONSTRAINT constraint_name_type UNIQUE (name, type)
@@ -164,15 +164,16 @@ func (p *PostgresStorage) UpdateJSONMetrics(metrics *[]models.Metrics) error {
 		return err
 	}
 	defer func() {
-		if err := tx.Rollback(); err != nil {
-			log.Println("Ошибка отката транзакции:", err)
+		if err != nil {
+			if rollbackErr := tx.Rollback(); rollbackErr != nil {
+				log.Println("Ошибка отката транзакции:", rollbackErr)
+			}
 		}
 	}()
 
 	// Создаем карты для хранения сумм дельт метрик типа "counter" и значений метрик типа "gauge"
 	counterDeltas := make(map[string]int64)
 	gaugeValues := make(map[string]float64)
-
 	// Обновляем значения в карты в соответствии с типом метрики
 	for _, metric := range *metrics {
 		switch metric.MType {
@@ -185,29 +186,34 @@ func (p *PostgresStorage) UpdateJSONMetrics(metrics *[]models.Metrics) error {
 
 	// Вставляем значения метрик типа "counter" из карты в базу данных
 	for id, delta := range counterDeltas {
+		fmt.Printf("id, value: %v, %v\n", id, delta)
 		_, err := tx.ExecContext(ctx,
 			"INSERT INTO "+p.getTableName()+" (name, type, counter)"+
 				" VALUES ($1, 'counter', $2)"+
 				" ON CONFLICT (name, type) DO UPDATE"+
 				" SET counter = EXCLUDED.counter;", id, delta)
 		if err != nil {
+			fmt.Printf("err.Error(): %v\n", err.Error())
 			return err
 		}
 	}
 
 	// Вставляем значения метрик типа "gauge" из карты в базу данных
 	for id, value := range gaugeValues {
+		fmt.Printf("id, value: %v, %v\n", id, value)
 		_, err := tx.ExecContext(ctx,
 			"INSERT INTO "+p.getTableName()+" (name, type, gauge)"+
 				" VALUES ($1, 'gauge', $2)"+
 				" ON CONFLICT (name, type) DO NOTHING;", id, value)
 		if err != nil {
+			fmt.Printf("err.Error(): %v\n", err.Error())
 			return err
 		}
 	}
 
 	// Коммитим транзакцию
 	if err := tx.Commit(); err != nil {
+		fmt.Printf("err.Error(): %v\n", err.Error())
 		return err
 	}
 
@@ -271,8 +277,10 @@ func (p *PostgresStorage) SetMetrics(metrics map[storage.MetricType]map[string]i
 		panic(fmt.Errorf("ошибка при начале транзакции: %v", err))
 	}
 	defer func() {
-		if err := tx.Rollback(); err != nil {
-			log.Println("Ошибка отката транзакции:", err)
+		if err != nil {
+			if rollbackErr := tx.Rollback(); rollbackErr != nil {
+				log.Println("Ошибка отката транзакции:", rollbackErr)
+			}
 		}
 	}()
 
