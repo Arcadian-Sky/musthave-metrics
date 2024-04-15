@@ -55,6 +55,41 @@ func (m *MemStorage) GetJSONMetric(metric *models.Metrics) error {
 	return nil
 }
 
+func (m *MemStorage) GetJSONMetrics(metric *[]models.Metrics) error {
+	// metricType, err := storage.GetMetricTypeByCode(metric.MType)
+
+	// if err != nil {
+	// 	return err
+	// }
+
+	// if _, ok := m.metrics[metricType]; !ok {
+	// 	m.metrics[metricType] = make(map[string]interface{})
+	// }
+	// realVal := m.metrics[metricType][metric.ID]
+	// switch metricType {
+	// case storage.Gauge:
+	// 	if f, ok := realVal.(float64); ok {
+	// 		metric.Value = &f
+	// 	} else {
+	// 		zeroValue := float64(0)
+	// 		metric.Value = &zeroValue
+	// 	}
+	// case storage.Counter:
+	// 	if i, ok := realVal.(int64); ok {
+	// 		metric.Delta = &i
+	// 	} else {
+	// 		zeroValue := int64(0)
+	// 		metric.Delta = &zeroValue
+	// 	}
+	// 	// fmt.Printf("Get saved metric.Delta: %v\n", realVal)
+	// 	// fmt.Printf("Get returned metric.Delta: %v\n", *metric.Delta)
+	// default:
+	// 	return fmt.Errorf("invalid metric type")
+	// }
+
+	return nil
+}
+
 func (m *MemStorage) UpdateJSONMetric(metric *models.Metrics) error {
 	metricType, err := storage.GetMetricTypeByCode(metric.MType)
 
@@ -125,6 +160,12 @@ func (m *MemStorage) UpdateMetric(mtype string, name string, value string) error
 	default:
 		return fmt.Errorf("invalid metric type")
 	}
+
+	return nil
+}
+
+func (m *MemStorage) UpdateJSONMetrics(metrics *[]models.Metrics) error {
+	// var metricType MetricType
 
 	return nil
 }

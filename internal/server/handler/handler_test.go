@@ -73,23 +73,26 @@ func InitRouter() chi.Router {
 	})
 	// GET http://localhost:8080/value/counter/testSetGet163
 
-	r.Get("/", handler.MetricsHandlerFunc)
+	r.Post("/updates/", handler.UpdateJSONMetricsHandlerFunc)
+
 	r.Route("/update", func(r chi.Router) {
-		r.Post("/", handler.UpdateMetricsHandlerFunc)
+		r.Post("/", handler.UpdateJSONMetricHandlerFunc)
 		r.Route("/{type}", func(r chi.Router) {
 			r.Post("/", handler.UpdateMetricsHandlerFunc)
 			r.Post("/{name}", handler.UpdateMetricsHandlerFunc)
+			r.Post("/{name}/", handler.UpdateMetricsHandlerFunc)
 			r.Post("/{name}/{value}", handler.UpdateMetricsHandlerFunc)
 			r.Post("/{name}/{value}/", handler.UpdateMetricsHandlerFunc)
+			r.Get("/{name}/{value}/", handler.UpdateMetricsHandlerFunc)
+
 		})
 	})
-
 	r.Route("/value", func(r chi.Router) {
-		r.Get("/", handler.GetMetricsHandlerFunc)
+		r.Post("/", handler.GetMetricsJSONHandlerFunc)
 		r.Route("/{type}", func(r chi.Router) {
-			r.Get("/", handler.GetMetricsHandlerFunc)
-			r.Get("/{name}", handler.GetMetricsHandlerFunc)
-			r.Get("/{name}/", handler.GetMetricsHandlerFunc)
+			r.Get("/", handler.GetMetricHandlerFunc)
+			r.Get("/{name}", handler.GetMetricHandlerFunc)
+			r.Get("/{name}/", handler.GetMetricHandlerFunc)
 		})
 	})
 
