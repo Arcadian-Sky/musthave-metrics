@@ -58,7 +58,7 @@ func InitRouter(handler handler.Handler) chi.Router {
 	})
 	r.Route("/value", func(r chi.Router) {
 		r.Post("/", handler.GetMetricsJSONHandlerFunc)
-		// r.Get("/", handler.GetMetricsHandlerFunc)
+		r.Get("/", handler.GetMetricHandlerFunc)
 		r.Route("/{type}", func(r chi.Router) {
 			r.Get("/", handler.GetMetricHandlerFunc)
 			r.Get("/{name}", handler.GetMetricHandlerFunc)
