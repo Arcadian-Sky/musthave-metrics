@@ -1,6 +1,7 @@
 package inmemory
 
 import (
+	"context"
 	"reflect"
 	"testing"
 
@@ -65,7 +66,8 @@ func TestMemStorage_UpdateMetric(t *testing.T) {
 			m := &MemStorage{
 				metrics: tt.fields.metrics,
 			}
-			if err := m.UpdateMetric(tt.args.mtype, tt.args.name, tt.args.value); (err != nil) != tt.wantErr {
+			ctx := context.TODO()
+			if err := m.UpdateMetric(ctx, tt.args.mtype, tt.args.name, tt.args.value); (err != nil) != tt.wantErr {
 				t.Errorf("MemStorage.UpdateMetric() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -120,7 +122,8 @@ func TestMemStorage_GetMetric(t *testing.T) {
 			m := &MemStorage{
 				metrics: tt.metrics,
 			}
-			got := m.GetMetric(tt.mtype)
+			ctx := context.TODO()
+			got := m.GetMetric(ctx, tt.mtype)
 			if len(got) == 0 && len(tt.want) == 0 {
 			} else if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("MemStorage.GetMetric() = %v, want %v", got, tt.want)
@@ -210,7 +213,8 @@ func TestMemStorage_GetMetrics(t *testing.T) {
 			m := &MemStorage{
 				metrics: tt.fields.metrics,
 			}
-			if got := m.GetMetrics(); !reflect.DeepEqual(got, tt.want) {
+			ctx := context.TODO()
+			if got := m.GetMetrics(ctx); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("MemStorage.GetMetrics() = %v, want %v", got, tt.want)
 			}
 		})
@@ -280,7 +284,8 @@ func TestMemStorage_UpdateJSONMetric(t *testing.T) {
 			m := &MemStorage{
 				metrics: tt.fields.metrics,
 			}
-			if err := m.UpdateJSONMetric(tt.args.metric); (err != nil) != tt.wantErr {
+			ctx := context.TODO()
+			if err := m.UpdateJSONMetric(ctx, tt.args.metric); (err != nil) != tt.wantErr {
 				t.Errorf("MemStorage.UpdateJSONMetric() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
