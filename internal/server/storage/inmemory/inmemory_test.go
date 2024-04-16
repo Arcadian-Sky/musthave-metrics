@@ -12,6 +12,64 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestMemStorage_GetMetric(t *testing.T) {
+	// Define some sample data for the test cases
+	gaugeMetrics := map[string]interface{}{
+		"cpu_usage":    0.75,
+		"memory_usage": 0.85,
+	}
+	counterMetrics := map[string]interface{}{
+		"requests_count": 100,
+		"errors_count":   5,
+	}
+
+	// Populate the test cases
+	tests := []struct {
+		name    string
+		metrics map[storage.MetricType]map[string]interface{}
+		mtype   storage.MetricType
+		want    map[string]interface{}
+	}{
+		{
+			name:    "EmptyStorage",
+			metrics: map[storage.MetricType]map[string]interface{}{},
+			mtype:   storage.Gauge,
+			want:    map[string]interface{}{},
+		},
+		{
+			name: "GaugeMetrics",
+			metrics: map[storage.MetricType]map[string]interface{}{
+				storage.Gauge: gaugeMetrics,
+			},
+			mtype: storage.Gauge,
+			want:  gaugeMetrics,
+		},
+		{
+			name: "CounterMetrics",
+			metrics: map[storage.MetricType]map[string]interface{}{
+				storage.Counter: counterMetrics,
+			},
+			mtype: storage.Counter,
+			want:  counterMetrics,
+		},
+	}
+
+	// Iterate over test cases
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := &MemStorage{
+				metrics: tt.metrics,
+			}
+			ctx := context.TODO()
+			got := m.GetMetric(ctx, tt.mtype)
+			if len(got) == 0 && len(tt.want) == 0 {
+			} else if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("MemStorage.GetMetric() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestMemStorage_UpdateMetric(t *testing.T) {
 	type fields struct {
 		metrics map[storage.MetricType]map[string]interface{}
@@ -77,60 +135,294 @@ func TestMemStorage_UpdateMetric(t *testing.T) {
 	}
 }
 
-func TestMemStorage_GetMetric(t *testing.T) {
-	// Define some sample data for the test cases
-	gaugeMetrics := map[string]interface{}{
-		"cpu_usage":    0.75,
-		"memory_usage": 0.85,
+func TestMemStorage_GetJSONMetric(t *testing.T) {
+	type fields struct {
+		metrics map[storage.MetricType]map[string]interface{}
 	}
-	counterMetrics := map[string]interface{}{
-		"requests_count": 100,
-		"errors_count":   5,
+	mtypeGauge := "gauge"
+	mtypeCounter := "counter"
+	type args struct {
+		ctx    context.Context
+		metric *models.Metrics
 	}
-
-	// Populate the test cases
 	tests := []struct {
 		name    string
-		metrics map[storage.MetricType]map[string]interface{}
-		mtype   storage.MetricType
-		want    map[string]interface{}
+		fields  fields
+		args    args
+		want    string
+		wantErr bool
 	}{
 		{
-			name:    "EmptyStorage",
-			metrics: map[storage.MetricType]map[string]interface{}{},
-			mtype:   storage.Gauge,
-			want:    map[string]interface{}{},
+			name: "empty metrics storage",
+			fields: fields{
+				metrics: map[storage.MetricType]map[string]interface{}{},
+			},
+			args: args{
+				ctx: context.TODO(),
+				metric: &models.Metrics{
+					MType: mtypeGauge,
+				},
+			},
+			want:    `{"id":"","type":"gauge","value":0}`,
+			wantErr: false,
 		},
 		{
-			name: "GaugeMetrics",
-			metrics: map[storage.MetricType]map[string]interface{}{
-				storage.Gauge: gaugeMetrics,
+			name: "metrics storage with only gauge metrics",
+			fields: fields{
+				metrics: map[storage.MetricType]map[string]interface{}{
+					storage.Gauge: {
+						"metric1": float64(10.5),
+						"metric2": float64(20.7),
+					},
+					storage.Counter: {
+						"metric3": int64(5),
+						"metric4": int64(8),
+					},
+				},
 			},
-			mtype: storage.Gauge,
-			want:  gaugeMetrics,
+			args: args{
+				ctx: context.TODO(),
+				metric: &models.Metrics{
+					MType: mtypeGauge,
+				},
+			},
+			want:    `{"id":"","type":"gauge","value":0}`,
+			wantErr: false,
 		},
 		{
-			name: "CounterMetrics",
-			metrics: map[storage.MetricType]map[string]interface{}{
-				storage.Counter: counterMetrics,
+			name: "metrics storage with only counter metrics",
+			fields: fields{
+				metrics: map[storage.MetricType]map[string]interface{}{
+					storage.Gauge: {
+						"metric1": float64(10.5),
+						"metric2": float64(20.7),
+					},
+					storage.Counter: {
+						"metric3": int64(5),
+						"metric4": int64(8),
+					},
+				},
 			},
-			mtype: storage.Counter,
-			want:  counterMetrics,
+			args: args{
+				ctx: context.TODO(),
+				metric: &models.Metrics{
+					MType: mtypeCounter,
+				},
+			},
+			want:    `{"id":"","type":"counter","delta":0}`,
+			wantErr: false,
+		},
+		{
+			name: "metrics storage with both gauge and counter metrics",
+			fields: fields{
+				metrics: map[storage.MetricType]map[string]interface{}{
+					storage.Gauge: {
+						"metric1": float64(10.5),
+						"metric2": float64(20.7),
+					},
+					storage.Counter: {
+						"metric3": int64(5),
+						"metric4": int64(8),
+					},
+				},
+			},
+			args: args{
+				ctx: context.TODO(),
+				metric: &models.Metrics{
+					MType: mtypeGauge,
+				},
+			},
+			want:    `{"id":"","type":"gauge","value":0}`,
+			wantErr: false,
+		},
+		{
+			name: "metrics storage with both gauge and counter metrics 1",
+			fields: fields{
+				metrics: map[storage.MetricType]map[string]interface{}{
+					storage.Gauge: {
+						"metric1": float64(10.5),
+						"metric2": float64(20.7),
+					},
+					storage.Counter: {
+						"metric3": int64(5),
+						"metric4": int64(8),
+					},
+				},
+			},
+			args: args{
+				ctx: context.TODO(),
+				metric: &models.Metrics{
+					MType: mtypeCounter,
+					ID:    "metric4",
+				},
+			},
+			want:    `{"id":"metric4","type":"counter","delta":8}`,
+			wantErr: false,
+		},
+		{
+			name: "metrics storage with both gauge and counter metrics 2",
+			fields: fields{
+				metrics: map[storage.MetricType]map[string]interface{}{
+					storage.Gauge: {
+						"metric1": float64(10.5),
+						"metric2": float64(20.7),
+					},
+					storage.Counter: {
+						"metric3": int64(5),
+						"metric4": int64(8),
+					},
+				},
+			},
+			args: args{
+				ctx: context.TODO(),
+				metric: &models.Metrics{
+					MType: mtypeGauge,
+					ID:    "metric2",
+				},
+			},
+			want:    `{"id":"metric2","type":"gauge","value":20.7}`,
+			wantErr: false,
 		},
 	}
-
-	// Iterate over test cases
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := &MemStorage{
-				metrics: tt.metrics,
+				metrics: tt.fields.metrics,
+			}
+			// fmt.Printf("before: %v\n", tt.args.metric)
+			err := m.GetJSONMetric(tt.args.ctx, tt.args.metric)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("MemStorage.GetJSONMetric() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			// fmt.Printf("got: %v\n", tt.args.metric)
+
+			// Преобразуем указатель на структуру в JSON строку
+			jsonData, err := json.Marshal(tt.args.metric)
+			if err != nil {
+				fmt.Println("Ошибка при преобразовании в JSON:", err)
+				return
+			}
+
+			// fmt.Println(string(jsonData))
+
+			assert.Equal(t, tt.want, string(jsonData))
+
+		})
+	}
+}
+
+func TestMemStorage_UpdateJSONMetric(t *testing.T) {
+	mtypeGauge := "gauge"
+	mtypeCounter := "counter"
+	type fields struct {
+		metrics map[storage.MetricType]map[string]interface{}
+	}
+	var f100 = float64(100)
+	var f200 = float64(200)
+	var i300 = int64(300)
+	tests := []struct {
+		name    string
+		fields  fields
+		args    models.Metrics
+		wantErr bool
+		want    string
+	}{
+		{
+			name: "UpdateGaugeMetric",
+			fields: fields{
+				metrics: map[storage.MetricType]map[string]interface{}{
+					storage.Gauge: {
+						"metric1": float64(10.5),
+						"metric2": float64(20.7),
+					},
+					storage.Counter: {
+						"metric3": int64(5),
+						"metric4": int64(8),
+					},
+				},
+			},
+			args: models.Metrics{
+				MType: mtypeGauge,
+				ID:    "metric2",
+				Value: &f200,
+			},
+			want:    `200`,
+			wantErr: false,
+		},
+		{
+			name: "UpdateCounterMetric",
+			fields: fields{
+				metrics: map[storage.MetricType]map[string]interface{}{
+					storage.Gauge: {
+						"metric1": float64(10.5),
+						"metric2": float64(20.7),
+					},
+					storage.Counter: {
+						"metric3": int64(5),
+						"metric4": int64(8),
+					},
+				},
+			},
+			args: models.Metrics{
+				MType: mtypeCounter,
+				ID:    "metric4",
+				Delta: &i300,
+			},
+			want:    `308`,
+			wantErr: false,
+		},
+		{
+			name: "InvalidMetricType",
+			fields: fields{
+				metrics: map[storage.MetricType]map[string]interface{}{
+					storage.Gauge:   {"metric1": 123.45, "metric2": 678.90},
+					storage.Counter: {"metric3": 100, "metric4": 200},
+				},
+			},
+			args: models.Metrics{
+				MType: "incorrect",
+				ID:    "metric5",
+				Value: &f100,
+			},
+			want:    `null`,
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := &MemStorage{
+				metrics: tt.fields.metrics,
 			}
 			ctx := context.TODO()
-			got := m.GetMetric(ctx, tt.mtype)
-			if len(got) == 0 && len(tt.want) == 0 {
-			} else if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("MemStorage.GetMetric() = %v, want %v", got, tt.want)
+			// fmt.Printf("m.GetMetrics(ctx): %v\n", m.GetMetrics(ctx))
+			err := m.UpdateJSONMetric(ctx, &tt.args)
+			// fmt.Printf("m.GetMetrics(ctx)2: %v\n", m.GetMetrics(ctx))
+
+			if (err != nil) && !tt.wantErr {
+				t.Errorf("MemStorage.UpdateJSONMetric() error = %v, wantErr %v", err, tt.wantErr)
 			}
+			// Преобразуем указатель на структуру в JSON строку
+			// jsonData, err := json.Marshal(tt.args)
+			// if err != nil {
+			// 	fmt.Println("Ошибка при преобразовании в JSON:", err)
+			// 	return
+			// }
+
+			if tt.want != "" {
+				mtype, _ := storage.GetMetricTypeByCode(tt.args.MType)
+				jsonData, err := json.Marshal(m.metrics[mtype][tt.args.ID])
+				if err != nil {
+					fmt.Println("Ошибка при преобразовании в JSON:", err)
+					return
+				}
+				fmt.Printf("tt.args: %v\n", string(jsonData))
+
+				assert.Equal(t, tt.want, string(jsonData))
+			}
+
+			// fmt.Printf("tt.args: %v\n", tt.args)
+
 		})
 	}
 }
@@ -224,20 +516,116 @@ func TestMemStorage_GetMetrics(t *testing.T) {
 	}
 }
 
-func TestMemStorage_UpdateJSONMetric(t *testing.T) {
+func TestMemStorage_SetMetrics(t *testing.T) {
 	type fields struct {
 		metrics map[storage.MetricType]map[string]interface{}
 	}
 	type args struct {
-		metric *models.Metrics
+		ctx     context.Context
+		metrics map[storage.MetricType]map[string]interface{}
 	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+	}{
+		{
+			name: "set metrics",
+			fields: fields{
+				metrics: map[storage.MetricType]map[string]interface{}{},
+			},
+			args: args{
+				ctx: context.TODO(),
+				metrics: map[storage.MetricType]map[string]interface{}{
+					storage.Gauge: {
+						"metric1": 10.5,
+						"metric2": 20.7,
+					},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := &MemStorage{
+				metrics: tt.fields.metrics,
+			}
+			m.SetMetrics(tt.args.ctx, tt.args.metrics)
+			assert.Equal(t, tt.args.metrics, m.metrics)
+		})
+	}
+}
+
+func TestMemStorage_UpdateJSONMetrics(t *testing.T) {
+	mtypeGauge := "gauge"
+	mtypeCounter := "counter"
+	type fields struct {
+		metrics map[storage.MetricType]map[string]interface{}
+	}
+	var f100 = float64(100)
+	var f200 = float64(200)
+	var i300 = int64(300)
 	tests := []struct {
 		name    string
 		fields  fields
-		args    args
+		args    []models.Metrics
 		wantErr bool
+		want    string
 	}{
-		// TODO: Add test cases.
+		{
+			name: "UpdateGaugeMetric",
+			fields: fields{
+				metrics: map[storage.MetricType]map[string]interface{}{
+					storage.Gauge:   {"metric1": 123.45, "metric2": 678.90},
+					storage.Counter: {"metric3": 100, "metric4": 200},
+				},
+			},
+			args: []models.Metrics{
+				{
+					MType: mtypeGauge,
+					ID:    "metric4",
+					Value: &f200,
+				},
+			},
+			want:    `[{"id":"metric4","type":"gauge","value":200}]`,
+			wantErr: false,
+		},
+		{
+			name: "UpdateCounterMetric",
+			fields: fields{
+				metrics: map[storage.MetricType]map[string]interface{}{
+					storage.Gauge:   {"metric1": 123.45, "metric2": 678.90},
+					storage.Counter: {"metric3": 100, "metric4": 200},
+				},
+			},
+			args: []models.Metrics{
+				{
+					MType: mtypeCounter,
+					ID:    "metric4",
+					Delta: &i300,
+				},
+			},
+			want:    `[{"id":"metric4","type":"counter","delta":300}]`,
+			wantErr: false,
+		},
+		{
+			name: "InvalidMetricType",
+			fields: fields{
+				metrics: map[storage.MetricType]map[string]interface{}{
+					storage.Gauge:   {"metric1": 123.45, "metric2": 678.90},
+					storage.Counter: {"metric3": 100, "metric4": 200},
+				},
+			},
+			args: []models.Metrics{
+				{
+					MType: "incorrect",
+					ID:    "metric5",
+					Value: &f100,
+				},
+			},
+			want:    `[{"id":"metric5","type":"incorrect","value":100}]`,
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -245,177 +633,24 @@ func TestMemStorage_UpdateJSONMetric(t *testing.T) {
 				metrics: tt.fields.metrics,
 			}
 			ctx := context.TODO()
-			if err := m.UpdateJSONMetric(ctx, tt.args.metric); (err != nil) != tt.wantErr {
-				t.Errorf("MemStorage.UpdateJSONMetric() error = %v, wantErr %v", err, tt.wantErr)
+			err := m.UpdateJSONMetrics(ctx, &tt.args)
+			if err != nil && !tt.wantErr {
+				t.Errorf("MemStorage.UpdateJSONMetrics() error = %v, wantErr %v", err, tt.wantErr)
 			}
-		})
-	}
-}
-
-func TestMemStorage_GetJSONMetric(t *testing.T) {
-	type fields struct {
-		metrics map[storage.MetricType]map[string]interface{}
-	}
-	mtypeGauge := "gauge"
-	mtypeCounter := "counter"
-	type args struct {
-		ctx    context.Context
-		metric *models.Metrics
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		want    string
-		wantErr bool
-	}{
-		{
-			name: "empty metrics storage",
-			fields: fields{
-				metrics: map[storage.MetricType]map[string]interface{}{},
-			},
-			args: args{
-				ctx: context.TODO(),
-				metric: &models.Metrics{
-					MType: mtypeGauge,
-				},
-			},
-			want:    `{"id":"","type":"gauge","value":0}`,
-			wantErr: false,
-		},
-		{
-			name: "metrics storage with only gauge metrics",
-			fields: fields{
-				metrics: map[storage.MetricType]map[string]interface{}{
-					storage.Gauge: {
-						"metric1": 10.5,
-						"metric2": 20.7,
-					},
-				},
-			},
-			args: args{
-				ctx: context.TODO(),
-				metric: &models.Metrics{
-					MType: mtypeGauge,
-				},
-			},
-			want:    `{"id":"","type":"gauge","value":0}`,
-			wantErr: false,
-		},
-		{
-			name: "metrics storage with only counter metrics",
-			fields: fields{
-				metrics: map[storage.MetricType]map[string]interface{}{
-					storage.Counter: {
-						"metric1": 5,
-						"metric2": 8,
-					},
-				},
-			},
-			args: args{
-				ctx: context.TODO(),
-				metric: &models.Metrics{
-					MType: mtypeCounter,
-				},
-			},
-			want:    `{"id":"","type":"counter","delta":0}`,
-			wantErr: false,
-		},
-		{
-			name: "metrics storage with both gauge and counter metrics",
-			fields: fields{
-				metrics: map[storage.MetricType]map[string]interface{}{
-					storage.Gauge: {
-						"metric1": 10.5,
-						"metric2": 20.7,
-					},
-					storage.Counter: {
-						"metric3": 5,
-						"metric4": 8,
-					},
-				},
-			},
-			args: args{
-				ctx: context.TODO(),
-				metric: &models.Metrics{
-					MType: mtypeGauge,
-				},
-			},
-			want:    `{"id":"","type":"gauge","value":0}`,
-			wantErr: false,
-		},
-		{
-			name: "metrics storage with both gauge and counter metrics 1",
-			fields: fields{
-				metrics: map[storage.MetricType]map[string]interface{}{
-					storage.Gauge: {
-						"metric1": 10.5,
-						"metric2": 20.7,
-					},
-					storage.Counter: {
-						"metric3": int64(5),
-						"metric4": int64(8),
-					},
-				},
-			},
-			args: args{
-				ctx: context.TODO(),
-				metric: &models.Metrics{
-					MType: mtypeCounter,
-					ID:    "metric4",
-				},
-			},
-			want:    `{"id":"metric4","type":"counter","delta":8}`,
-			wantErr: false,
-		},
-		{
-			name: "metrics storage with both gauge and counter metrics 2",
-			fields: fields{
-				metrics: map[storage.MetricType]map[string]interface{}{
-					storage.Gauge: {
-						"metric1": float64(10.5),
-						"metric2": float64(20.7),
-					},
-					storage.Counter: {
-						"metric3": int64(5),
-						"metric4": int64(8),
-					},
-				},
-			},
-			args: args{
-				ctx: context.TODO(),
-				metric: &models.Metrics{
-					MType: mtypeGauge,
-					ID:    "metric2",
-				},
-			},
-			want:    `{"id":"metric2","type":"gauge","value":20.7}`,
-			wantErr: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			m := &MemStorage{
-				metrics: tt.fields.metrics,
-			}
-			// fmt.Printf("before: %v\n", tt.args.metric)
-			err := m.GetJSONMetric(tt.args.ctx, tt.args.metric)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("MemStorage.GetJSONMetric() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			// fmt.Printf("got: %v\n", tt.args.metric)
 
 			// Преобразуем указатель на структуру в JSON строку
-			jsonData, err := json.Marshal(tt.args.metric)
+			jsonData, err := json.Marshal(tt.args)
 			if err != nil {
 				fmt.Println("Ошибка при преобразовании в JSON:", err)
 				return
 			}
 
-			// fmt.Println(string(jsonData))
+			if tt.want != "" {
+				assert.Equal(t, tt.want, string(jsonData))
+			}
 
-			assert.Equal(t, tt.want, string(jsonData))
+			fmt.Printf("tt.args: %v\n", string(jsonData))
+			// fmt.Printf("tt.args: %v\n", tt.args)
 
 		})
 	}
