@@ -1,6 +1,7 @@
 package inmemory
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 
@@ -20,7 +21,7 @@ func NewMemStorage() *MemStorage {
 	}
 }
 
-func (m *MemStorage) GetJSONMetric(metric *models.Metrics) error {
+func (m *MemStorage) GetJSONMetric(ctx context.Context, metric *models.Metrics) error {
 	metricType, err := storage.GetMetricTypeByCode(metric.MType)
 
 	if err != nil {
@@ -55,7 +56,7 @@ func (m *MemStorage) GetJSONMetric(metric *models.Metrics) error {
 	return nil
 }
 
-func (m *MemStorage) GetJSONMetrics(metric *[]models.Metrics) error {
+func (m *MemStorage) GetJSONMetrics(ctx context.Context, metric *[]models.Metrics) error {
 	// metricType, err := storage.GetMetricTypeByCode(metric.MType)
 
 	// if err != nil {
@@ -90,7 +91,7 @@ func (m *MemStorage) GetJSONMetrics(metric *[]models.Metrics) error {
 	return nil
 }
 
-func (m *MemStorage) UpdateJSONMetric(metric *models.Metrics) error {
+func (m *MemStorage) UpdateJSONMetric(ctx context.Context, metric *models.Metrics) error {
 	metricType, err := storage.GetMetricTypeByCode(metric.MType)
 
 	if err != nil {
@@ -128,7 +129,7 @@ func (m *MemStorage) UpdateJSONMetric(metric *models.Metrics) error {
 }
 
 // UpdateMetric обновляет значение метрики в хранилище
-func (m *MemStorage) UpdateMetric(mtype string, name string, value string) error {
+func (m *MemStorage) UpdateMetric(ctx context.Context, mtype string, name string, value string) error {
 	// var metricType MetricType
 	metricType, err := storage.GetMetricTypeByCode(mtype)
 	if err != nil {
@@ -164,24 +165,24 @@ func (m *MemStorage) UpdateMetric(mtype string, name string, value string) error
 	return nil
 }
 
-func (m *MemStorage) UpdateJSONMetrics(metrics *[]models.Metrics) error {
+func (m *MemStorage) UpdateJSONMetrics(ctx context.Context, metrics *[]models.Metrics) error {
 	// var metricType MetricType
 
 	return nil
 }
 
 // GetMetric возвращает текущие метрики из хранилища для типа
-func (m *MemStorage) GetMetric(mtype storage.MetricType) map[string]interface{} {
+func (m *MemStorage) GetMetric(ctx context.Context, mtype storage.MetricType) map[string]interface{} {
 	return m.metrics[mtype]
 }
 
 // GetMetrics возвращает текущие метрики из хранилища == getState
-func (m *MemStorage) GetMetrics() map[storage.MetricType]map[string]interface{} {
+func (m *MemStorage) GetMetrics(ctx context.Context) map[storage.MetricType]map[string]interface{} {
 	return m.metrics
 }
 
 // SetMetrics метод вызывается при инициализации для перезаписи всего хранилища == setState
-func (m *MemStorage) SetMetrics(metrics map[storage.MetricType]map[string]interface{}) {
+func (m *MemStorage) SetMetrics(ctx context.Context, metrics map[storage.MetricType]map[string]interface{}) {
 	m.metrics = metrics
 }
 
@@ -192,11 +193,13 @@ func (m *MemStorage) Ping() error {
 // CreateMemento - создает Memento на основе текущего состояния storage.MemStorage
 func (m *MemStorage) CreateMemento() *storage.Memento {
 	s := &storage.Memento{}
-	s.SetMetrics(m.GetMetrics())
+	ctx := context.TODO()
+	s.SetMetrics(m.GetMetrics(ctx))
 	return s
 }
 
 // RestoreFromMemento - восстанавливает состояние storage.MemStorage из Memento
 func (m *MemStorage) RestoreFromMemento(s *storage.Memento) {
-	m.SetMetrics(s.GetMetrics())
+	ctx := context.TODO()
+	m.SetMetrics(ctx, s.GetMetrics())
 }

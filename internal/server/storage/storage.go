@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/models"
@@ -16,17 +17,17 @@ const (
 
 // MetricsStorage определяет интерфейс для взаимодействия с хранилищем метрик
 type MetricsStorage interface {
-	GetMetric(mtype MetricType) map[string]interface{}
-	UpdateMetric(mtype string, name string, value string) error
+	GetMetric(ctx context.Context, mtype MetricType) map[string]interface{}
+	UpdateMetric(ctx context.Context, mtype string, name string, value string) error
 
-	GetJSONMetric(metric *models.Metrics) error
-	UpdateJSONMetric(metric *models.Metrics) error
+	GetJSONMetric(ctx context.Context, metric *models.Metrics) error
+	UpdateJSONMetric(ctx context.Context, metric *models.Metrics) error
 
 	// GetJSONMetrics(metrics *[]models.Metrics)
-	UpdateJSONMetrics(metrics *[]models.Metrics) error
+	UpdateJSONMetrics(ctx context.Context, metrics *[]models.Metrics) error
 
-	GetMetrics() map[MetricType]map[string]interface{}
-	SetMetrics(metrics map[MetricType]map[string]interface{})
+	GetMetrics(ctx context.Context) map[MetricType]map[string]interface{}
+	SetMetrics(ctx context.Context, metrics map[MetricType]map[string]interface{})
 
 	Ping() error
 }

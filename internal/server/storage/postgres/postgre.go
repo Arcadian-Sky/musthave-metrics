@@ -3,8 +3,14 @@ package postgres
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"log"
+	"strconv"
+	"time"
+
+	"github.com/jackc/pgerrcode"
+	"github.com/jackc/pgx/v5/pgconn"
 
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/models"
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/storage"
@@ -12,18 +18,56 @@ import (
 
 // PostgresStorage представляет хранилище метрик в PostgreSQL
 type PostgresStorage struct {
-	db *sql.DB
+	db                *sql.DB
+	retriableErrorMap map[string]bool
+	maxRetries        int
+	initialDelay      time.Duration
 }
 
 // NewPostgresStorage создает новый экземпляр PostgresStorage
 func NewPostgresStorage(db *sql.DB) *PostgresStorage {
-	p := &PostgresStorage{db: db}
+	p := &PostgresStorage{
+		db: db,
+		retriableErrorMap: map[string]bool{
+			pgerrcode.UniqueViolation: true,
+		},
+		maxRetries:   3,
+		initialDelay: time.Second,
+	}
 	err := p.CreateMetricsTable()
 	if err != nil {
 		panic(err)
 	}
 	return p
+}
 
+// executeWithRetry - функция для выполнения операции с повторными попытками
+func (p *PostgresStorage) executeWithRetry(ctx context.Context, operation func() error) error {
+	var err error
+	delay := p.initialDelay
+	for attempt := 0; attempt <= p.maxRetries; attempt++ {
+		if err = operation(); err == nil || !p.isRetriableError(err) {
+			return err
+		}
+
+		// Если ошибка retriable, ждем перед следующей попыткой
+		fmt.Printf("Retriable error occurred: %v. Retrying after %s...\n", err, delay)
+		select {
+		case <-time.After(delay):
+		case <-ctx.Done():
+			return ctx.Err()
+		}
+		delay *= 2 // Увеличиваем задержку перед следующей попыткой
+	}
+	return err
+}
+
+// isRetryableError - функция для проверки, является ли ошибка retriable
+func (p *PostgresStorage) isRetriableError(err error) bool {
+	if pgErr, ok := err.(*pgconn.PgError); ok {
+		return p.retriableErrorMap[pgErr.Code]
+	}
+	return false
 }
 
 func (p *PostgresStorage) getTableName() string {
@@ -55,71 +99,95 @@ func (p *PostgresStorage) CreateMetricsTable() error {
 	return nil
 }
 
-func (p *PostgresStorage) GetJSONMetric(metric *models.Metrics) error {
+func (p *PostgresStorage) GetJSONMetric(ctx context.Context, metric *models.Metrics) error {
 	query := fmt.Sprintf("SELECT name, type, counter, gauge FROM %s WHERE name = $1 AND type = $2", p.getTableName())
-	err := p.db.QueryRow(query, metric.ID, metric.MType).Scan(&metric.ID, &metric.MType, &metric.Delta, &metric.Value)
-	if metric.Value != nil {
-		fmt.Printf("get metrics V: %v\n", metric)
-		fmt.Printf("get metrics V: %v\n", *metric.Value)
-	}
+	row := p.db.QueryRowContext(ctx, query, metric.ID, metric.MType)
 
-	if metric.Delta != nil {
-		fmt.Printf("get metrics V: %v\n", metric)
-		fmt.Printf("get metrics D: %v\n", *metric.Delta)
-	}
+	var counter sql.NullInt64
+	var gauge sql.NullFloat64
+	err := row.Scan(&metric.ID, &metric.MType, &counter, &gauge)
 	if err != nil {
-		return fmt.Errorf("ошибка при извлечении метрики из базы данных: %v", err)
+		if errors.Is(err, sql.ErrNoRows) {
+			// return nil
+		} else {
+			// Возникла другая ошибка
+			return err
+		}
 	}
+
+	metricType, err := storage.GetMetricTypeByCode(metric.MType)
+	if err != nil {
+		return err
+	}
+	switch metricType {
+	case storage.Gauge:
+		if gauge.Valid {
+			metric.Value = &gauge.Float64
+		} else {
+			metric.Value = new(float64)
+		}
+	case storage.Counter:
+		if counter.Valid {
+			metric.Delta = &counter.Int64
+		} else {
+			metric.Delta = new(int64)
+		}
+	}
+
 	return nil
 }
 
-func (p *PostgresStorage) GetJSONMetrics(metric *[]models.Metrics) error {
+func (p *PostgresStorage) GetJSONMetrics(ctx context.Context, metric *[]models.Metrics) error {
 	return nil
 }
 
-func (p *PostgresStorage) UpdateJSONMetric(metric *models.Metrics) error {
-	query := fmt.Sprintf("INSERT INTO %s (name, type, counter, gauge) VALUES ($1, $2, $3, $4) ON CONFLICT (name, type) DO UPDATE SET counter = $3, gauge = $4", p.getTableName())
-	_, err := p.db.Exec(query, metric.ID, metric.MType, metric.Delta, metric.Value)
+func (p *PostgresStorage) UpdateJSONMetric(ctx context.Context, metric *models.Metrics) error {
+	mType, err := storage.GetMetricTypeByCode(metric.MType)
+	if err != nil {
+		return err
+	}
+	var query string
+	var value interface{}
+	switch mType {
+	case storage.Gauge:
+		if metric.Value == nil {
+			return nil
+		}
+		query = fmt.Sprintf(`
+				INSERT INTO %s (name, type, gauge)
+				VALUES ($1, 'gauge', $2)
+				ON CONFLICT (name, type) DO UPDATE
+				SET gauge = EXCLUDED.gauge
+			`, p.getTableName())
+		value = metric.Value
+	case storage.Counter:
+		if metric.Delta == nil {
+			return nil
+		}
+		var currentCounter sql.NullInt64
+		_ = p.db.QueryRowContext(ctx, "SELECT counter FROM "+p.getTableName()+" WHERE name = $1 AND type = 'counter'", metric.ID).Scan(&currentCounter)
+
+		*metric.Delta += currentCounter.Int64
+		fmt.Printf("metric.Delta: %v\n", metric.Delta)
+		query = "INSERT INTO " + p.getTableName() + " (name, type, counter)" +
+			" VALUES ($1, 'counter', $2)" +
+			" ON CONFLICT (name, type) DO UPDATE" +
+			" SET counter = EXCLUDED.counter"
+		value = metric.Delta
+	default:
+		return fmt.Errorf("неподдерживаемый тип метрики: %s", mType)
+	}
+
+	_, err = p.db.Exec(query, metric.ID, value)
+
 	if err != nil {
 		return fmt.Errorf("ошибка при обновлении метрики в базе данных: %v", err)
 	}
+
 	return nil
-
-	// mType, err := storage.GetMetricTypeByCode(metric.MType)
-	// if err != nil {
-	// 	return err
-	// }
-	// var query string
-	// var value interface{}
-	// switch mType {
-	// case storage.Gauge:
-	// 	query = fmt.Sprintf(`
-	// 			INSERT INTO %s (name, type, gauge)
-	// 			VALUES ($1, 'gauge', $2)
-	// 			ON CONFLICT (name, type) DO UPDATE
-	// 			SET gauge = EXCLUDED.gauge
-	// 		`, p.getTableName())
-	// 	value = metric.Value
-	// case storage.Counter:
-	// 	query = fmt.Sprintf(`INSERT INTO %s (name, type, counter)
-	// 		VALUES ($1, 'counter', COALESCE((SELECT counter FROM %s WHERE name = $1 AND type = 'counter'), 0) + $2)
-	// 		ON CONFLICT (name, type) DO UPDATE
-	// 		SET counter = EXCLUDED.counter;
-	// 		`, p.getTableName(), p.getTableName())
-	// 	value = metric.Delta
-	// default:
-	// 	return fmt.Errorf("неподдерживаемый тип метрики: %s", mType)
-	// }
-
-	// // query := fmt.Sprintf("INSERT INTO %s (name, type, counter, gauge) VALUES ($1, $2, $3, $4) ON CONFLICT (name, type) DO UPDATE SET counter = $3, gauge = $4", p.getTableName())
-	// _, err = p.db.Exec(query, metric.ID, value)
-	// if err != nil {
-	// 	return fmt.Errorf("ошибка при обновлении метрики в базе данных: %v", err)
-	// }
-	// return nil
 }
 
-func (p *PostgresStorage) UpdateMetric(mtype string, name string, value string) error {
+func (p *PostgresStorage) UpdateMetric(ctx context.Context, mtype string, name string, value string) error {
 	// Получаем тип метрики
 	metricType, err := storage.GetMetricTypeByCode(mtype)
 	if err != nil {
@@ -128,35 +196,52 @@ func (p *PostgresStorage) UpdateMetric(mtype string, name string, value string) 
 
 	// Определяем запрос SQL в зависимости от типа метрики
 	var query string
+	var reValue interface{}
 	switch metricType {
 	case storage.Gauge:
-		query = fmt.Sprintf(`
-            INSERT INTO %s (name, type, gauge)
-            VALUES ($1, 'gauge', $2)
-            ON CONFLICT (name, type) DO UPDATE
-            SET gauge = EXCLUDED.gauge
-        `, p.getTableName())
+		query = "INSERT INTO " + p.getTableName() + " (name, type, gauge)" +
+			"VALUES ($1, 'gauge', $2)" +
+			"ON CONFLICT (name, type) DO UPDATE" +
+			"SET gauge = EXCLUDED.gauge"
+		if floatValue, err := strconv.ParseFloat(value, 64); err == nil {
+			reValue = floatValue
+		}
 	case storage.Counter:
-		query = fmt.Sprintf(`
-		INSERT INTO %s (name, type, counter)
-		VALUES ($1, 'counter', $2)
-		ON CONFLICT (name, type) DO UPDATE
-		SET counter = EXCLUDED.counter
-	`, p.getTableName())
+		if intValue, err := strconv.ParseInt(value, 10, 64); err == nil {
+			var currentCounter sql.NullInt64
+			err := p.executeWithRetry(context.Background(), func() error {
+				return p.db.QueryRowContext(ctx, "SELECT counter FROM "+p.getTableName()+" WHERE name = $1 AND type = 'counter'", name).Scan(&currentCounter)
+			})
+			if err != nil {
+				return err
+			}
+			reValue = currentCounter.Int64 + intValue
+			query = "INSERT INTO " + p.getTableName() + " (name, type, counter)" +
+				" VALUES ($1, 'counter', $2)" +
+				" ON CONFLICT (name, type) DO UPDATE" +
+				" SET counter = EXCLUDED.counter"
+		} else {
+			return fmt.Errorf("invalid metric value: %v", err)
+		}
+
 	default:
-		return fmt.Errorf("неподдерживаемый тип метрики: %s", mtype)
+		return fmt.Errorf("неподдерживаемый тип метрики: %s", metricType)
 	}
 
 	// Выполняем SQL запрос
-	_, err = p.db.Exec(query, name, value)
+	err = p.executeWithRetry(context.Background(), func() error {
+		_, err = p.db.Exec(query, name, reValue)
+		return err
+	})
+
 	if err != nil {
 		return fmt.Errorf("ошибка при обновлении метрики в базе данных: %v", err)
 	}
 	return nil
 }
 
-func (p *PostgresStorage) UpdateJSONMetrics(metrics *[]models.Metrics) error {
-	ctx := context.Background()
+func (p *PostgresStorage) UpdateJSONMetrics(ctx context.Context, metrics *[]models.Metrics) error {
+	// ctxB := context.Background()
 
 	// Начинаем транзакцию
 	tx, err := p.db.Begin()
@@ -220,7 +305,7 @@ func (p *PostgresStorage) UpdateJSONMetrics(metrics *[]models.Metrics) error {
 	return nil
 }
 
-func (p *PostgresStorage) GetMetric(mtype storage.MetricType) map[string]interface{} {
+func (p *PostgresStorage) GetMetric(ctx context.Context, mtype storage.MetricType) map[string]interface{} {
 	var query string
 	var metrics map[string]interface{}
 	fmt.Printf("mtype: %v\n", mtype)
@@ -270,7 +355,7 @@ func (p *PostgresStorage) GetMetric(mtype storage.MetricType) map[string]interfa
 }
 
 // TODO:Add support error handling
-func (p *PostgresStorage) SetMetrics(metrics map[storage.MetricType]map[string]interface{}) {
+func (p *PostgresStorage) SetMetrics(ctx context.Context, metrics map[storage.MetricType]map[string]interface{}) {
 	// Начало транзакции
 	tx, err := p.db.Begin()
 	if err != nil {
@@ -326,7 +411,7 @@ func (p *PostgresStorage) SetMetrics(metrics map[storage.MetricType]map[string]i
 }
 
 // TODO:Add support error handling
-func (p *PostgresStorage) GetMetrics() map[storage.MetricType]map[string]interface{} {
+func (p *PostgresStorage) GetMetrics(ctx context.Context) map[storage.MetricType]map[string]interface{} {
 	metrics := make(map[storage.MetricType]map[string]interface{})
 	query := fmt.Sprintf("SELECT name, type, counter, gauge FROM %s", p.getTableName())
 
