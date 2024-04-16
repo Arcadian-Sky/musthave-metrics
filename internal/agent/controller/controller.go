@@ -134,8 +134,10 @@ func (c *CollectAndSendMetricsService) sendMetricJSONValues(m []interface{}) err
 
 	// Отправляем запрос на сервер
 	resp, err := client.Post(url, "application/json", bytes.NewBuffer(jsonData))
-
-	// fmt.Printf("Metric sent: %s\n", m.ID)
+	if err != nil {
+		fmt.Printf("Metrics did not sent: \n")
+		return err
+	}
 	defer resp.Body.Close()
 
 	return nil
