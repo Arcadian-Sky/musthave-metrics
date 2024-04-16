@@ -37,6 +37,8 @@ func (c *CollectAndSendMetricsService) Run() {
 			if err != nil {
 				fmt.Println("Error sending metrics:", err)
 			}
+			c.sendPack(metrics, pollCount)
+
 			pollCount = pollCount + 1
 			time.Sleep(c.config.GetPollInterval())
 		}
@@ -88,25 +90,22 @@ func (c *CollectAndSendMetricsService) send(metrics map[string]interface{}, poll
 }
 
 func (c *CollectAndSendMetricsService) sendPack(metrics map[string]interface{}, pollCount int) error {
+	var forSend []interface{}
 	for metricType, value := range metrics {
 		mValue := value.(float64)
-		metric := models.Metrics{
+		forSend = append(forSend, models.Metrics{
 			ID:    metricType,
 			MType: "gauge",
 			Value: &mValue,
-		}
-		err := c.sendMetricJSONValue(metric)
-		if err != nil {
-			return err
-		}
+		})
 	}
 	mValue := int64(pollCount)
-	metric := models.Metrics{
+	forSend = append(forSend, models.Metrics{
 		ID:    "PollCount",
 		MType: "counter",
 		Delta: &mValue,
-	}
-	err := c.sendMetricJSONValue(metric)
+	})
+	err := c.sendMetricJSONValues(forSend)
 	if err != nil {
 		return err
 	}
@@ -115,6 +114,29 @@ func (c *CollectAndSendMetricsService) sendPack(metrics map[string]interface{}, 
 }
 
 // Отправляем запрос на сервер
+func (c *CollectAndSendMetricsService) sendMetricJSONValues(m []interface{}) error {
+	client := &http.Client{
+		Timeout: 2 * time.Second,
+	}
+
+	jsonData, err := json.Marshal(m)
+	if err != nil {
+		fmt.Println("Error marshaling metrics:", err)
+		return err
+	}
+
+	// Формируем адрес запроса
+	url := fmt.Sprintf("%s/updates", c.config.GetServerAddress())
+
+	// Отправляем запрос на сервер
+	resp, err := client.Post(url, "application/json", bytes.NewBuffer(jsonData))
+
+	// fmt.Printf("Metric sent: %s\n", m.ID)
+	defer resp.Body.Close()
+
+	return nil
+}
+
 func (c *CollectAndSendMetricsService) sendMetricJSONValue(m models.Metrics) error {
 	client := &http.Client{
 		Timeout: 2 * time.Second,
