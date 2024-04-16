@@ -5,6 +5,7 @@
 package mock
 
 import (
+	context "context"
 	reflect "reflect"
 
 	models "github.com/Arcadian-Sky/musthave-metrics/internal/server/models"
@@ -36,45 +37,45 @@ func (m *MockMetricsStorage) EXPECT() *MockMetricsStorageMockRecorder {
 }
 
 // GetJSONMetric mocks base method.
-func (m *MockMetricsStorage) GetJSONMetric(metric *models.Metrics) error {
+func (m *MockMetricsStorage) GetJSONMetric(ctx context.Context, metric *models.Metrics) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetJSONMetric", metric)
+	ret := m.ctrl.Call(m, "GetJSONMetric", ctx, metric)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // GetJSONMetric indicates an expected call of GetJSONMetric.
-func (mr *MockMetricsStorageMockRecorder) GetJSONMetric(metric interface{}) *gomock.Call {
+func (mr *MockMetricsStorageMockRecorder) GetJSONMetric(ctx, metric interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetJSONMetric", reflect.TypeOf((*MockMetricsStorage)(nil).GetJSONMetric), metric)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetJSONMetric", reflect.TypeOf((*MockMetricsStorage)(nil).GetJSONMetric), ctx, metric)
 }
 
 // GetMetric mocks base method.
-func (m *MockMetricsStorage) GetMetric(mtype storage.MetricType) map[string]interface{} {
+func (m *MockMetricsStorage) GetMetric(ctx context.Context, mtype storage.MetricType) map[string]interface{} {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetMetric", mtype)
+	ret := m.ctrl.Call(m, "GetMetric", ctx, mtype)
 	ret0, _ := ret[0].(map[string]interface{})
 	return ret0
 }
 
 // GetMetric indicates an expected call of GetMetric.
-func (mr *MockMetricsStorageMockRecorder) GetMetric(mtype interface{}) *gomock.Call {
+func (mr *MockMetricsStorageMockRecorder) GetMetric(ctx, mtype interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMetric", reflect.TypeOf((*MockMetricsStorage)(nil).GetMetric), mtype)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMetric", reflect.TypeOf((*MockMetricsStorage)(nil).GetMetric), ctx, mtype)
 }
 
 // GetMetrics mocks base method.
-func (m *MockMetricsStorage) GetMetrics() map[storage.MetricType]map[string]interface{} {
+func (m *MockMetricsStorage) GetMetrics(ctx context.Context) map[storage.MetricType]map[string]interface{} {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetMetrics")
+	ret := m.ctrl.Call(m, "GetMetrics", ctx)
 	ret0, _ := ret[0].(map[storage.MetricType]map[string]interface{})
 	return ret0
 }
 
 // GetMetrics indicates an expected call of GetMetrics.
-func (mr *MockMetricsStorageMockRecorder) GetMetrics() *gomock.Call {
+func (mr *MockMetricsStorageMockRecorder) GetMetrics(ctx interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMetrics", reflect.TypeOf((*MockMetricsStorage)(nil).GetMetrics))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMetrics", reflect.TypeOf((*MockMetricsStorage)(nil).GetMetrics), ctx)
 }
 
 // Ping mocks base method.
@@ -92,55 +93,55 @@ func (mr *MockMetricsStorageMockRecorder) Ping() *gomock.Call {
 }
 
 // SetMetrics mocks base method.
-func (m *MockMetricsStorage) SetMetrics(metrics map[storage.MetricType]map[string]interface{}) {
+func (m *MockMetricsStorage) SetMetrics(ctx context.Context, metrics map[storage.MetricType]map[string]interface{}) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "SetMetrics", metrics)
+	m.ctrl.Call(m, "SetMetrics", ctx, metrics)
 }
 
 // SetMetrics indicates an expected call of SetMetrics.
-func (mr *MockMetricsStorageMockRecorder) SetMetrics(metrics interface{}) *gomock.Call {
+func (mr *MockMetricsStorageMockRecorder) SetMetrics(ctx, metrics interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetMetrics", reflect.TypeOf((*MockMetricsStorage)(nil).SetMetrics), metrics)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetMetrics", reflect.TypeOf((*MockMetricsStorage)(nil).SetMetrics), ctx, metrics)
 }
 
 // UpdateJSONMetric mocks base method.
-func (m *MockMetricsStorage) UpdateJSONMetric(metric *models.Metrics) error {
+func (m *MockMetricsStorage) UpdateJSONMetric(ctx context.Context, metric *models.Metrics) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateJSONMetric", metric)
+	ret := m.ctrl.Call(m, "UpdateJSONMetric", ctx, metric)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // UpdateJSONMetric indicates an expected call of UpdateJSONMetric.
-func (mr *MockMetricsStorageMockRecorder) UpdateJSONMetric(metric interface{}) *gomock.Call {
+func (mr *MockMetricsStorageMockRecorder) UpdateJSONMetric(ctx, metric interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateJSONMetric", reflect.TypeOf((*MockMetricsStorage)(nil).UpdateJSONMetric), metric)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateJSONMetric", reflect.TypeOf((*MockMetricsStorage)(nil).UpdateJSONMetric), ctx, metric)
 }
 
 // UpdateJSONMetrics mocks base method.
-func (m *MockMetricsStorage) UpdateJSONMetrics(metrics *[]models.Metrics) error {
+func (m *MockMetricsStorage) UpdateJSONMetrics(ctx context.Context, metrics *[]models.Metrics) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateJSONMetrics", metrics)
+	ret := m.ctrl.Call(m, "UpdateJSONMetrics", ctx, metrics)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // UpdateJSONMetrics indicates an expected call of UpdateJSONMetrics.
-func (mr *MockMetricsStorageMockRecorder) UpdateJSONMetrics(metrics interface{}) *gomock.Call {
+func (mr *MockMetricsStorageMockRecorder) UpdateJSONMetrics(ctx, metrics interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateJSONMetrics", reflect.TypeOf((*MockMetricsStorage)(nil).UpdateJSONMetrics), metrics)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateJSONMetrics", reflect.TypeOf((*MockMetricsStorage)(nil).UpdateJSONMetrics), ctx, metrics)
 }
 
 // UpdateMetric mocks base method.
-func (m *MockMetricsStorage) UpdateMetric(mtype, name, value string) error {
+func (m *MockMetricsStorage) UpdateMetric(ctx context.Context, mtype, name, value string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateMetric", mtype, name, value)
+	ret := m.ctrl.Call(m, "UpdateMetric", ctx, mtype, name, value)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // UpdateMetric indicates an expected call of UpdateMetric.
-func (mr *MockMetricsStorageMockRecorder) UpdateMetric(mtype, name, value interface{}) *gomock.Call {
+func (mr *MockMetricsStorageMockRecorder) UpdateMetric(ctx, mtype, name, value interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateMetric", reflect.TypeOf((*MockMetricsStorage)(nil).UpdateMetric), mtype, name, value)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateMetric", reflect.TypeOf((*MockMetricsStorage)(nil).UpdateMetric), ctx, mtype, name, value)
 }
