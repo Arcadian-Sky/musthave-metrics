@@ -37,7 +37,11 @@ func (c *CollectAndSendMetricsService) Run() {
 			if err != nil {
 				fmt.Println("Error sending metrics:", err)
 			}
-			c.sendPack(metrics, pollCount)
+
+			err = c.sendPack(metrics, pollCount)
+			if err != nil {
+				fmt.Println("Error sending metrics:", err)
+			}
 
 			pollCount = pollCount + 1
 			time.Sleep(c.config.GetPollInterval())
