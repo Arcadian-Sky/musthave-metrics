@@ -87,6 +87,33 @@ func (c *CollectAndSendMetricsService) send(metrics map[string]interface{}, poll
 	return nil
 }
 
+func (c *CollectAndSendMetricsService) sendPack(metrics map[string]interface{}, pollCount int) error {
+	for metricType, value := range metrics {
+		mValue := value.(float64)
+		metric := models.Metrics{
+			ID:    metricType,
+			MType: "gauge",
+			Value: &mValue,
+		}
+		err := c.sendMetricJSONValue(metric)
+		if err != nil {
+			return err
+		}
+	}
+	mValue := int64(pollCount)
+	metric := models.Metrics{
+		ID:    "PollCount",
+		MType: "counter",
+		Delta: &mValue,
+	}
+	err := c.sendMetricJSONValue(metric)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // Отправляем запрос на сервер
 func (c *CollectAndSendMetricsService) sendMetricJSONValue(m models.Metrics) error {
 	client := &http.Client{

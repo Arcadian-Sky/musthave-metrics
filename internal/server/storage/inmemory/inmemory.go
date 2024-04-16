@@ -47,8 +47,8 @@ func (m *MemStorage) GetJSONMetric(ctx context.Context, metric *models.Metrics) 
 			zeroValue := int64(0)
 			metric.Delta = &zeroValue
 		}
-		// fmt.Printf("Get saved metric.Delta: %v\n", realVal)
-		// fmt.Printf("Get returned metric.Delta: %v\n", *metric.Delta)
+		fmt.Printf("Get saved metric.Delta: %v\n", realVal)
+		fmt.Printf("Get returned metric.Delta: %v\n", *metric.Delta)
 	default:
 		return fmt.Errorf("invalid metric type")
 	}

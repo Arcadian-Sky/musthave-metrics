@@ -38,6 +38,12 @@ func TestParse(t *testing.T) {
 			env:  "localhost:7070",
 			want: "localhost:7070",
 		},
+		{
+			name: "WithArgumentsflagRestoreMetrics",
+			args: []string{"-r", ""},
+			env:  "",
+			want: "",
+		},
 	}
 
 	for _, tt := range tests {
