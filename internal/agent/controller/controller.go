@@ -134,32 +134,6 @@ func (c *CollectAndSendMetricsService) sendMetricJSON(m any, method string) erro
 	return nil
 }
 
-// func (c *CollectAndSendMetricsService) sendMetricJSONValue(m models.Metrics) error {
-// 	client := &http.Client{
-// 		Timeout: 2 * time.Second,
-// 	}
-
-// 	jsonData, err := json.Marshal(m)
-// 	if err != nil {
-// 		fmt.Println("Error marshaling metrics:", err)
-// 		return err
-// 	}
-
-// 	// Формируем адрес запроса
-// 	url := fmt.Sprintf("%s/update", c.config.GetServerAddress())
-
-// 	// Отправляем запрос на сервер
-// 	resp, err := client.Post(url, "application/json", bytes.NewBuffer(jsonData))
-// 	if err != nil {
-// 		fmt.Printf("Metrics did not sent: %s\n", m.ID)
-// 		return err
-// 	}
-// 	// fmt.Printf("Metric sent: %s\n", m.ID)
-// 	defer resp.Body.Close()
-
-// 	return nil
-// }
-
 func (c *CollectAndSendMetricsService) sendMetricValue(mType string, mName string, mValue interface{}) error {
 	client := &http.Client{
 		Timeout: 2 * time.Second,
