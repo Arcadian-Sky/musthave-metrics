@@ -13,7 +13,7 @@ func TestGetMetricTypeByCode(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    storage.MetricType
+		want    any
 		wantErr bool
 	}{
 		{
@@ -28,12 +28,12 @@ func TestGetMetricTypeByCode(t *testing.T) {
 			want:    storage.Counter,
 			wantErr: false,
 		},
-		// {
-		// 	name:    "InvalidMetricType",
-		// 	args:    args{mtype: "invalid"},
-		// 	want:    0,
-		// 	wantErr: true,
-		// },
+		{
+			name:    "InvalidMetricType",
+			args:    args{mtype: "invalid"},
+			want:    "",
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -42,7 +42,7 @@ func TestGetMetricTypeByCode(t *testing.T) {
 				t.Errorf("utils.GetMetricTypeByCode() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if got != tt.want {
+			if !tt.wantErr && got != tt.want {
 				t.Errorf("utils.GetMetricTypeByCode() = %v, want %v", got, tt.want)
 			}
 		})
