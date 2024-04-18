@@ -2,7 +2,6 @@ package storage
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/models"
 )
@@ -30,18 +29,4 @@ type MetricsStorage interface {
 	SetMetrics(ctx context.Context, metrics map[MetricType]map[string]interface{})
 
 	Ping() error
-}
-
-func GetMetricTypeByCode(mtype string) (MetricType, error) {
-	var metricType MetricType
-	switch mtype {
-	case "gauge":
-		metricType = Gauge
-	case "counter":
-		metricType = Counter
-	default:
-		return metricType, fmt.Errorf("invalid metric type")
-	}
-
-	return metricType, nil
 }

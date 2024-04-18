@@ -9,11 +9,15 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/cenkalti/backoff/v4"
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/pressly/goose/v3"
 
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/models"
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/storage"
+	"github.com/Arcadian-Sky/musthave-metrics/internal/server/storage/utils"
+	"github.com/Arcadian-Sky/musthave-metrics/migrations"
 )
 
 // PostgresStorage представляет хранилище метрик в PostgreSQL
@@ -34,32 +38,51 @@ func NewPostgresStorage(db *sql.DB) *PostgresStorage {
 		maxRetries:   3,
 		initialDelay: time.Second,
 	}
-	err := p.CreateMetricsTable()
+	err := p.migrateDB()
 	if err != nil {
 		panic(err)
 	}
 	return p
 }
 
-// executeWithRetry - функция для выполнения операции с повторными попытками
+// // executeWithRetry - функция для выполнения операции с повторными попытками
+// func (p *PostgresStorage) executeWithRetry(ctx context.Context, operation func() error) error {
+// 	var err error
+// 	delay := p.initialDelay
+// 	for attempt := 0; attempt <= p.maxRetries; attempt++ {
+// 		if err = operation(); err == nil || !p.isRetriableError(err) {
+// 			return err
+// 		}
+
+// 		// Если ошибка retriable, ждем перед следующей попыткой
+// 		fmt.Printf("Retriable error occurred: %v. Retrying after %s...\n", err, delay)
+// 		select {
+// 		case <-time.After(delay):
+// 		case <-ctx.Done():
+// 			return ctx.Err()
+// 		}
+// 		delay *= 2 // Увеличиваем задержку перед следующей попыткой
+// 	}
+// 	return err
+// }
+
 func (p *PostgresStorage) executeWithRetry(ctx context.Context, operation func() error) error {
-	var err error
-	delay := p.initialDelay
-	for attempt := 0; attempt <= p.maxRetries; attempt++ {
-		if err = operation(); err == nil || !p.isRetriableError(err) {
+	// Создаем экземпляр стратегии повторных попыток
+	backoffStrategy := backoff.NewExponentialBackOff()
+	backoffStrategy.MaxElapsedTime = time.Duration(p.maxRetries) * p.initialDelay
+
+	// Обертываем операцию в функцию, которую backoff будет повторять
+	retryOperation := func() error {
+		err := operation()
+		if err != nil && p.isRetriableError(err) {
+			fmt.Printf("Retriable error occurred: %v\n", err)
 			return err
 		}
-
-		// Если ошибка retriable, ждем перед следующей попыткой
-		fmt.Printf("Retriable error occurred: %v. Retrying after %s...\n", err, delay)
-		select {
-		case <-time.After(delay):
-		case <-ctx.Done():
-			return ctx.Err()
-		}
-		delay *= 2 // Увеличиваем задержку перед следующей попыткой
+		return nil
 	}
-	return err
+
+	// Выполняем операцию с использованием backoff
+	return backoff.Retry(retryOperation, backoffStrategy)
 }
 
 // isRetryableError - функция для проверки, является ли ошибка retriable
@@ -82,20 +105,17 @@ func (p *PostgresStorage) Ping() error {
 	return nil
 }
 
-func (p *PostgresStorage) CreateMetricsTable() error {
-	query := `
-		CREATE TABLE IF NOT EXISTS metrics (
-			"name" varchar NOT NULL,
-			counter numeric NULL,
-			gauge double precision NULL,
-			"type" varchar NOT NULL,
-			CONSTRAINT constraint_name_type UNIQUE (name, type)
-		);
-    `
-	_, err := p.db.Exec(query)
+func (p *PostgresStorage) migrateDB() error {
+	goose.SetBaseFS(migrations.Migrations)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	err := goose.RunContext(ctx, "up", p.db, ".")
 	if err != nil {
-		return fmt.Errorf("ошибка при создании таблицы метрик: %v", err)
+		log.Fatalf("goose.Status(): %v", err)
 	}
+
 	return nil
 }
 
@@ -115,7 +135,7 @@ func (p *PostgresStorage) GetJSONMetric(ctx context.Context, metric *models.Metr
 		}
 	}
 
-	metricType, err := storage.GetMetricTypeByCode(metric.MType)
+	metricType, err := utils.GetMetricTypeByCode(metric.MType)
 	if err != nil {
 		return err
 	}
@@ -142,12 +162,12 @@ func (p *PostgresStorage) GetJSONMetrics(ctx context.Context, metric *[]models.M
 }
 
 func (p *PostgresStorage) UpdateJSONMetric(ctx context.Context, metric *models.Metrics) error {
-	mType, err := storage.GetMetricTypeByCode(metric.MType)
+	mType, err := utils.GetMetricTypeByCode(metric.MType)
 	if err != nil {
 		return err
 	}
 	var query string
-	var value interface{}
+	var value any
 	switch mType {
 	case storage.Gauge:
 		if metric.Value == nil {
@@ -189,7 +209,7 @@ func (p *PostgresStorage) UpdateJSONMetric(ctx context.Context, metric *models.M
 
 func (p *PostgresStorage) UpdateMetric(ctx context.Context, mtype string, name string, value string) error {
 	// Получаем тип метрики
-	metricType, err := storage.GetMetricTypeByCode(mtype)
+	metricType, err := utils.GetMetricTypeByCode(mtype)
 	if err != nil {
 		return err
 	}
@@ -269,16 +289,18 @@ func (p *PostgresStorage) UpdateJSONMetrics(ctx context.Context, metrics *[]mode
 		}
 	}
 
+	var queryString = "INSERT INTO %s (name, type, %[2]s)" +
+		" VALUES ($1, '%[2]s', $2)" +
+		" ON CONFLICT (name, type) DO UPDATE" +
+		" SET %[2]s = EXCLUDED.%[2]s;"
+
 	// Вставляем значения метрик типа "counter" из карты в базу данных
 	for id, delta := range counterDeltas {
 		fmt.Printf("id, value: %v, %v\n", id, delta)
-		_, err := tx.ExecContext(ctx,
-			"INSERT INTO "+p.getTableName()+" (name, type, counter)"+
-				" VALUES ($1, 'counter', $2)"+
-				" ON CONFLICT (name, type) DO UPDATE"+
-				" SET counter = EXCLUDED.counter;", id, delta)
+		query := fmt.Sprintf(queryString, p.getTableName(), "counter")
+		_, err := tx.ExecContext(ctx, query, id, delta)
 		if err != nil {
-			fmt.Printf("err.Error(): %v\n", err.Error())
+			fmt.Printf("2 err.Error(): %v\n", err.Error())
 			return err
 		}
 	}
@@ -286,19 +308,17 @@ func (p *PostgresStorage) UpdateJSONMetrics(ctx context.Context, metrics *[]mode
 	// Вставляем значения метрик типа "gauge" из карты в базу данных
 	for id, value := range gaugeValues {
 		fmt.Printf("id, value: %v, %v\n", id, value)
-		_, err := tx.ExecContext(ctx,
-			"INSERT INTO "+p.getTableName()+" (name, type, gauge)"+
-				" VALUES ($1, 'gauge', $2)"+
-				" ON CONFLICT (name, type) DO NOTHING;", id, value)
+		query := fmt.Sprintf(queryString, p.getTableName(), "gauge")
+		_, err := tx.ExecContext(ctx, query, id, value)
 		if err != nil {
-			fmt.Printf("err.Error(): %v\n", err.Error())
+			fmt.Printf("1 err.Error(): %v\n", err.Error())
 			return err
 		}
 	}
 
 	// Коммитим транзакцию
 	if err := tx.Commit(); err != nil {
-		fmt.Printf("err.Error(): %v\n", err.Error())
+		fmt.Printf("3 err.Error(): %v\n", err.Error())
 		return err
 	}
 
@@ -429,19 +449,21 @@ func (p *PostgresStorage) GetMetrics(ctx context.Context) map[storage.MetricType
 	}
 
 	for rows.Next() {
-		var name string
-		var mType string
-		var counter sql.NullInt64
-		var gauge sql.NullFloat64
+		var row struct {
+			name    string
+			mType   string
+			counter sql.NullInt64
+			gauge   sql.NullFloat64
+		}
 
 		// Сканирование значений строки результата
-		if err := rows.Scan(&name, &mType, &counter, &gauge); err != nil {
+		if err := rows.Scan(&row); err != nil {
 			return nil
 			//, fmt.Errorf("ошибка при сканировании строки: %v", err)
 		}
 
 		// Преобразование строкового представления типа метрики в тип MetricType
-		metricType, err := storage.GetMetricTypeByCode(mType)
+		metricType, err := utils.GetMetricTypeByCode(row.mType)
 		if err != nil {
 			return nil
 			//, fmt.Errorf("ошибка при преобразовании типа метрики: %v", err)
@@ -453,10 +475,10 @@ func (p *PostgresStorage) GetMetrics(ctx context.Context) map[storage.MetricType
 		}
 
 		// Запись метрики в соответствующую карту
-		if counter.Valid {
-			metrics[metricType][name] = counter.Int64
-		} else if gauge.Valid {
-			metrics[metricType][name] = gauge.Float64
+		if row.counter.Valid {
+			metrics[metricType][row.name] = row.counter.Int64
+		} else if row.gauge.Valid {
+			metrics[metricType][row.name] = row.gauge.Float64
 		}
 	}
 

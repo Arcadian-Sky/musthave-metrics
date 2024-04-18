@@ -7,6 +7,7 @@ import (
 
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/models"
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/storage"
+	"github.com/Arcadian-Sky/musthave-metrics/internal/server/storage/utils"
 )
 
 // MemStorage представляет хранилище метрик
@@ -22,7 +23,7 @@ func NewMemStorage() *MemStorage {
 }
 
 func (m *MemStorage) GetJSONMetric(ctx context.Context, metric *models.Metrics) error {
-	metricType, err := storage.GetMetricTypeByCode(metric.MType)
+	metricType, err := utils.GetMetricTypeByCode(metric.MType)
 
 	if err != nil {
 		return err
@@ -57,7 +58,7 @@ func (m *MemStorage) GetJSONMetric(ctx context.Context, metric *models.Metrics) 
 }
 
 func (m *MemStorage) GetJSONMetrics(ctx context.Context, metric *[]models.Metrics) error {
-	// metricType, err := storage.GetMetricTypeByCode(metric.MType)
+	// metricType, err := utils.GetMetricTypeByCode(metric.MType)
 
 	// if err != nil {
 	// 	return err
@@ -92,7 +93,7 @@ func (m *MemStorage) GetJSONMetrics(ctx context.Context, metric *[]models.Metric
 }
 
 func (m *MemStorage) UpdateJSONMetric(ctx context.Context, metric *models.Metrics) error {
-	metricType, err := storage.GetMetricTypeByCode(metric.MType)
+	metricType, err := utils.GetMetricTypeByCode(metric.MType)
 
 	if err != nil {
 		return err
@@ -131,7 +132,7 @@ func (m *MemStorage) UpdateJSONMetric(ctx context.Context, metric *models.Metric
 // UpdateMetric обновляет значение метрики в хранилище
 func (m *MemStorage) UpdateMetric(ctx context.Context, mtype string, name string, value string) error {
 	// var metricType MetricType
-	metricType, err := storage.GetMetricTypeByCode(mtype)
+	metricType, err := utils.GetMetricTypeByCode(mtype)
 	if err != nil {
 		return err
 	}
