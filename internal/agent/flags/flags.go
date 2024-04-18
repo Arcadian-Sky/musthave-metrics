@@ -14,6 +14,10 @@ type Config struct {
 	reportInterval time.Duration
 }
 
+func (c *Config) SetConfigServer(s string) {
+	c.serverAddress = s
+}
+
 func (c *Config) GetServerAddress() string {
 	return c.serverAddress
 }
