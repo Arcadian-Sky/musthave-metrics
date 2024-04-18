@@ -656,3 +656,64 @@ func TestMemStorage_UpdateJSONMetrics(t *testing.T) {
 		})
 	}
 }
+
+func TestMemStorage_CreateMemento(t *testing.T) {
+	var expected = `{"metrics":{"counter":{"metric1":100,"metric2":200},"gauge":{"metric3":300.5}}}`
+	var metrics = make(map[storage.MetricType]map[string]interface{})
+	metrics[storage.Counter] = map[string]interface{}{
+		"metric1": 100,
+		"metric2": 200,
+	}
+	metrics[storage.Gauge] = map[string]interface{}{
+		"metric3": 300.5,
+	}
+	mStorage := NewMemStorage()
+	ctx := context.TODO()
+	mStorage.SetMetrics(ctx, metrics)
+
+	// Вызываем функцию CreateMemento
+	memento := mStorage.CreateMemento()
+
+	// // fmt.Printf("response.Body: %v\n", response.Body)
+	respJSONData, err := json.Marshal(memento)
+	if err != nil {
+		t.Errorf("Failed to marshal empty metric: %v", err)
+	}
+
+	// Сравниваем результат с ожидаемым
+	if !reflect.DeepEqual(string(respJSONData), expected) {
+		t.Errorf("Expected result %v, got %v", string(respJSONData), expected)
+	}
+}
+
+func TestMemStorage_RestoreFromMemento(t *testing.T) {
+	var expected = `{"counter":{"metric20":200,"metric5":100},"gauge":{"metric100":300.5}}`
+	var metrics = make(map[storage.MetricType]map[string]interface{})
+	metrics[storage.Counter] = map[string]interface{}{
+		"metric5":  100,
+		"metric20": 200,
+	}
+	metrics[storage.Gauge] = map[string]interface{}{
+		"metric100": 300.5,
+	}
+
+	mStorage := NewMemStorage()
+	ctx := context.TODO()
+	mStorage.SetMetrics(ctx, metrics)
+
+	s := &storage.Memento{}
+	s.SetMetrics(metrics)
+
+	mStorage.RestoreFromMemento(s)
+
+	// // fmt.Printf("response.Body: %v\n", response.Body)
+	respJSONData, err := json.Marshal(mStorage.metrics)
+	if err != nil {
+		t.Errorf("Failed to marshal empty metric: %v", err)
+	}
+
+	// Сравниваем результат с ожидаемым
+	if !reflect.DeepEqual(string(respJSONData), expected) {
+		t.Errorf("Expected result %v, got %v", string(respJSONData), expected)
+	}
+}
