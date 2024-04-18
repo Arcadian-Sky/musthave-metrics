@@ -119,6 +119,55 @@ func (p *PostgresStorage) migrateDB() error {
 	return nil
 }
 
+func (p *PostgresStorage) GetMetric(ctx context.Context, mtype storage.MetricType) map[string]interface{} {
+	var query string
+	var metrics map[string]interface{}
+	fmt.Printf("mtype: %v\n", mtype)
+	switch mtype {
+	case storage.Gauge:
+		query = fmt.Sprintf("SELECT name, gauge FROM %s WHERE type = 'gauge'", p.getTableName())
+	case storage.Counter:
+		query = fmt.Sprintf("SELECT name, counter FROM %s WHERE type = 'counter'", p.getTableName())
+	default:
+		return nil //, fmt.Errorf("неподдерживаемый тип метрики: %s", metricType)
+	}
+
+	rows, err := p.db.Query(query)
+	if err != nil {
+		return nil //, fmt.Errorf("ошибка при выполнении запроса: %v", err)
+	}
+	defer rows.Close()
+	// Проверка наличия ошибок при чтении строк результата
+	if rows.Err() != nil {
+		return nil
+		//, fmt.Errorf("ошибка при чтении строк результата: %v", rows.Err())
+	}
+
+	metrics = make(map[string]interface{})
+	for rows.Next() {
+		var name string
+		var value interface{}
+
+		if mtype == storage.Gauge {
+			var gauge float64
+			err := rows.Scan(&name, &gauge)
+			if err != nil {
+				return nil //, fmt.Errorf("ошибка при сканировании строки: %v", err)
+			}
+			value = gauge
+		} else if mtype == storage.Counter {
+			var counter int
+			err := rows.Scan(&name, &counter)
+			if err != nil {
+				return nil //, fmt.Errorf("ошибка при сканировании строки: %v", err)
+			}
+			value = counter
+		}
+		metrics[name] = value
+	}
+	return metrics //, nil
+}
+
 func (p *PostgresStorage) GetJSONMetric(ctx context.Context, metric *models.Metrics) error {
 	query := fmt.Sprintf("SELECT name, type, counter, gauge FROM %s WHERE name = $1 AND type = $2", p.getTableName())
 	row := p.db.QueryRowContext(ctx, query, metric.ID, metric.MType)
@@ -157,53 +206,65 @@ func (p *PostgresStorage) GetJSONMetric(ctx context.Context, metric *models.Metr
 	return nil
 }
 
-func (p *PostgresStorage) GetJSONMetrics(ctx context.Context, metric *[]models.Metrics) error {
-	return nil
+// TODO:Add support error handling
+func (p *PostgresStorage) GetMetrics(ctx context.Context) map[storage.MetricType]map[string]interface{} {
+	metrics := make(map[storage.MetricType]map[string]interface{})
+	query := fmt.Sprintf("SELECT name, type, counter, gauge FROM %s", p.getTableName())
+
+	// Выполнение запроса SQL
+	rows, err := p.db.Query(query)
+	if err != nil {
+		fmt.Printf("1err: %v\n", err)
+		return nil
+		//, fmt.Errorf("ошибка при выполнении запроса: %v", err)
+	}
+	defer rows.Close()
+	// Проверка наличия ошибок при чтении строк результата
+	if rows.Err() != nil {
+		fmt.Printf("2err: %v\n", err)
+		return nil
+		//, fmt.Errorf("ошибка при чтении строк результата: %v", rows.Err())
+	}
+
+	for rows.Next() {
+		var row struct {
+			name    string `field:"name"`
+			mType   string `field:"type"`
+			counter sql.NullInt64
+			gauge   sql.NullFloat64
+		}
+
+		// Сканирование значений строки результата
+		if err := rows.Scan(&row.name, &row.mType, &row.counter, &row.gauge); err != nil {
+			fmt.Printf("3err: %v\n", err)
+			return nil
+			//, fmt.Errorf("ошибка при сканировании строки: %v", err)
+		}
+		// Преобразование строкового представления типа метрики в тип MetricType
+		metricType, err := utils.GetMetricTypeByCode(row.mType)
+		if err != nil {
+			fmt.Printf("3err: %v\n", err)
+			return nil
+			//, fmt.Errorf("ошибка при преобразовании типа метрики: %v", err)
+		}
+
+		// Создание вложенной карты метрик для данного типа метрики, если она еще не существует
+		if _, ok := metrics[metricType]; !ok {
+			metrics[metricType] = make(map[string]interface{})
+		}
+
+		// Запись метрики в соответствующую карту
+		if row.counter.Valid {
+			metrics[metricType][row.name] = row.counter.Int64
+		} else if row.gauge.Valid {
+			metrics[metricType][row.name] = row.gauge.Float64
+		}
+	}
+
+	return metrics
 }
 
-func (p *PostgresStorage) UpdateJSONMetric(ctx context.Context, metric *models.Metrics) error {
-	mType, err := utils.GetMetricTypeByCode(metric.MType)
-	if err != nil {
-		return err
-	}
-	var query string
-	var value any
-	switch mType {
-	case storage.Gauge:
-		if metric.Value == nil {
-			return nil
-		}
-		query = fmt.Sprintf(`
-				INSERT INTO %s (name, type, gauge)
-				VALUES ($1, 'gauge', $2)
-				ON CONFLICT (name, type) DO UPDATE
-				SET gauge = EXCLUDED.gauge
-			`, p.getTableName())
-		value = metric.Value
-	case storage.Counter:
-		if metric.Delta == nil {
-			return nil
-		}
-		var currentCounter sql.NullInt64
-		_ = p.db.QueryRowContext(ctx, "SELECT counter FROM "+p.getTableName()+" WHERE name = $1 AND type = 'counter'", metric.ID).Scan(&currentCounter)
-
-		*metric.Delta += currentCounter.Int64
-		fmt.Printf("metric.Delta: %v\n", metric.Delta)
-		query = "INSERT INTO " + p.getTableName() + " (name, type, counter)" +
-			" VALUES ($1, 'counter', $2)" +
-			" ON CONFLICT (name, type) DO UPDATE" +
-			" SET counter = EXCLUDED.counter"
-		value = metric.Delta
-	default:
-		return fmt.Errorf("неподдерживаемый тип метрики: %s", mType)
-	}
-
-	_, err = p.db.Exec(query, metric.ID, value)
-
-	if err != nil {
-		return fmt.Errorf("ошибка при обновлении метрики в базе данных: %v", err)
-	}
-
+func (p *PostgresStorage) GetJSONMetrics(ctx context.Context, metric *[]models.Metrics) error {
 	return nil
 }
 
@@ -258,6 +319,107 @@ func (p *PostgresStorage) UpdateMetric(ctx context.Context, mtype string, name s
 		return fmt.Errorf("ошибка при обновлении метрики в базе данных: %v", err)
 	}
 	return nil
+}
+
+func (p *PostgresStorage) UpdateJSONMetric(ctx context.Context, metric *models.Metrics) error {
+	mType, err := utils.GetMetricTypeByCode(metric.MType)
+	if err != nil {
+		return err
+	}
+	var query string
+	var value any
+	switch mType {
+	case storage.Gauge:
+		if metric.Value == nil {
+			return nil
+		}
+		query = fmt.Sprintf(`
+				INSERT INTO %s (name, type, gauge)
+				VALUES ($1, 'gauge', $2)
+				ON CONFLICT (name, type) DO UPDATE
+				SET gauge = EXCLUDED.gauge
+			`, p.getTableName())
+		value = metric.Value
+	case storage.Counter:
+		if metric.Delta == nil {
+			return nil
+		}
+		var currentCounter sql.NullInt64
+		_ = p.db.QueryRowContext(ctx, "SELECT counter FROM "+p.getTableName()+" WHERE name = $1 AND type = 'counter'", metric.ID).Scan(&currentCounter)
+
+		*metric.Delta += currentCounter.Int64
+		fmt.Printf("metric.Delta: %v\n", metric.Delta)
+		query = "INSERT INTO " + p.getTableName() + " (name, type, counter)" +
+			" VALUES ($1, 'counter', $2)" +
+			" ON CONFLICT (name, type) DO UPDATE" +
+			" SET counter = EXCLUDED.counter"
+		value = metric.Delta
+	default:
+		return fmt.Errorf("неподдерживаемый тип метрики: %s", mType)
+	}
+
+	_, err = p.db.Exec(query, metric.ID, value)
+
+	if err != nil {
+		return fmt.Errorf("ошибка при обновлении метрики в базе данных: %v", err)
+	}
+
+	return nil
+}
+
+// TODO:Add support error handling
+func (p *PostgresStorage) SetMetrics(ctx context.Context, metrics map[storage.MetricType]map[string]interface{}) {
+	// Начало транзакции
+	tx, err := p.db.Begin()
+	if err != nil {
+		panic(fmt.Errorf("ошибка при начале транзакции: %v", err))
+	}
+	defer func() {
+		if err != nil {
+			if rollbackErr := tx.Rollback(); rollbackErr != nil {
+				log.Println("Ошибка отката транзакции:", rollbackErr)
+			}
+		}
+	}()
+
+	// Цикл по всем типам метрик
+	for metricType, metricValues := range metrics {
+		// Определение имени столбца для текущего типа метрики
+		var columnName string
+		switch metricType {
+		case storage.Gauge:
+			columnName = "gauge"
+		case storage.Counter:
+			columnName = "counter"
+		default:
+			return
+			// return fmt.Errorf("неподдерживаемый тип метрики: %v", metricType)
+		}
+
+		// Цикл по всем метрикам текущего типа
+		for name, value := range metricValues {
+			// Формирование запроса SQL для обновления или вставки метрики
+			query := fmt.Sprintf(`
+                INSERT INTO %s (name, type, %s)
+                VALUES ($1, $2, $3)
+                ON CONFLICT (name, type) DO UPDATE
+                SET %s = EXCLUDED.%s
+            `, p.getTableName(), columnName, columnName, columnName)
+
+			// Выполнение запроса SQL внутри транзакции
+			_, err := tx.Exec(query, name, string(metricType), value)
+			if err != nil {
+				return
+				// fmt.Errorf("ошибка при выполнении запроса: %v", err)
+			}
+		}
+	}
+
+	// Фиксация транзакции
+	if err := tx.Commit(); err != nil {
+		panic(fmt.Errorf("ошибка при фиксации транзакции: %v", err))
+		// return fmt.Errorf("ошибка при фиксации транзакции: %v", err)
+	}
 }
 
 func (p *PostgresStorage) UpdateJSONMetrics(ctx context.Context, metrics *[]models.Metrics) error {
@@ -323,165 +485,4 @@ func (p *PostgresStorage) UpdateJSONMetrics(ctx context.Context, metrics *[]mode
 	}
 
 	return nil
-}
-
-func (p *PostgresStorage) GetMetric(ctx context.Context, mtype storage.MetricType) map[string]interface{} {
-	var query string
-	var metrics map[string]interface{}
-	fmt.Printf("mtype: %v\n", mtype)
-	switch mtype {
-	case storage.Gauge:
-		query = fmt.Sprintf("SELECT name, gauge FROM %s WHERE type = 'gauge'", p.getTableName())
-	case storage.Counter:
-		query = fmt.Sprintf("SELECT name, counter FROM %s WHERE type = 'counter'", p.getTableName())
-	default:
-		return nil //, fmt.Errorf("неподдерживаемый тип метрики: %s", metricType)
-	}
-
-	rows, err := p.db.Query(query)
-	if err != nil {
-		return nil //, fmt.Errorf("ошибка при выполнении запроса: %v", err)
-	}
-	defer rows.Close()
-	// Проверка наличия ошибок при чтении строк результата
-	if rows.Err() != nil {
-		return nil
-		//, fmt.Errorf("ошибка при чтении строк результата: %v", rows.Err())
-	}
-
-	metrics = make(map[string]interface{})
-	for rows.Next() {
-		var name string
-		var value interface{}
-
-		if mtype == storage.Gauge {
-			var gauge float64
-			err := rows.Scan(&name, &gauge)
-			if err != nil {
-				return nil //, fmt.Errorf("ошибка при сканировании строки: %v", err)
-			}
-			value = gauge
-		} else if mtype == storage.Counter {
-			var counter int
-			err := rows.Scan(&name, &counter)
-			if err != nil {
-				return nil //, fmt.Errorf("ошибка при сканировании строки: %v", err)
-			}
-			value = counter
-		}
-		metrics[name] = value
-	}
-	return metrics //, nil
-}
-
-// TODO:Add support error handling
-func (p *PostgresStorage) SetMetrics(ctx context.Context, metrics map[storage.MetricType]map[string]interface{}) {
-	// Начало транзакции
-	tx, err := p.db.Begin()
-	if err != nil {
-		panic(fmt.Errorf("ошибка при начале транзакции: %v", err))
-	}
-	defer func() {
-		if err != nil {
-			if rollbackErr := tx.Rollback(); rollbackErr != nil {
-				log.Println("Ошибка отката транзакции:", rollbackErr)
-			}
-		}
-	}()
-
-	// Цикл по всем типам метрик
-	for metricType, metricValues := range metrics {
-		// Определение имени столбца для текущего типа метрики
-		var columnName string
-		switch metricType {
-		case storage.Gauge:
-			columnName = "gauge"
-		case storage.Counter:
-			columnName = "counter"
-		default:
-			return
-			// return fmt.Errorf("неподдерживаемый тип метрики: %v", metricType)
-		}
-
-		// Цикл по всем метрикам текущего типа
-		for name, value := range metricValues {
-			// Формирование запроса SQL для обновления или вставки метрики
-			query := fmt.Sprintf(`
-                INSERT INTO %s (name, type, %s)
-                VALUES ($1, $2, $3)
-                ON CONFLICT (name, type) DO UPDATE
-                SET %s = EXCLUDED.%s
-            `, p.getTableName(), columnName, columnName, columnName)
-
-			// Выполнение запроса SQL внутри транзакции
-			_, err := tx.Exec(query, name, string(metricType), value)
-			if err != nil {
-				return
-				// fmt.Errorf("ошибка при выполнении запроса: %v", err)
-			}
-		}
-	}
-
-	// Фиксация транзакции
-	if err := tx.Commit(); err != nil {
-		panic(fmt.Errorf("ошибка при фиксации транзакции: %v", err))
-		// return fmt.Errorf("ошибка при фиксации транзакции: %v", err)
-	}
-
-}
-
-// TODO:Add support error handling
-func (p *PostgresStorage) GetMetrics(ctx context.Context) map[storage.MetricType]map[string]interface{} {
-	metrics := make(map[storage.MetricType]map[string]interface{})
-	query := fmt.Sprintf("SELECT name, type, counter, gauge FROM %s", p.getTableName())
-
-	// Выполнение запроса SQL
-	rows, err := p.db.Query(query)
-	if err != nil {
-		return nil
-		//, fmt.Errorf("ошибка при выполнении запроса: %v", err)
-	}
-	defer rows.Close()
-	// Проверка наличия ошибок при чтении строк результата
-	if rows.Err() != nil {
-		return nil
-		//, fmt.Errorf("ошибка при чтении строк результата: %v", rows.Err())
-	}
-
-	for rows.Next() {
-		var row struct {
-			name    string
-			mType   string
-			counter sql.NullInt64
-			gauge   sql.NullFloat64
-		}
-
-		// Сканирование значений строки результата
-		if err := rows.Scan(&row); err != nil {
-			return nil
-			//, fmt.Errorf("ошибка при сканировании строки: %v", err)
-		}
-
-		// Преобразование строкового представления типа метрики в тип MetricType
-		metricType, err := utils.GetMetricTypeByCode(row.mType)
-		if err != nil {
-			return nil
-			//, fmt.Errorf("ошибка при преобразовании типа метрики: %v", err)
-		}
-
-		// Создание вложенной карты метрик для данного типа метрики, если она еще не существует
-		if _, ok := metrics[metricType]; !ok {
-			metrics[metricType] = make(map[string]interface{})
-		}
-
-		// Запись метрики в соответствующую карту
-		if row.counter.Valid {
-			metrics[metricType][row.name] = row.counter.Int64
-		} else if row.gauge.Valid {
-			metrics[metricType][row.name] = row.gauge.Float64
-		}
-	}
-
-	return metrics
-	//, nil
 }
