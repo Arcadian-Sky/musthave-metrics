@@ -66,7 +66,7 @@ func NewPostgresStorage(db *sql.DB) *PostgresStorage {
 // 	return err
 // }
 
-func (p *PostgresStorage) executeWithRetry(ctx context.Context, operation func() error) error {
+func (p *PostgresStorage) executeWithRetry(_ context.Context, operation func() error) error {
 	// Создаем экземпляр стратегии повторных попыток
 	backoffStrategy := backoff.NewExponentialBackOff()
 	backoffStrategy.MaxElapsedTime = time.Duration(p.maxRetries) * p.initialDelay
