@@ -9,6 +9,7 @@ import (
 
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/models"
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/storage"
+	"github.com/Arcadian-Sky/musthave-metrics/internal/server/storage/utils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -410,7 +411,7 @@ func TestMemStorage_UpdateJSONMetric(t *testing.T) {
 			// }
 
 			if tt.want != "" {
-				mtype, _ := storage.GetMetricTypeByCode(tt.args.MType)
+				mtype, _ := utils.GetMetricTypeByCode(tt.args.MType)
 				jsonData, err := json.Marshal(m.metrics[mtype][tt.args.ID])
 				if err != nil {
 					fmt.Println("Ошибка при преобразовании в JSON:", err)

@@ -10,6 +10,7 @@ import (
 
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/models"
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/storage"
+	"github.com/Arcadian-Sky/musthave-metrics/internal/server/storage/utils"
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/validate"
 )
 
@@ -114,7 +115,7 @@ func (h *Handler) GetMetricHandlerFunc(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//Получаем данные для вывода
-	metricTypeID, err := storage.GetMetricTypeByCode(params.Type)
+	metricTypeID, err := utils.GetMetricTypeByCode(params.Type)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return

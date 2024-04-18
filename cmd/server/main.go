@@ -10,6 +10,7 @@ import (
 	"syscall"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/pressly/goose/v3"
 
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/flags"
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/handler"
@@ -18,6 +19,7 @@ import (
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/storage/config"
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/storage/inmemory"
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/storage/postgres"
+	"github.com/Arcadian-Sky/musthave-metrics/migrations"
 )
 
 // Пример запроса к серверу:
@@ -55,6 +57,8 @@ func main() {
 		panic(err)
 	}
 	defer db.Close()
+
+	goose.SetBaseFS(migrations.Migrations)
 
 	// NewMemStorage создает новый экземпляр хранилищв
 	//Создаем хранилище
