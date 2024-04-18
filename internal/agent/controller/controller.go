@@ -65,36 +65,8 @@ func (c *CollectAndSendMetricsService) Run() {
 	select {}
 }
 
-// Отправляем метрики
-func (c *CollectAndSendMetricsService) send(metrics map[string]interface{}, pollCount int) error {
-	for metricType, value := range metrics {
-		mValue := value.(float64)
-		metric := models.Metrics{
-			ID:    metricType,
-			MType: "gauge",
-			Value: &mValue,
-		}
-		err := c.sendMetricJSONValue(metric)
-		if err != nil {
-			return err
-		}
-	}
-	mValue := int64(pollCount)
-	metric := models.Metrics{
-		ID:    "PollCount",
-		MType: "counter",
-		Delta: &mValue,
-	}
-	err := c.sendMetricJSONValue(metric)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (c *CollectAndSendMetricsService) sendPack(metrics map[string]interface{}, pollCount int) error {
-	var forSend []interface{}
+func (c *CollectAndSendMetricsService) makePack(metrics map[string]interface{}, pollCount int) []interface{} {
+	forSend := make([]interface{}, 0, len(metrics))
 	for metricType, value := range metrics {
 		mValue := value.(float64)
 		forSend = append(forSend, models.Metrics{
@@ -109,7 +81,26 @@ func (c *CollectAndSendMetricsService) sendPack(metrics map[string]interface{}, 
 		MType: "counter",
 		Delta: &mValue,
 	})
-	err := c.sendMetricJSONValues(forSend)
+
+	return forSend
+}
+
+// Отправляем метрики
+func (c *CollectAndSendMetricsService) send(metrics map[string]interface{}, pollCount int) error {
+	var forSend = c.makePack(metrics, pollCount)
+	for _, metric := range forSend {
+		err := c.sendMetricJSON(metric, "/update")
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (c *CollectAndSendMetricsService) sendPack(metrics map[string]interface{}, pollCount int) error {
+	var forSend = c.makePack(metrics, pollCount)
+	err := c.sendMetricJSON(forSend, "/updates")
 	if err != nil {
 		return err
 	}
@@ -118,7 +109,7 @@ func (c *CollectAndSendMetricsService) sendPack(metrics map[string]interface{}, 
 }
 
 // Отправляем запрос на сервер
-func (c *CollectAndSendMetricsService) sendMetricJSONValues(m []interface{}) error {
+func (c *CollectAndSendMetricsService) sendMetricJSON(m any, method string) error {
 	client := &http.Client{
 		Timeout: 2 * time.Second,
 	}
@@ -130,7 +121,7 @@ func (c *CollectAndSendMetricsService) sendMetricJSONValues(m []interface{}) err
 	}
 
 	// Формируем адрес запроса
-	url := fmt.Sprintf("%s/updates", c.config.GetServerAddress())
+	url := fmt.Sprintf("%s"+method, c.config.GetServerAddress())
 
 	// Отправляем запрос на сервер
 	resp, err := client.Post(url, "application/json", bytes.NewBuffer(jsonData))
@@ -143,31 +134,31 @@ func (c *CollectAndSendMetricsService) sendMetricJSONValues(m []interface{}) err
 	return nil
 }
 
-func (c *CollectAndSendMetricsService) sendMetricJSONValue(m models.Metrics) error {
-	client := &http.Client{
-		Timeout: 2 * time.Second,
-	}
+// func (c *CollectAndSendMetricsService) sendMetricJSONValue(m models.Metrics) error {
+// 	client := &http.Client{
+// 		Timeout: 2 * time.Second,
+// 	}
 
-	jsonData, err := json.Marshal(m)
-	if err != nil {
-		fmt.Println("Error marshaling metrics:", err)
-		return err
-	}
+// 	jsonData, err := json.Marshal(m)
+// 	if err != nil {
+// 		fmt.Println("Error marshaling metrics:", err)
+// 		return err
+// 	}
 
-	// Формируем адрес запроса
-	url := fmt.Sprintf("%s/update", c.config.GetServerAddress())
+// 	// Формируем адрес запроса
+// 	url := fmt.Sprintf("%s/update", c.config.GetServerAddress())
 
-	// Отправляем запрос на сервер
-	resp, err := client.Post(url, "application/json", bytes.NewBuffer(jsonData))
-	if err != nil {
-		fmt.Printf("Metrics did not sent: %s\n", m.ID)
-		return err
-	}
-	// fmt.Printf("Metric sent: %s\n", m.ID)
-	defer resp.Body.Close()
+// 	// Отправляем запрос на сервер
+// 	resp, err := client.Post(url, "application/json", bytes.NewBuffer(jsonData))
+// 	if err != nil {
+// 		fmt.Printf("Metrics did not sent: %s\n", m.ID)
+// 		return err
+// 	}
+// 	// fmt.Printf("Metric sent: %s\n", m.ID)
+// 	defer resp.Body.Close()
 
-	return nil
-}
+// 	return nil
+// }
 
 func (c *CollectAndSendMetricsService) sendMetricValue(mType string, mName string, mValue interface{}) error {
 	client := &http.Client{

@@ -119,6 +119,56 @@ func TestCollectAndSendMetricsService_sendMetricValue(t *testing.T) {
 // 	assert.NoError(t, err)
 // }
 
+func TestMakePack(t *testing.T) {
+	// Создаем экземпляр CollectAndSendMetricsService
+	c := &CollectAndSendMetricsService{}
+
+	// Создаем тестовые данные для метрик
+	metrics := map[string]interface{}{
+		"metric1": 100.0,
+		"metric2": 200.0,
+	}
+
+	// Создаем тестовое значение для pollCount
+	pollCount := 10
+
+	// Вызываем метод makePack
+	pack := c.makePack(metrics, pollCount)
+	// Проверяем, что pack не nil
+	if pack == nil {
+		t.Error("Expected pack to not be nil")
+	}
+
+	// Проверяем, что длина pack равна количеству метрик + 1
+	expectedLength := len(metrics) + 1
+	if len(pack) != expectedLength {
+		t.Errorf("Expected pack length to be %d, but got %d", expectedLength, len(pack))
+	}
+
+	// Проверяем, что pack содержит корректные метрики
+	for i, metric := range pack {
+		if i < len(metrics) {
+			// Проверяем метрики типа gauge
+			m, ok := metric.(models.Metrics)
+			if !ok {
+				t.Errorf("Expected metric at index %d to be type models.Metrics", i)
+			}
+			if m.MType != "gauge" {
+				t.Errorf("Expected metric type to be 'gauge', but got '%s'", m.MType)
+			}
+		} else {
+			// Проверяем метрику типа counter
+			m, ok := metric.(models.Metrics)
+			if !ok {
+				t.Errorf("Expected metric at index %d to be type models.Metrics", i)
+			}
+			if m.MType != "counter" {
+				t.Errorf("Expected metric type to be 'counter', but got '%s'", m.MType)
+			}
+		}
+	}
+}
+
 func TestSendMetricJSONValues(t *testing.T) {
 	// Создаем фейковый HTTP-сервер
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -160,11 +210,11 @@ func TestSendMetricJSONValues(t *testing.T) {
 	var fl200 = float64(200)
 	var de5 = int64(5)
 	// // Тестируемый вызов
-	err := c.sendMetricJSONValues([]interface{}{
+	err := c.sendMetricJSON([]interface{}{
 		models.Metrics{ID: "metric1", MType: "gauge", Value: &fl100},
 		models.Metrics{ID: "metric2", MType: "gauge", Value: &fl200},
 		models.Metrics{ID: "PollCount", MType: "counter", Delta: &de5},
-	})
+	}, "/updates")
 	if err != nil {
 		t.Errorf("sendMetricJSONValues failed: %v", err)
 	}
