@@ -481,13 +481,13 @@ func TestHandler_UpdateMetricsJSONHandlerFunc(t *testing.T) {
 		name         string
 		requestBody  string
 		expectedCode int
-		expJsonData  string
+		expJSONData  string
 		// expectedMetrics []models.Metrics
 	}{
 		{
 			name:         "valid request gauge",
 			requestBody:  `[{"id": "metric1", "type": "gauge", "value": 100}]`,
-			expJsonData:  `[{"id":"metric1","type":"gauge","value":100}]`,
+			expJSONData:  `[{"id":"metric1","type":"gauge","value":100}]`,
 			expectedCode: http.StatusOK,
 			// expectedMetrics: []models.Metrics{
 			// 	{
@@ -500,7 +500,7 @@ func TestHandler_UpdateMetricsJSONHandlerFunc(t *testing.T) {
 		{
 			name:         "valid request counter",
 			requestBody:  `[{"id": "metric2", "type": "counter", "delta": 100}]`,
-			expJsonData:  `[{"delta":100,"id":"metric2","type":"counter"}]`,
+			expJSONData:  `[{"delta":100,"id":"metric2","type":"counter"}]`,
 			expectedCode: http.StatusOK,
 			// expectedMetrics: []models.Metrics{
 			// 	{
@@ -513,7 +513,7 @@ func TestHandler_UpdateMetricsJSONHandlerFunc(t *testing.T) {
 		{
 			name:         "valid request counter",
 			requestBody:  `[{"id": "metric2", "type": "counter", "delta": 200}, {"id": "metric2", "type": "counter", "delta": 100}]`,
-			expJsonData:  `[{"delta":200,"id":"metric2","type":"counter"},{"delta":100,"id":"metric2","type":"counter"}]`,
+			expJSONData:  `[{"delta":200,"id":"metric2","type":"counter"},{"delta":100,"id":"metric2","type":"counter"}]`,
 			expectedCode: http.StatusOK,
 			//
 			// expectedMetrics: []models.Metrics{
@@ -550,7 +550,7 @@ func TestHandler_UpdateMetricsJSONHandlerFunc(t *testing.T) {
 			name:         "ID and type request",
 			requestBody:  `[{"id": "metric1", "type": "gauge"}]`,
 			expectedCode: http.StatusOK,
-			expJsonData:  `[{"id":"metric1","type":"gauge"}]`,
+			expJSONData:  `[{"id":"metric1","type":"gauge"}]`,
 			// expectedMetrics: []models.Metrics{
 			// 	{
 			// 		ID:    "metric1",
@@ -615,20 +615,20 @@ func TestHandler_UpdateMetricsJSONHandlerFunc(t *testing.T) {
 					return
 				}
 
-				resJsonData, err := json.Marshal(jsonData)
+				resJSONData, err := json.Marshal(jsonData)
 				if err != nil {
 					fmt.Println("Ошибка при преобразовании в JSON строку:", err)
 					return
 				}
 
 				// // fmt.Printf("response.Body: %v\n", response.Body)
-				// expJsonData, err := json.Marshal(tt.expectedMetrics)
+				// expJSONData, err := json.Marshal(tt.expectedMetrics)
 				// if err != nil {
 				// 	t.Errorf("Failed to marshal empty metric: %v", err)
 				// }
-				// string(expJsonData)
+				// string(expJSONData)
 
-				assert.Equal(t, tt.expJsonData, string(resJsonData))
+				assert.Equal(t, tt.expJSONData, string(resJSONData))
 			}
 
 			defer response.Body.Close()
@@ -644,7 +644,7 @@ func TestHandler_GetMetricJSONHandlerFunc(t *testing.T) {
 		requestPath     string
 		name            string
 		requestBody     string
-		expJsonData     string
+		expJSONData     string
 		expectedCode    int
 		expectedMetrics models.Metrics
 		wantErr         bool
@@ -653,7 +653,7 @@ func TestHandler_GetMetricJSONHandlerFunc(t *testing.T) {
 			requestPath:  "/value",
 			name:         "valid request gauge",
 			requestBody:  `{"id": "metric1", "type": "gauge", "value": 100}`,
-			expJsonData:  `{"id":"metric1","type":"gauge","value":0}`,
+			expJSONData:  `{"id":"metric1","type":"gauge","value":0}`,
 			expectedCode: http.StatusOK,
 			// expectedMetrics: models.Metrics{
 			// 	ID:    "metric1",
@@ -666,7 +666,7 @@ func TestHandler_GetMetricJSONHandlerFunc(t *testing.T) {
 			requestPath:  "/value",
 			name:         "valid request counter",
 			requestBody:  `{"id": "metric2", "type": "counter", "delta": 100}`,
-			expJsonData:  `{"delta":0,"id":"metric2","type":"counter"}`,
+			expJSONData:  `{"delta":0,"id":"metric2","type":"counter"}`,
 			expectedCode: http.StatusOK,
 			// expectedMetrics: models.Metrics{
 			// 	Delta: &delta,
@@ -679,7 +679,7 @@ func TestHandler_GetMetricJSONHandlerFunc(t *testing.T) {
 			requestPath:  "/value",
 			name:         "empty request",
 			requestBody:  `{}`, // Empty request body
-			expJsonData:  `{"id":"","type":""}`,
+			expJSONData:  `{"id":"","type":""}`,
 			expectedCode: http.StatusOK,
 			// expectedMetrics: models.Metrics{},
 			wantErr: false,
@@ -688,7 +688,7 @@ func TestHandler_GetMetricJSONHandlerFunc(t *testing.T) {
 			requestPath:  "/value",
 			name:         "only ID request",
 			requestBody:  `{"id": "metric1"}`,
-			expJsonData:  `{"id":"metric1","type":""}`,
+			expJSONData:  `{"id":"metric1","type":""}`,
 			expectedCode: http.StatusOK,
 			// expectedMetrics: models.Metrics{
 			// 	ID: "metric1",
@@ -700,7 +700,7 @@ func TestHandler_GetMetricJSONHandlerFunc(t *testing.T) {
 			requestPath:  "/value",
 			name:         "ID and type request",
 			requestBody:  `{"id": "metric1", "type": "gauge"}`,
-			expJsonData:  `{"id":"metric1","type":"gauge","value":0}`,
+			expJSONData:  `{"id":"metric1","type":"gauge","value":0}`,
 			expectedCode: http.StatusOK,
 			// expectedMetrics: models.Metrics{
 			// 	ID:    "metric1",
@@ -732,6 +732,21 @@ func TestHandler_GetMetricJSONHandlerFunc(t *testing.T) {
 			expectedCode: http.StatusBadRequest,
 			// expectedMetrics: models.Metrics{},
 			wantErr: true,
+		},
+		{
+			requestPath: "/value",
+			name:        "bad body struct",
+			requestBody: `{
+				"name": "John",
+				"age": 30,
+				"emails": [
+					"john@example.com",
+					"invalid email"
+				]
+			}`,
+			expJSONData:  `{"id":"","type":""}`,
+			expectedCode: http.StatusOK,
+			wantErr:      true,
 		},
 	}
 
@@ -768,20 +783,20 @@ func TestHandler_GetMetricJSONHandlerFunc(t *testing.T) {
 					return
 				}
 
-				resJsonData, err := json.Marshal(jsonData)
+				resJSONData, err := json.Marshal(jsonData)
 				if err != nil {
 					fmt.Println("Ошибка при преобразовании в JSON строку:", err)
 					return
 				}
 
 				// // fmt.Printf("response.Body: %v\n", response.Body)
-				// expJsonData, err := json.Marshal(tt.expectedMetrics)
+				// expJSONData, err := json.Marshal(tt.expectedMetrics)
 				// if err != nil {
 				// 	t.Errorf("Failed to marshal empty metric: %v", err)
 				// }
-				// string(expJsonData)
+				// string(expJSONData)
 
-				assert.Equal(t, tt.expJsonData, string(resJsonData))
+				assert.Equal(t, tt.expJSONData, string(resJSONData))
 			}
 
 			defer response.Body.Close()

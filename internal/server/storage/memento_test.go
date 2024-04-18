@@ -193,3 +193,18 @@ func TestMemento_SetMetrics(t *testing.T) {
 	}
 	assert.Equal(t, expectedMetrics, memento.GetMetrics())
 }
+
+// func TestMemento_MementoStore(t *testing.T) *Memento {
+// 	expectedMetrics := &Memento{
+// 		metrics: map[MetricType]map[string]interface{}{
+// 			"counter": {
+// 				"metric1": 100,
+// 				"metric2": 200,
+// 			},
+// 			"gauge": {
+// 				"metric3": 300.5,
+// 			},
+// 		},
+// 	}
+// 	return expectedMetrics
+// }
