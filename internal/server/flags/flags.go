@@ -22,10 +22,12 @@ type InitedFlags struct {
 	RestoreMetrics bool
 	DBSettings     string
 	StorageType    string
+	HashKey        string
 }
 
 func Parse() *InitedFlags {
 	end := flag.String("a", ":8080", "endpoint address")
+	key := flag.String("k", "", "hash key")
 	flagStoreInterval := flag.Int("i", 300, "Интервал сохранения метрик на диск")
 	flagFileStorage := flag.String("f", "/tmp/metrics-db.json", "Путь к файлу для хранения метрик")
 	flagRestoreMetrics := flag.Bool("r", true, "Восстановление метрик при старте сервера")
@@ -38,6 +40,11 @@ func Parse() *InitedFlags {
 	endpoint := *end
 	if envRunAddr := os.Getenv("ADDRESS"); envRunAddr != "" {
 		endpoint = envRunAddr
+	}
+
+	hashKey := *key
+	if envHashKey := os.Getenv("KEY"); envHashKey != "" {
+		hashKey = envHashKey
 	}
 
 	// fmt.Printf("flagStoreInterval: %v\n", *flagStoreInterval)
@@ -78,6 +85,7 @@ func Parse() *InitedFlags {
 		RestoreMetrics: restoreMetrics,
 		DBSettings:     dbSettings,
 		StorageType:    storageType,
+		HashKey:        hashKey,
 	}
 
 }

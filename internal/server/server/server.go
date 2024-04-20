@@ -27,9 +27,9 @@ import (
 // @externalDocs.url          https://swagger.io/resources/open-api/
 func InitRouter(handler handler.Handler) chi.Router {
 	r := chi.NewRouter()
+	r.Use(packmiddleware.Logger)
 
 	// r.Use(middleware.Logger)
-	r.Use(packmiddleware.Logger)
 	// r.Use(packmiddleware.ContentTypeSet("application/json"))
 	// r.Use(middleware.RealIP)
 	// r.Use(middleware.Recoverer)
@@ -42,7 +42,7 @@ func InitRouter(handler handler.Handler) chi.Router {
 	// app.HandleRequest()
 	r.Get("/", handler.MetricsHandlerFunc)
 	r.Get("/ping", handler.PingDB)
-	r.Post("/updates/", handler.UpdateJSONMetricsHandlerFunc)
+	r.Post("/updates", handler.UpdateJSONMetricsHandlerFunc)
 
 	r.Route("/update", func(r chi.Router) {
 		r.Post("/", handler.UpdateJSONMetricHandlerFunc)

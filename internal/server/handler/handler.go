@@ -8,10 +8,11 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	"github.com/Arcadian-Sky/musthave-metrics/internal/server/flags"
+	"github.com/Arcadian-Sky/musthave-metrics/internal/server/handler/validate"
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/models"
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/storage"
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/storage/utils"
-	"github.com/Arcadian-Sky/musthave-metrics/internal/server/validate"
 )
 
 // Сборщик параметров
@@ -32,13 +33,15 @@ func NewMetricParams(r *http.Request) MetricParams {
 
 // Server handlers
 type Handler struct {
-	s storage.MetricsStorage
+	s   storage.MetricsStorage
+	cfg *flags.InitedFlags
 }
 
 // NewHandler создает экземпляр Handler
-func NewHandler(mStorage storage.MetricsStorage) *Handler {
+func NewHandler(mStorage storage.MetricsStorage, cnf *flags.InitedFlags) *Handler {
 	return &Handler{
-		s: mStorage,
+		s:   mStorage,
+		cfg: cnf,
 	}
 }
 
@@ -48,6 +51,13 @@ func NewHandler(mStorage storage.MetricsStorage) *Handler {
 // @Success 200 {string} string "OK"
 // @Router / [get]
 func (h *Handler) MetricsHandlerFunc(w http.ResponseWriter, r *http.Request) {
+	body, _ := io.ReadAll(r.Body)
+	err := validate.CheckHash(validate.GetHashHead(r), body, h.cfg.HashKey)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
 	w.Header().Set("Content-Type", "text/html")
 	w.WriteHeader(http.StatusOK)
 
@@ -71,14 +81,22 @@ func (h *Handler) MetricsHandlerFunc(w http.ResponseWriter, r *http.Request) {
 // @Success 200 {string} string "OK"
 // @Failure 404 {string} string "Error"
 func (h *Handler) UpdateMetricsHandlerFunc(w http.ResponseWriter, r *http.Request) {
+	body, _ := io.ReadAll(r.Body)
+	err := validate.CheckHash(validate.GetHashHead(r), body, h.cfg.HashKey)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
 	params := NewMetricParams(r)
 
 	//Проверякм переданные параметры
-	err := validate.CheckMetricTypeAndName(params.Type, params.Name)
+	err = validate.CheckMetricTypeAndName(params.Type, params.Name)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
+
 	ctx := r.Context()
 	// Обновляем метрику
 	err = h.s.UpdateMetric(ctx, params.Type, params.Name, params.Value)
@@ -105,10 +123,16 @@ func (h *Handler) UpdateMetricsHandlerFunc(w http.ResponseWriter, r *http.Reques
 // @Success 200 {string} string "OK"
 // @Router /value/{type}/{name} [get]
 func (h *Handler) GetMetricHandlerFunc(w http.ResponseWriter, r *http.Request) {
-	params := NewMetricParams(r)
+	body, _ := io.ReadAll(r.Body)
+	err := validate.CheckHash(validate.GetHashHead(r), body, h.cfg.HashKey)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 
+	params := NewMetricParams(r)
 	//Проверякм переданные параметры
-	err := validate.CheckMetricTypeAndName(params.Type, params.Name)
+	err = validate.CheckMetricTypeAndName(params.Type, params.Name)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
@@ -151,14 +175,19 @@ func (h *Handler) GetMetricHandlerFunc(w http.ResponseWriter, r *http.Request) {
 // @Failure 404 {object} string "Error"
 // @Router /value [post]
 func (h *Handler) GetMetricsJSONHandlerFunc(w http.ResponseWriter, r *http.Request) {
-	var metrics models.Metrics
-
 	// Читаем тело запроса
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		http.Error(w, "Failed to read request body: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
+	err = validate.CheckHash(validate.GetHashHead(r), body, h.cfg.HashKey)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	var metrics models.Metrics
 
 	// Проверяем тело запроса на пустоту
 	if len(body) == 0 {
@@ -205,13 +234,20 @@ func (h *Handler) GetMetricsJSONHandlerFunc(w http.ResponseWriter, r *http.Reque
 // @Failure 404 {object} string "Error"
 // @Router /update [post]
 func (h *Handler) UpdateJSONMetricHandlerFunc(w http.ResponseWriter, r *http.Request) {
-	var metrics models.Metrics
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		http.Error(w, "Failed to read request body: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
+	err = validate.CheckHash(validate.GetHashHead(r), body, h.cfg.HashKey)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 
+	var metrics models.Metrics
+
+	fmt.Printf("body2: %v\n", body)
 	// Проверяем тело запроса на пустоту
 	if len(body) == 0 {
 		http.Error(w, "Request body is empty", http.StatusBadRequest)
@@ -255,7 +291,14 @@ func (h *Handler) UpdateJSONMetricHandlerFunc(w http.ResponseWriter, r *http.Req
 }
 
 func (h *Handler) PingDB(w http.ResponseWriter, r *http.Request) {
-	err := h.s.Ping()
+	body, _ := io.ReadAll(r.Body)
+	err := validate.CheckHash(validate.GetHashHead(r), body, h.cfg.HashKey)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	err = h.s.Ping()
 	if err != nil {
 		http.Error(w, "ошибка при проверке подключения к базе данных:"+err.Error(), http.StatusInternalServerError)
 		return
@@ -267,12 +310,18 @@ func (h *Handler) PingDB(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) UpdateJSONMetricsHandlerFunc(w http.ResponseWriter, r *http.Request) {
-	var metrics []models.Metrics
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		http.Error(w, "Failed to read request body: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
+	err = validate.CheckHash(validate.GetHashHead(r), body, h.cfg.HashKey)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	var metrics []models.Metrics
 
 	// Проверяем тело запроса на пустоту
 	if len(body) == 0 {

@@ -10,6 +10,7 @@ import (
 
 type Config struct {
 	serverAddress  string
+	hashKey        string
 	pollInterval   time.Duration
 	reportInterval time.Duration
 }
@@ -20,6 +21,10 @@ func (c *Config) SetConfigServer(s string) {
 
 func (c *Config) GetServerAddress() string {
 	return c.serverAddress
+}
+
+func (c *Config) GetHash() string {
+	return c.hashKey
 }
 
 func (c *Config) GetReportInterval() time.Duration {
@@ -41,18 +46,24 @@ func SetDefault() *Config {
 
 func Parse() (Config, error) {
 	end := flag.String("a", "localhost:8080", "endpoint")
+	key := flag.String("k", "", "hash key")
 	repI := flag.Int("r", 2, "reportInterval")
 	polI := flag.Int("p", 10, "pollInterval")
 	flag.Parse()
 
 	config := Config{
 		serverAddress:  "http://" + *end,
+		hashKey:        *key,
 		reportInterval: time.Duration(*repI) * time.Second,
 		pollInterval:   time.Duration(*polI) * time.Second,
 	}
 
 	if envRunAddr := os.Getenv("ADDRESS"); envRunAddr != "" {
 		config.serverAddress = "http://" + envRunAddr
+	}
+
+	if envHashKey := os.Getenv("KEY"); envHashKey != "" {
+		config.hashKey = envHashKey
 	}
 
 	if envRepI := os.Getenv("REPORT_INTERVAL"); envRepI != "" {
