@@ -2,6 +2,9 @@ package controller
 
 import (
 	"bytes"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -113,22 +116,43 @@ func (c *CollectAndSendMetricsService) sendMetricJSON(m any, method string) erro
 	client := &http.Client{
 		Timeout: 2 * time.Second,
 	}
-
 	jsonData, err := json.Marshal(m)
 	if err != nil {
 		fmt.Println("Error marshaling metrics:", err)
 		return err
 	}
+	fmt.Printf("m: %v\n", string(jsonData))
 
 	// Формируем адрес запроса
 	url := fmt.Sprintf("%s"+method, c.config.GetServerAddress())
 
-	// Отправляем запрос на сервер
-	resp, err := client.Post(url, "application/json", bytes.NewBuffer(jsonData))
+	// Создание HTTP-запроса POST
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
 	if err != nil {
-		fmt.Printf("Metrics did not sent: \n")
 		return err
 	}
+	hashKey := c.config.GetHash()
+	if hashKey != "" {
+		h := hmac.New(sha256.New, []byte(hashKey))
+		h.Write(jsonData)
+		dst := h.Sum(nil)
+		// fmt.Printf("dst: %v\n", hex.EncodeToString(dst))
+		req.Header.Set("HashSHA256", hex.EncodeToString(dst))
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	//
+	// Отправляем запрос на сервер
+	// resp, err := client.Post(url, "application/json", bytes.NewBuffer(jsonData))
+	// if err != nil {
+	// 	fmt.Printf("Metrics did not sent: \n")
+	// 	return err
+	// }
 	defer resp.Body.Close()
 
 	return nil
