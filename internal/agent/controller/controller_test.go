@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -196,8 +195,6 @@ func TestSendMetricJSONValues(t *testing.T) {
 	}))
 
 	defer server.Close()
-
-	fmt.Printf("server.URL: %v\n", server.URL)
 
 	config, _ := flags.Parse()
 	config.SetConfigServer(server.URL)

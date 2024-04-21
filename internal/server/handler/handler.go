@@ -81,14 +81,13 @@ func (h *Handler) MetricsHandlerFunc(w http.ResponseWriter, r *http.Request) {
 // @Success 200 {string} string "OK"
 // @Failure 404 {string} string "Error"
 func (h *Handler) UpdateMetricsHandlerFunc(w http.ResponseWriter, r *http.Request) {
+	params := NewMetricParams(r)
 	body, _ := io.ReadAll(r.Body)
 	err := validate.CheckHash(validate.GetHashHead(r), body, h.cfg.HashKey)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-
-	params := NewMetricParams(r)
 
 	//Проверякм переданные параметры
 	err = validate.CheckMetricTypeAndName(params.Type, params.Name)
