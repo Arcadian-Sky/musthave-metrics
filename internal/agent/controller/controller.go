@@ -131,6 +131,8 @@ func (c *CollectAndSendMetricsService) sendMetricJSON(m any, method string) erro
 	if err != nil {
 		return err
 	}
+	req.Header.Set("Content-Type", "application/json")
+
 	hashKey := c.config.GetHash()
 	if hashKey != "" {
 		h := hmac.New(sha256.New, []byte(hashKey))

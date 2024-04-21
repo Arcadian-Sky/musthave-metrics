@@ -30,6 +30,7 @@ func GetHashHead(r *http.Request) string {
 
 func CheckHash(sha string, body []byte, key string) error {
 	if sha != "" {
+		fmt.Printf("sha: %v\n", sha)
 		data, err := hex.DecodeString(sha)
 		if err != nil {
 			return err
