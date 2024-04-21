@@ -314,11 +314,11 @@ func (h *Handler) UpdateJSONMetricsHandlerFunc(w http.ResponseWriter, r *http.Re
 		http.Error(w, "Failed to read request body: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
-	err = validate.CheckHash(validate.GetHashHead(r), body, h.cfg.HashKey)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
+	// err = validate.CheckHash(validate.GetHashHead(r), body, h.cfg.HashKey)
+	// if err != nil {
+	// 	http.Error(w, err.Error(), http.StatusBadRequest)
+	// 	return
+	// }
 
 	var metrics []models.Metrics
 

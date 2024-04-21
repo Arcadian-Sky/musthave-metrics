@@ -43,6 +43,7 @@ func InitRouter(handler handler.Handler) chi.Router {
 	r.Get("/", handler.MetricsHandlerFunc)
 	r.Get("/ping", handler.PingDB)
 	r.Post("/updates", handler.UpdateJSONMetricsHandlerFunc)
+	r.Post("/updates/", handler.UpdateJSONMetricsHandlerFunc)
 
 	r.Route("/update", func(r chi.Router) {
 		r.Post("/", handler.UpdateJSONMetricHandlerFunc)
