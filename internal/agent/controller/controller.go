@@ -16,6 +16,9 @@ type CollectAndSendMetricsService struct {
 	config flags.Config
 }
 
+const updatePathOne = "/update"
+const updatePathPack = "/updates"
+
 func NewCollectAndSendMetricsService(config flags.Config) *CollectAndSendMetricsService {
 	return &CollectAndSendMetricsService{config}
 }
@@ -89,7 +92,7 @@ func (c *CollectAndSendMetricsService) makePack(metrics map[string]interface{}, 
 func (c *CollectAndSendMetricsService) send(metrics map[string]interface{}, pollCount int) error {
 	var forSend = c.makePack(metrics, pollCount)
 	for _, metric := range forSend {
-		err := c.sendMetricJSON(metric, "/update")
+		err := c.sendMetricJSON(metric, updatePathOne)
 		if err != nil {
 			return err
 		}
@@ -100,7 +103,7 @@ func (c *CollectAndSendMetricsService) send(metrics map[string]interface{}, poll
 
 func (c *CollectAndSendMetricsService) sendPack(metrics map[string]interface{}, pollCount int) error {
 	var forSend = c.makePack(metrics, pollCount)
-	err := c.sendMetricJSON(forSend, "/updates")
+	err := c.sendMetricJSON(forSend, updatePathPack)
 	if err != nil {
 		return err
 	}

@@ -194,13 +194,13 @@ func (m *MemStorage) Ping() error {
 // CreateMemento - создает Memento на основе текущего состояния storage.MemStorage
 func (m *MemStorage) CreateMemento() *storage.Memento {
 	s := &storage.Memento{}
-	ctx := context.TODO()
+	ctx := context.Background()
 	s.SetMetrics(m.GetMetrics(ctx))
 	return s
 }
 
 // RestoreFromMemento - восстанавливает состояние storage.MemStorage из Memento
 func (m *MemStorage) RestoreFromMemento(s *storage.Memento) {
-	ctx := context.TODO()
+	ctx := context.Background()
 	m.SetMetrics(ctx, s.GetMetrics())
 }
