@@ -16,6 +16,9 @@ type CollectAndSendMetricsService struct {
 	config flags.Config
 }
 
+const updatePathOne = "/update"
+const updatePathPack = "/updates"
+
 func NewCollectAndSendMetricsService(config flags.Config) *CollectAndSendMetricsService {
 	return &CollectAndSendMetricsService{config}
 }
@@ -37,6 +40,12 @@ func (c *CollectAndSendMetricsService) Run() {
 			if err != nil {
 				fmt.Println("Error sending metrics:", err)
 			}
+
+			err = c.sendPack(metrics, pollCount)
+			if err != nil {
+				fmt.Println("Error sending metrics:", err)
+			}
+
 			pollCount = pollCount + 1
 			time.Sleep(c.config.GetPollInterval())
 		}
@@ -59,27 +68,42 @@ func (c *CollectAndSendMetricsService) Run() {
 	select {}
 }
 
-// Отправляем метрики
-func (c *CollectAndSendMetricsService) send(metrics map[string]interface{}, pollCount int) error {
+func (c *CollectAndSendMetricsService) makePack(metrics map[string]interface{}, pollCount int) []interface{} {
+	forSend := make([]interface{}, 0, len(metrics))
 	for metricType, value := range metrics {
 		mValue := value.(float64)
-		metric := models.Metrics{
+		forSend = append(forSend, models.Metrics{
 			ID:    metricType,
 			MType: "gauge",
 			Value: &mValue,
-		}
-		err := c.sendMetricJSONValue(metric)
+		})
+	}
+	mValue := int64(pollCount)
+	forSend = append(forSend, models.Metrics{
+		ID:    "PollCount",
+		MType: "counter",
+		Delta: &mValue,
+	})
+
+	return forSend
+}
+
+// Отправляем метрики
+func (c *CollectAndSendMetricsService) send(metrics map[string]interface{}, pollCount int) error {
+	var forSend = c.makePack(metrics, pollCount)
+	for _, metric := range forSend {
+		err := c.sendMetricJSON(metric, updatePathOne)
 		if err != nil {
 			return err
 		}
 	}
-	mValue := int64(pollCount)
-	metric := models.Metrics{
-		ID:    "PollCount",
-		MType: "counter",
-		Delta: &mValue,
-	}
-	err := c.sendMetricJSONValue(metric)
+
+	return nil
+}
+
+func (c *CollectAndSendMetricsService) sendPack(metrics map[string]interface{}, pollCount int) error {
+	var forSend = c.makePack(metrics, pollCount)
+	err := c.sendMetricJSON(forSend, updatePathPack)
 	if err != nil {
 		return err
 	}
@@ -88,7 +112,7 @@ func (c *CollectAndSendMetricsService) send(metrics map[string]interface{}, poll
 }
 
 // Отправляем запрос на сервер
-func (c *CollectAndSendMetricsService) sendMetricJSONValue(m models.Metrics) error {
+func (c *CollectAndSendMetricsService) sendMetricJSON(m any, method string) error {
 	client := &http.Client{
 		Timeout: 2 * time.Second,
 	}
@@ -100,15 +124,14 @@ func (c *CollectAndSendMetricsService) sendMetricJSONValue(m models.Metrics) err
 	}
 
 	// Формируем адрес запроса
-	url := fmt.Sprintf("%s/update", c.config.GetServerAddress())
+	url := fmt.Sprintf("%s"+method, c.config.GetServerAddress())
 
 	// Отправляем запрос на сервер
 	resp, err := client.Post(url, "application/json", bytes.NewBuffer(jsonData))
 	if err != nil {
-		fmt.Printf("Metrics did not sent: %s\n", m.ID)
+		fmt.Printf("Metrics did not sent: \n")
 		return err
 	}
-	// fmt.Printf("Metric sent: %s\n", m.ID)
 	defer resp.Body.Close()
 
 	return nil

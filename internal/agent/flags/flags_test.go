@@ -58,6 +58,17 @@ func TestSetDefault(t *testing.T) {
 	}
 }
 
+func TestSetConfigServer(t *testing.T) {
+	config := &Config{}
+	expectedServerAddress := "http://example.com"
+
+	config.SetConfigServer(expectedServerAddress)
+
+	if config.serverAddress != expectedServerAddress {
+		t.Errorf("Expected server address %s, got %s", expectedServerAddress, config.serverAddress)
+	}
+}
+
 func TestConfig_GetPollInterval(t *testing.T) {
 	tests := []struct {
 		name   string

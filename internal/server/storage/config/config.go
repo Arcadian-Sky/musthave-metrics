@@ -12,9 +12,16 @@ import (
 //	Интервал с которым производим бэкапирование: parsed.StoreInterval,
 //	Место в которое производим бэкапирование: parsed.FileStorage,
 //	Делаем ли восстановление значений при старте сервера:parsed.RestoreMetrics,
-//
+
+type MementoStorage interface {
+	// InitConfig(storeMetrics MementoStorage, config *flags.InitedFlags) error
+	// SaveMetricsToFile(storeMetrics MementoStorage, fileStoragePath string)
+	CreateMemento() *storage.Memento
+	RestoreFromMemento(s *storage.Memento)
+}
+
 // InitConfig инициализирует конфигурацию сервера на основе переданных параметров
-func InitConfig(storeMetrics *storage.MemStorage, config *flags.InitedFlags) error {
+func InitConfig(storeMetrics MementoStorage, config *flags.InitedFlags) error {
 	// Создаем экземпляр Caretaker для работы с мементо
 	caretaker := &caretaker.Caretaker{}
 	if config.FileStorage == "" {
@@ -52,7 +59,7 @@ func InitConfig(storeMetrics *storage.MemStorage, config *flags.InitedFlags) err
 }
 
 // saveMetricsToFile сохраняет текущие значения метрик на диск
-func SaveMetricsToFile(storeMetrics *storage.MemStorage, fileStoragePath string) {
+func SaveMetricsToFile(storeMetrics MementoStorage, fileStoragePath string) {
 	memento := storeMetrics.CreateMemento()
 	caretaker := &caretaker.Caretaker{}
 	err := caretaker.SaveToFile(memento, fileStoragePath)
