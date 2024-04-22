@@ -10,6 +10,7 @@ import (
 
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/models"
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/storage"
+	"github.com/Arcadian-Sky/musthave-metrics/internal/server/storage/utils"
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/validate"
 )
 
@@ -51,7 +52,7 @@ func (h *Handler) MetricsHandlerFunc(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 
 	// Выводим данные
-	for name, value := range h.s.GetMetrics() {
+	for name, value := range h.s.GetMetrics(r.Context()) {
 		fmt.Fprintf(w, "%s: %v\n", name, value)
 	}
 }
@@ -78,9 +79,9 @@ func (h *Handler) UpdateMetricsHandlerFunc(w http.ResponseWriter, r *http.Reques
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
-
+	ctx := r.Context()
 	// Обновляем метрику
-	err = h.s.UpdateMetric(params.Type, params.Name, params.Value)
+	err = h.s.UpdateMetric(ctx, params.Type, params.Name, params.Value)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -90,7 +91,7 @@ func (h *Handler) UpdateMetricsHandlerFunc(w http.ResponseWriter, r *http.Reques
 	w.WriteHeader(http.StatusOK)
 
 	// Выводим данные
-	currentMetrics := h.s.GetMetrics()
+	currentMetrics := h.s.GetMetrics(ctx)
 	for name, value := range currentMetrics {
 		fmt.Fprintf(w, "%s: %v\n", name, value)
 	}
@@ -103,7 +104,7 @@ func (h *Handler) UpdateMetricsHandlerFunc(w http.ResponseWriter, r *http.Reques
 // @Param name path string true "Название метрики"
 // @Success 200 {string} string "OK"
 // @Router /value/{type}/{name} [get]
-func (h *Handler) GetMetricsHandlerFunc(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) GetMetricHandlerFunc(w http.ResponseWriter, r *http.Request) {
 	params := NewMetricParams(r)
 
 	//Проверякм переданные параметры
@@ -114,15 +115,14 @@ func (h *Handler) GetMetricsHandlerFunc(w http.ResponseWriter, r *http.Request) 
 	}
 
 	//Получаем данные для вывода
-	metricTypeID, err := storage.GetMetricTypeByCode(params.Type)
+	metricTypeID, err := utils.GetMetricTypeByCode(params.Type)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	// Выводим данные
-	currentMetrics := h.s.GetMetric(metricTypeID)
-	fmt.Printf("metricName: %v\n", params.Name)
+	currentMetrics := h.s.GetMetric(r.Context(), metricTypeID)
 	if params.Name != "" {
 		fmt.Printf("currentMetrics[metricName]: %v\n", currentMetrics[params.Name])
 		if currentMetrics[params.Name] != nil {
@@ -169,16 +169,19 @@ func (h *Handler) GetMetricsJSONHandlerFunc(w http.ResponseWriter, r *http.Reque
 	// Декодируем JSON из []byte в структуру Metrics
 	if err := json.Unmarshal(body, &metrics); err != nil {
 		http.Error(w, "Failed to decode JSON: "+err.Error(), http.StatusBadRequest)
+		fmt.Printf("Failed to decode JSON:  err.Error(): %v\n", err.Error())
 		return
 	}
 
-	// Выводим данные
-	err = h.s.GetJSONMetric(&metrics)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+	if metrics.MType != "" && metrics.ID != "" {
+		// Выводим данные
+		err = h.s.GetJSONMetric(r.Context(), &metrics)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusNotFound)
+			fmt.Printf("GetJSONMetric err.Error(): %v\n", err.Error())
+			return
+		}
 	}
-
 	resp, err := json.Marshal(&metrics)
 	if err != nil {
 		fmt.Println("Ошибка при преобразовании в JSON:", err)
@@ -201,7 +204,7 @@ func (h *Handler) GetMetricsJSONHandlerFunc(w http.ResponseWriter, r *http.Reque
 // @Success 200 {object} string "OK"
 // @Failure 404 {object} string "Error"
 // @Router /update [post]
-func (h *Handler) UpdateJSONMetricsHandlerFunc(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) UpdateJSONMetricHandlerFunc(w http.ResponseWriter, r *http.Request) {
 	var metrics models.Metrics
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -215,21 +218,21 @@ func (h *Handler) UpdateJSONMetricsHandlerFunc(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	// // Декодируем JSON из []byte в структуру Metrics
+	// Декодируем JSON из []byte в структуру Metrics
 	if err := json.Unmarshal(body, &metrics); err != nil {
 		http.Error(w, "Failed to decode JSON: "+err.Error(), http.StatusBadRequest)
 		return
 	}
-
+	ctx := r.Context()
 	// Обновляем метрику
-	err = h.s.UpdateJSONMetric(&metrics)
+	err = h.s.UpdateJSONMetric(ctx, &metrics)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	// Выводим данные
-	err = h.s.GetJSONMetric(&metrics)
+	err = h.s.GetJSONMetric(ctx, &metrics)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -249,4 +252,66 @@ func (h *Handler) UpdateJSONMetricsHandlerFunc(w http.ResponseWriter, r *http.Re
 		return
 	}
 
+}
+
+func (h *Handler) PingDB(w http.ResponseWriter, r *http.Request) {
+	err := h.s.Ping()
+	if err != nil {
+		http.Error(w, "ошибка при проверке подключения к базе данных:"+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	fmt.Fprintf(w, "%s\n", "Подключение к базе данных успешно!")
+	// w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+}
+
+func (h *Handler) UpdateJSONMetricsHandlerFunc(w http.ResponseWriter, r *http.Request) {
+	var metrics []models.Metrics
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, "Failed to read request body: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Проверяем тело запроса на пустоту
+	if len(body) == 0 {
+		http.Error(w, "Request body is empty", http.StatusBadRequest)
+		return
+	}
+
+	// // Декодируем JSON из []byte в структуру Metrics
+	if err := json.Unmarshal(body, &metrics); err != nil {
+		http.Error(w, "Failed to decode JSON: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+	// Обновляем метрики
+	err = h.s.UpdateJSONMetrics(r.Context(), &metrics)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Выводим данные
+	// for range metrics{
+	// 	err = h.s.GetJSONMetrics(&metrics)
+	// 	if err != nil {
+	// 		http.Error(w, err.Error(), http.StatusBadRequest)
+	// 		return
+	// 	}
+	// }
+
+	resp, err := json.Marshal(&metrics)
+	if err != nil {
+		fmt.Println("Ошибка при преобразовании в JSON:", err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_, err = w.Write(resp)
+	if err != nil {
+		fmt.Println("Ошибка записи Body:", err)
+		return
+	}
 }

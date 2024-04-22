@@ -38,6 +38,12 @@ func TestParse(t *testing.T) {
 			env:  "localhost:7070",
 			want: "localhost:7070",
 		},
+		{
+			name: "WithArgumentsflagRestoreMetrics",
+			args: []string{"-r", ""},
+			env:  "",
+			want: "",
+		},
 	}
 
 	for _, tt := range tests {
@@ -67,6 +73,7 @@ func TestParse(t *testing.T) {
 		wantStoreInterval  time.Duration
 		wantFileStorage    string
 		wantRestoreMetrics bool
+		flagDBSettings     string
 	}{
 		{
 			name:               "NoArguments",
@@ -80,6 +87,7 @@ func TestParse(t *testing.T) {
 			wantStoreInterval:  300 * time.Second,
 			wantFileStorage:    "/tmp/metrics-db.json",
 			wantRestoreMetrics: true,
+			flagDBSettings:     "",
 		},
 		{
 			name:               "WithEnvironmentVariables",
@@ -93,6 +101,7 @@ func TestParse(t *testing.T) {
 			wantStoreInterval:  5 * time.Minute,
 			wantFileStorage:    "/custom/path",
 			wantRestoreMetrics: false,
+			flagDBSettings:     "",
 		},
 	}
 
@@ -104,6 +113,7 @@ func TestParse(t *testing.T) {
 			os.Setenv("STORE_INTERVAL", tt.envInterv)
 			os.Setenv("FILE_STORAGE_PATH", tt.envFileStorage)
 			os.Setenv("RESTORE", tt.envRestore)
+			os.Setenv("DATABASE_DSN", "")
 
 			got := Parse()
 
