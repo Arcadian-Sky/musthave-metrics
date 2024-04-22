@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS metrics (
 			name varchar NOT NULL,
 			counter numeric NULL,
 			gauge double precision NULL,
-			type varchar NOT NULL,
+			type metric_type  NOT NULL,
 			CONSTRAINT constraint_name_type UNIQUE (name, type)
 		);
 -- +goose StatementEnd

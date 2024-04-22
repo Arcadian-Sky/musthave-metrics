@@ -40,7 +40,7 @@ func NewPostgresStorage(db *sql.DB) *PostgresStorage {
 	}
 	err := p.migrateDB()
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 	return p
 }
@@ -113,7 +113,7 @@ func (p *PostgresStorage) migrateDB() error {
 
 	err := goose.RunContext(ctx, "up", p.db, ".")
 	if err != nil {
-		log.Fatalf("goose.Status(): %v", err)
+		return err
 	}
 
 	return nil
@@ -123,16 +123,20 @@ func (p *PostgresStorage) GetMetric(ctx context.Context, mtype storage.MetricTyp
 	var query string
 	var metrics map[string]interface{}
 	fmt.Printf("mtype: %v\n", mtype)
+	query = fmt.Sprintf("SELECT name, gauge FROM %s WHERE type = '$1'", p.getTableName())
+	var queryType string
 	switch mtype {
 	case storage.Gauge:
-		query = fmt.Sprintf("SELECT name, gauge FROM %s WHERE type = 'gauge'", p.getTableName())
+		queryType = "gauge"
+		// query = fmt.Sprintf("SELECT name, gauge FROM %s WHERE type = 'gauge'", p.getTableName())
 	case storage.Counter:
-		query = fmt.Sprintf("SELECT name, counter FROM %s WHERE type = 'counter'", p.getTableName())
+		queryType = "counter"
+		// query = fmt.Sprintf("SELECT name, counter FROM %s WHERE type = 'counter'", p.getTableName())
 	default:
 		return nil //, fmt.Errorf("неподдерживаемый тип метрики: %s", metricType)
 	}
 
-	rows, err := p.db.Query(query)
+	rows, err := p.db.Query(query, queryType)
 	if err != nil {
 		return nil //, fmt.Errorf("ошибка при выполнении запроса: %v", err)
 	}
