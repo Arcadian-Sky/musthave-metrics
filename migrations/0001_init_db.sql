@@ -2,7 +2,7 @@
 -- +goose StatementBegin
 CREATE TABLE IF NOT EXISTS metrics (
 			name varchar NOT NULL,
-			counter numeric NULL,
+			counter enum NULL,
 			gauge double precision NULL,
 			type varchar NOT NULL,
 			CONSTRAINT constraint_name_type UNIQUE (name, type)
