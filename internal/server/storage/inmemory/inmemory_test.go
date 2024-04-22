@@ -61,7 +61,7 @@ func TestMemStorage_GetMetric(t *testing.T) {
 			m := &MemStorage{
 				metrics: tt.metrics,
 			}
-			ctx := context.TODO()
+			ctx := context.Background()
 			got := m.GetMetric(ctx, tt.mtype)
 			if len(got) == 0 && len(tt.want) == 0 {
 			} else if !reflect.DeepEqual(got, tt.want) {
@@ -128,7 +128,7 @@ func TestMemStorage_UpdateMetric(t *testing.T) {
 			m := &MemStorage{
 				metrics: tt.fields.metrics,
 			}
-			ctx := context.TODO()
+			ctx := context.Background()
 			if err := m.UpdateMetric(ctx, tt.args.mtype, tt.args.name, tt.args.value); (err != nil) != tt.wantErr {
 				t.Errorf("MemStorage.UpdateMetric() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -159,7 +159,7 @@ func TestMemStorage_GetJSONMetric(t *testing.T) {
 				metrics: map[storage.MetricType]map[string]interface{}{},
 			},
 			args: args{
-				ctx: context.TODO(),
+				ctx: context.Background(),
 				metric: &models.Metrics{
 					MType: mtypeGauge,
 				},
@@ -182,7 +182,7 @@ func TestMemStorage_GetJSONMetric(t *testing.T) {
 				},
 			},
 			args: args{
-				ctx: context.TODO(),
+				ctx: context.Background(),
 				metric: &models.Metrics{
 					MType: mtypeGauge,
 				},
@@ -205,7 +205,7 @@ func TestMemStorage_GetJSONMetric(t *testing.T) {
 				},
 			},
 			args: args{
-				ctx: context.TODO(),
+				ctx: context.Background(),
 				metric: &models.Metrics{
 					MType: mtypeCounter,
 				},
@@ -228,7 +228,7 @@ func TestMemStorage_GetJSONMetric(t *testing.T) {
 				},
 			},
 			args: args{
-				ctx: context.TODO(),
+				ctx: context.Background(),
 				metric: &models.Metrics{
 					MType: mtypeGauge,
 				},
@@ -251,7 +251,7 @@ func TestMemStorage_GetJSONMetric(t *testing.T) {
 				},
 			},
 			args: args{
-				ctx: context.TODO(),
+				ctx: context.Background(),
 				metric: &models.Metrics{
 					MType: mtypeCounter,
 					ID:    "metric4",
@@ -275,7 +275,7 @@ func TestMemStorage_GetJSONMetric(t *testing.T) {
 				},
 			},
 			args: args{
-				ctx: context.TODO(),
+				ctx: context.Background(),
 				metric: &models.Metrics{
 					MType: mtypeGauge,
 					ID:    "metric2",
@@ -395,7 +395,7 @@ func TestMemStorage_UpdateJSONMetric(t *testing.T) {
 			m := &MemStorage{
 				metrics: tt.fields.metrics,
 			}
-			ctx := context.TODO()
+			ctx := context.Background()
 			// fmt.Printf("m.GetMetrics(ctx): %v\n", m.GetMetrics(ctx))
 			err := m.UpdateJSONMetric(ctx, &tt.args)
 			// fmt.Printf("m.GetMetrics(ctx)2: %v\n", m.GetMetrics(ctx))
@@ -509,7 +509,7 @@ func TestMemStorage_GetMetrics(t *testing.T) {
 			m := &MemStorage{
 				metrics: tt.fields.metrics,
 			}
-			ctx := context.TODO()
+			ctx := context.Background()
 			if got := m.GetMetrics(ctx); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("MemStorage.GetMetrics() = %v, want %v", got, tt.want)
 			}
@@ -536,7 +536,7 @@ func TestMemStorage_SetMetrics(t *testing.T) {
 				metrics: map[storage.MetricType]map[string]interface{}{},
 			},
 			args: args{
-				ctx: context.TODO(),
+				ctx: context.Background(),
 				metrics: map[storage.MetricType]map[string]interface{}{
 					storage.Gauge: {
 						"metric1": 10.5,
@@ -633,7 +633,7 @@ func TestMemStorage_UpdateJSONMetrics(t *testing.T) {
 			m := &MemStorage{
 				metrics: tt.fields.metrics,
 			}
-			ctx := context.TODO()
+			ctx := context.Background()
 			err := m.UpdateJSONMetrics(ctx, &tt.args)
 			if err != nil && !tt.wantErr {
 				t.Errorf("MemStorage.UpdateJSONMetrics() error = %v, wantErr %v", err, tt.wantErr)
@@ -668,7 +668,7 @@ func TestMemStorage_CreateMemento(t *testing.T) {
 		"metric3": 300.5,
 	}
 	mStorage := NewMemStorage()
-	ctx := context.TODO()
+	ctx := context.Background()
 	mStorage.SetMetrics(ctx, metrics)
 
 	// Вызываем функцию CreateMemento
@@ -698,7 +698,7 @@ func TestMemStorage_RestoreFromMemento(t *testing.T) {
 	}
 
 	mStorage := NewMemStorage()
-	ctx := context.TODO()
+	ctx := context.Background()
 	mStorage.SetMetrics(ctx, metrics)
 
 	s := &storage.Memento{}
