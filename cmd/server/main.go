@@ -61,7 +61,7 @@ func main() {
 	goose.SetBaseFS(migrations.Migrations)
 
 	// NewMemStorage создает новый экземпляр хранилищв
-	//Создаем хранилище
+	// Создаем хранилище
 	storeMetrics := func(cnf *flags.InitedFlags, db *sql.DB) storage.MetricsStorage {
 		if cnf.StorageType == "postgres" {
 			return postgres.NewPostgresStorage(db)
