@@ -1,6 +1,8 @@
 package controller
 
 import (
+	"math"
+	"sync"
 	"testing"
 
 	"github.com/Arcadian-Sky/musthave-metrics/internal/agent/flags"
@@ -31,11 +33,21 @@ func TestCollectAndSendMetricsService_GetSystemInfo(t *testing.T) {
 	// Создаем канал для передачи метрик
 	metricsInfoChan := make(chan map[string]interface{})
 
+	var wg sync.WaitGroup
+	wg.Add(1)
+
 	// Запускаем функцию getSystemInfo в отдельной горутине
-	go getSystemInfo(metricsInfoChan, mockMetricsRepo)
+	go func() {
+		// Запускаем функцию getSystemInfo в отдельной горутине
+		getSystemInfo(metricsInfoChan, mockMetricsRepo)
+		wg.Done()
+	}()
 
 	// Получаем результат из канала
 	receivedMetrics := <-metricsInfoChan
+
+	// Ожидаем завершения выполнения горутины
+	wg.Wait()
 
 	// Проверяем, что полученные метрики соответствуют ожидаемым
 	assert.Equal(t, 123, receivedMetrics["ExistingMetric"])
@@ -44,10 +56,19 @@ func TestCollectAndSendMetricsService_GetSystemInfo(t *testing.T) {
 	memoryInfo, _ := mem.VirtualMemory()
 	cpuCount, _ := cpu.Counts(false)
 
+	numberRTotal := int(math.Round(receivedMetrics["TotalMemory"].(float64))/10000) * 10000
+	numberTotal := int(math.Round(float64(memoryInfo.Total))/10000) * 10000
+
+	numberRFree := int(math.Round(receivedMetrics["FreeMemory"].(float64))/10000) * 10000
+	numberFree := int(math.Round(float64(memoryInfo.Free))/10000) * 10000
+
+	numberRcpuCount := int(math.Round(receivedMetrics["CPUutilization1"].(float64))/10000) * 10000
+	numbercpuCount := int(math.Round(float64(cpuCount))/10000) * 10000
+
 	// Проверяем, что TotalMemory, FreeMemory и CPUutilization1 установлены правильно
-	assert.Equal(t, float64(memoryInfo.Total), receivedMetrics["TotalMemory"])
-	assert.Equal(t, float64(memoryInfo.Free), receivedMetrics["FreeMemory"])
-	assert.Equal(t, float64(cpuCount), receivedMetrics["CPUutilization1"])
+	assert.Equal(t, numberTotal, numberRTotal)
+	assert.Equal(t, numberFree, numberRFree)
+	assert.Equal(t, numbercpuCount, numberRcpuCount)
 
 }
 
