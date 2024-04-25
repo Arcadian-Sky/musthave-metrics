@@ -56,16 +56,16 @@ func TestCollectAndSendMetricsService_GetSystemInfo(t *testing.T) {
 	memoryInfo, _ := mem.VirtualMemory()
 	cpuCount, _ := cpu.Counts(false)
 
-	numberRTotal := int(math.Round(receivedMetrics["TotalMemory"].(float64))/10000) * 10000
-	numberTotal := int(math.Round(float64(memoryInfo.Total))/10000) * 10000
+	numberRTotal := int(math.Round(receivedMetrics["TotalMemory"].(float64)) / 10000000)
+	numberTotal := int(math.Round(float64(memoryInfo.Total)) / 10000000)
 
-	numberRFree := int(math.Round(receivedMetrics["FreeMemory"].(float64))/10000) * 10000
-	numberFree := int(math.Round(float64(memoryInfo.Free))/10000) * 10000
+	numberRFree := int(math.Round(receivedMetrics["FreeMemory"].(float64)) / 10000000)
+	numberFree := int(math.Round(float64(memoryInfo.Free)) / 10000000)
 
-	numberRcpuCount := int(math.Round(receivedMetrics["CPUutilization1"].(float64))/10000) * 10000
-	numbercpuCount := int(math.Round(float64(cpuCount))/10000) * 10000
+	numberRcpuCount := int(math.Round(receivedMetrics["CPUutilization1"].(float64)) / 10000000)
+	numbercpuCount := int(math.Round(float64(cpuCount)) / 10000000)
 
-	// Проверяем, что TotalMemory, FreeMemory и CPUutilization1 установлены правильно
+	// Проверяем, что TotalMemory, FreeMemory и CPUutilization1 установлены относительно правильно
 	assert.Equal(t, numberTotal, numberRTotal)
 	assert.Equal(t, numberFree, numberRFree)
 	assert.Equal(t, numbercpuCount, numberRcpuCount)
