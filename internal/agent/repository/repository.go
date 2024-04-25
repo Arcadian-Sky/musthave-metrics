@@ -60,6 +60,13 @@ func (r *InMemoryMetricsRepository) GetMetrics() (map[string]interface{}, error)
 	// Добавляем дополнительные метрики
 	metrics["RandomValue"] = rand.Float64() // Произвольное значение
 
+	// v, _ := mem.VirtualMemory()
+
+	// metrics["TotalMemory"] = v.Total
+	// metrics["FreeMemory"] = v.Free
+	// v, _ := cpu.Counts(false)
+	// metrics["CPUutilization1"] = v.cpu_count
+
 	err := r.SaveMetrics(metrics)
 	if err != nil {
 		log.Println("Error saving metrics:", err)

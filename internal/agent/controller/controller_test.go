@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/Arcadian-Sky/musthave-metrics/internal/agent/controller/sender"
 	"github.com/Arcadian-Sky/musthave-metrics/internal/agent/flags"
 	"github.com/Arcadian-Sky/musthave-metrics/internal/agent/models"
 	"github.com/stretchr/testify/assert"
@@ -45,7 +46,7 @@ func TestNewCollectAndSendMetricsService(t *testing.T) {
 			c := &CollectAndSendMetricsService{
 				config: tt.fields.config,
 			}
-			if err := c.sendMetricValue(tt.args.mType, tt.args.mName, tt.args.mValue); (err != nil) != tt.wantErr {
+			if err := c.sender.SendMetricValue(tt.args.mType, tt.args.mName, tt.args.mValue); (err != nil) != tt.wantErr {
 				t.Errorf("CollectAndSendMetricsService.sendMetricValue() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -54,9 +55,9 @@ func TestNewCollectAndSendMetricsService(t *testing.T) {
 
 func TestCollectAndSendMetricsService_send(t *testing.T) {
 	metrics := make(map[string]interface{})
-	pollCount := 10 // Пример значения pollCount
+	pollCount := int64(10) // Пример значения pollCount
 
-	service := NewCollectAndSendMetricsService(*flags.SetDefault())
+	service := NewCollectAndSendMetricsService(flags.SetDefault())
 	err := service.send(metrics, pollCount)
 	assert.Error(t, err, "Функция должна вернуть errоr")
 }
@@ -94,7 +95,7 @@ func TestCollectAndSendMetricsService_sendMetricValue(t *testing.T) {
 			c := &CollectAndSendMetricsService{
 				config: tt.fields.config,
 			}
-			if err := c.sendMetricValue(tt.args.mType, tt.args.mName, tt.args.mValue); (err != nil) != tt.wantErr {
+			if err := c.sender.SendMetricValue(tt.args.mType, tt.args.mName, tt.args.mValue); (err != nil) != tt.wantErr {
 				t.Errorf("CollectAndSendMetricsService.sendMetricValue() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -129,7 +130,7 @@ func TestMakePack(t *testing.T) {
 	}
 
 	// Создаем тестовое значение для pollCount
-	pollCount := 10
+	pollCount := int64(10)
 
 	// Вызываем метод makePack
 	pack := c.makePack(metrics, pollCount)
@@ -196,18 +197,19 @@ func TestSendMetricJSONValues(t *testing.T) {
 
 	defer server.Close()
 
-	config, _ := flags.Parse()
-	config.SetConfigServer(server.URL)
+	conf, _ := flags.Parse()
+	conf.SetConfigServer(server.URL)
 
 	// Создаем экземпляр CollectAndSendMetricsService с фейковым сервером
 	c := &CollectAndSendMetricsService{
-		config: config,
+		config: conf,
+		sender: sender.NewSender(&conf),
 	}
 	var fl100 = float64(100)
 	var fl200 = float64(200)
 	var de5 = int64(5)
 	// // Тестируемый вызов
-	err := c.sendMetricJSON([]interface{}{
+	err := c.sender.SendMetricJSON([]interface{}{
 		models.Metrics{ID: "metric1", MType: "gauge", Value: &fl100},
 		models.Metrics{ID: "metric2", MType: "gauge", Value: &fl200},
 		models.Metrics{ID: "PollCount", MType: "counter", Delta: &de5},
