@@ -15,7 +15,7 @@ import (
 func TestNewCollectAndSendMetricsService(t *testing.T) {
 
 	type fields struct {
-		config flags.Config
+		// config flags.Config
 		sender *sender.Sender
 	}
 	type args struct {
@@ -32,7 +32,7 @@ func TestNewCollectAndSendMetricsService(t *testing.T) {
 		{
 			name: "Test error sending metric value",
 			fields: fields{
-				config: flags.Config{},
+				// config: flags.Config{},
 				sender: sender.NewSender(&flags.Config{}),
 			},
 			args: args{
@@ -46,7 +46,7 @@ func TestNewCollectAndSendMetricsService(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			c := &CollectAndSendMetricsService{
-				config: tt.fields.config,
+				// config: tt.fields.config,
 				sender: tt.fields.sender,
 			}
 			if err := c.sender.SendMetricValue(tt.args.mType, tt.args.mName, tt.args.mValue); (err != nil) != tt.wantErr {
@@ -67,7 +67,7 @@ func TestCollectAndSendMetricsService_send(t *testing.T) {
 
 func TestCollectAndSendMetricsService_sendMetricValue(t *testing.T) {
 	type fields struct {
-		config flags.Config
+		// config flags.Config
 		sender *sender.Sender
 	}
 	type args struct {
@@ -84,7 +84,7 @@ func TestCollectAndSendMetricsService_sendMetricValue(t *testing.T) {
 		{
 			name: "Test with valid data",
 			fields: fields{
-				config: *flags.SetDefault(),
+				// config: *flags.SetDefault(),
 				sender: sender.NewSender(&flags.Config{}),
 			},
 			args: args{
@@ -98,7 +98,7 @@ func TestCollectAndSendMetricsService_sendMetricValue(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			c := &CollectAndSendMetricsService{
-				config: tt.fields.config,
+				// config: tt.fields.config,
 				sender: tt.fields.sender,
 			}
 			if err := c.sender.SendMetricValue(tt.args.mType, tt.args.mName, tt.args.mValue); (err != nil) != tt.wantErr {
@@ -208,7 +208,7 @@ func TestSendMetricJSONValues(t *testing.T) {
 
 	// Создаем экземпляр CollectAndSendMetricsService с фейковым сервером
 	c := &CollectAndSendMetricsService{
-		config: conf,
+		// config: conf,
 		sender: sender.NewSender(&conf),
 	}
 	var fl100 = float64(100)
