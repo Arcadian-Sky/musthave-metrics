@@ -16,6 +16,7 @@ func TestNewCollectAndSendMetricsService(t *testing.T) {
 
 	type fields struct {
 		config flags.Config
+		sender *sender.Sender
 	}
 	type args struct {
 		mType  string
@@ -32,6 +33,7 @@ func TestNewCollectAndSendMetricsService(t *testing.T) {
 			name: "Test error sending metric value",
 			fields: fields{
 				config: flags.Config{},
+				sender: sender.NewSender(&flags.Config{}),
 			},
 			args: args{
 				mType:  "gauge",
@@ -45,6 +47,7 @@ func TestNewCollectAndSendMetricsService(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			c := &CollectAndSendMetricsService{
 				config: tt.fields.config,
+				sender: tt.fields.sender,
 			}
 			if err := c.sender.SendMetricValue(tt.args.mType, tt.args.mName, tt.args.mValue); (err != nil) != tt.wantErr {
 				t.Errorf("CollectAndSendMetricsService.sendMetricValue() error = %v, wantErr %v", err, tt.wantErr)
@@ -65,6 +68,7 @@ func TestCollectAndSendMetricsService_send(t *testing.T) {
 func TestCollectAndSendMetricsService_sendMetricValue(t *testing.T) {
 	type fields struct {
 		config flags.Config
+		sender *sender.Sender
 	}
 	type args struct {
 		mType  string
@@ -81,6 +85,7 @@ func TestCollectAndSendMetricsService_sendMetricValue(t *testing.T) {
 			name: "Test with valid data",
 			fields: fields{
 				config: *flags.SetDefault(),
+				sender: sender.NewSender(&flags.Config{}),
 			},
 			args: args{
 				mType:  "gauge",
@@ -94,6 +99,7 @@ func TestCollectAndSendMetricsService_sendMetricValue(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			c := &CollectAndSendMetricsService{
 				config: tt.fields.config,
+				sender: tt.fields.sender,
 			}
 			if err := c.sender.SendMetricValue(tt.args.mType, tt.args.mName, tt.args.mValue); (err != nil) != tt.wantErr {
 				t.Errorf("CollectAndSendMetricsService.sendMetricValue() error = %v, wantErr %v", err, tt.wantErr)
