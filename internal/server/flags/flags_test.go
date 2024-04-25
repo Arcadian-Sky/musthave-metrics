@@ -1,10 +1,14 @@
 package flags
 
 import (
+	"encoding/json"
 	"flag"
+	"fmt"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestParse(t *testing.T) {
@@ -18,31 +22,37 @@ func TestParse(t *testing.T) {
 			name: "NoArguments",
 			args: []string{},
 			env:  "",
-			want: ":8080",
+			want: `{"Endpoint":":8080","StoreInterval":300000000000,"FileStorage":"/tmp/metrics-db.json","RestoreMetrics":true,"DBSettings":"","StorageType":"inmemory","HashKey":""}`,
 		},
 		{
 			name: "WithArguments",
 			args: []string{"-a", ":9090"},
 			env:  "",
-			want: ":9090",
+			want: `{"Endpoint":":9090","StoreInterval":300000000000,"FileStorage":"/tmp/metrics-db.json","RestoreMetrics":true,"DBSettings":"","StorageType":"inmemory","HashKey":""}`,
 		},
 		{
 			name: "WithEnvironmentVariable",
 			args: []string{},
 			env:  "localhost:7070",
-			want: "localhost:7070",
+			want: `{"Endpoint":"localhost:7070","StoreInterval":300000000000,"FileStorage":"/tmp/metrics-db.json","RestoreMetrics":true,"DBSettings":"","StorageType":"inmemory","HashKey":""}`,
 		},
 		{
 			name: "WithArgumentsAndEnvironmentVariable",
 			args: []string{"-a", ":9090"},
 			env:  "localhost:7070",
-			want: "localhost:7070",
+			want: `{"Endpoint":"localhost:7070","StoreInterval":300000000000,"FileStorage":"/tmp/metrics-db.json","RestoreMetrics":true,"DBSettings":"","StorageType":"inmemory","HashKey":""}`,
 		},
 		{
 			name: "WithArgumentsflagRestoreMetrics",
 			args: []string{"-r", ""},
 			env:  "",
-			want: "",
+			want: `{"Endpoint":":8080","StoreInterval":300000000000,"FileStorage":"/tmp/metrics-db.json","RestoreMetrics":true,"DBSettings":"","StorageType":"inmemory","HashKey":""}`,
+		},
+		{
+			name: "WithArgumentsflagFileStorage",
+			args: []string{"-f", "ololo"},
+			env:  "",
+			want: `{"Endpoint":":8080","StoreInterval":300000000000,"FileStorage":"ololo","RestoreMetrics":true,"DBSettings":"","StorageType":"inmemory","HashKey":""}`,
 		},
 	}
 
@@ -54,7 +64,15 @@ func TestParse(t *testing.T) {
 
 			// Устанавливаем переменную окружения
 			os.Setenv("ADDRESS", tt.env)
+			got := Parse()
 
+			resJSONData, err := json.Marshal(got)
+			if err != nil {
+				fmt.Println("Ошибка при преобразовании в JSON строку:", err)
+				return
+			}
+			assert.Equal(t, tt.want, string(resJSONData))
+			// fmt.Printf("got: %v\n", string(resJSONData))
 			// if got := Parse(); got != tt.want {
 			// 	t.Errorf("Parse() = %v, want %v", got, tt.want)
 			// }

@@ -12,7 +12,7 @@ type (
 	responseData struct {
 		status int
 		size   int
-		data   string
+		// data   string
 	}
 
 	// responseWriter - обертка вокруг http.ResponseWriter, чтобы отслеживать код статуса и размер ответа.
@@ -59,7 +59,7 @@ func Logger(h http.Handler) http.Handler {
 			responseData: &responseData{
 				status: 0,
 				size:   0,
-				data:   "",
+				// data:   "",
 			},
 		}
 
@@ -75,7 +75,7 @@ func Logger(h http.Handler) http.Handler {
 			zap.Int("status", lw.responseData.status),
 			zap.Duration("duration", duration),
 			zap.Int("response_size", lw.responseData.size),
-			zap.String("response", lw.responseData.data),
+			// zap.String("response", lw.responseData.data),
 		)
 
 		// logger.Info(
