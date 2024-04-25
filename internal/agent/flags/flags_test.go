@@ -46,6 +46,7 @@ func TestSetDefault(t *testing.T) {
 				serverAddress:  "http://localhost:8080",
 				reportInterval: time.Second,
 				pollInterval:   time.Second,
+				rateLimit:      10,
 			},
 		},
 	}
