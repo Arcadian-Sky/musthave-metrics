@@ -57,24 +57,37 @@ func (c *CollectAndSendMetricsService) worker(id int, jobs <-chan int, results c
 		// Ожидаем завершения выполнения горутины с помощью select
 		select {
 		case metrics := <-metricsInfoChan:
-			err := c.send(metrics, pollCount)
-			if err != nil {
-				log.Println("Error sending metrics:", err)
-			}
+			// err := c.send(metrics, pollCount)
+			// if err != nil {
+			// 	log.Println("Error sending metrics:", err)
+			// }
 			// для наглядности выводим, что рабочий завершил задачу
-			log.Println("рабочий", id, "завершил выполнение задачи", j)
 			// отправляем результат в канал результатов
-			err = c.sendPack(metrics, pollCount)
-			if err != nil {
-				fmt.Println("Error sending metrics:", err)
-			}
-			atomic.AddInt64(&pollCount, 1)
+			// err = c.sendPack(metrics, pollCount)
+			// if err != nil {
+			// 	fmt.Println("Error sending metrics:", err)
+			// }
+			// atomic.AddInt64(&pollCount, 1)
+			c.Push(metrics, pollCount)
+			log.Println("рабочий", id, "завершил выполнение задачи", j)
 			results <- j + 1
 
 		case <-time.After(time.Second * 5):
 			// Если получение системной информации заняло более 5 секунд, выводим сообщение об ошибке
 			log.Println("Ошибка: превышено время ожидания получения системной информации")
 		}
+	}
+}
+
+func (c *CollectAndSendMetricsService) Push(metrics map[string]interface{}, pollCount int64) {
+	err := c.send(metrics, pollCount)
+	if err != nil {
+		fmt.Println("Error sending metrics:", err)
+	}
+	atomic.AddInt64(&pollCount, 1)
+	err = c.sendPack(metrics, pollCount)
+	if err != nil {
+		fmt.Println("Error sending metrics:", err)
 	}
 }
 
