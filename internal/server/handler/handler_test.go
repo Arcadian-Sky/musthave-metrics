@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/Arcadian-Sky/musthave-metrics/internal/server/flags"
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/models"
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/storage/inmemory"
 	"github.com/go-chi/chi/v5"
@@ -66,8 +67,8 @@ import (
 // }
 
 func InitRouter() chi.Router {
-
-	handler := NewHandler(inmemory.NewMemStorage())
+	f := flags.InitedFlags{}
+	handler := NewHandler(inmemory.NewMemStorage(), &f)
 
 	r := chi.NewRouter()
 

@@ -6,12 +6,14 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	"github.com/Arcadian-Sky/musthave-metrics/internal/server/flags"
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/handler"
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/storage/inmemory"
 )
 
 func TestInitRouter(t *testing.T) {
-	fakeHandler := handler.NewHandler(inmemory.NewMemStorage())
+	f := flags.InitedFlags{}
+	fakeHandler := handler.NewHandler(inmemory.NewMemStorage(), &f)
 	// Получаем роутер с помощью InitRouter
 	router := InitRouter(*fakeHandler)
 	expectedPaths := []string{

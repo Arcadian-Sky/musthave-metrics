@@ -10,5 +10,5 @@ func main() {
 	if err != nil {
 		panic("Panic error in flags parsing")
 	}
-	controller.NewCollectAndSendMetricsService(config).Run()
+	controller.NewCollectAndSendMetricsService(&config).Run()
 }
