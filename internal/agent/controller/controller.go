@@ -45,9 +45,9 @@ func (c *CollectAndSendMetricsService) Run() {
 				// if err != nil {
 				// 	fmt.Println("Error sending metrics:", err)
 				// }
-				c.Push(metrics, pollCount)
+				c.Push(metrics, &pollCount)
 			} else {
-				c.Init(metricsRepo, pollCount)
+				c.Init(metricsRepo, &pollCount)
 			}
 
 			time.Sleep(c.config.GetPollInterval())

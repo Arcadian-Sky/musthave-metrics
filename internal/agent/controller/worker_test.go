@@ -79,8 +79,9 @@ func TestCollectAndSendMetricsService_Init(t *testing.T) {
 	// Создаем экземпляр сервиса, который будем тестировать
 	service := NewCollectAndSendMetricsService(flags.SetDefault())
 
+	var p int64 = 5
 	// Инициализируем сервис
-	service.Init(metricsRepo, 5)
+	service.Init(metricsRepo, &p)
 
 	// Ожидаем, что количество горутин воркеров будет равно количеству воркеров
 	// expectedWorkers := 5
@@ -90,5 +91,32 @@ func TestCollectAndSendMetricsService_Init(t *testing.T) {
 	// if actualWorkers != expectedWorkers+1 {
 	// 	// +1, потому что есть главная горутина исполнения теста
 	// 	t.Errorf("Expected %d workers goroutines, but got %d", expectedWorkers, actualWorkers-1)
+	// }
+}
+
+func TestCollectAndSendMetricsService_Push(t *testing.T) {
+	// type fields struct {
+	// 	config flags.Config
+	// 	sender *senderPack.Sender
+	// }
+	// type args struct {
+	// 	metrics   map[string]interface{}
+	// 	pollCount int64
+	// }
+	// tests := []struct {
+	// 	name   string
+	// 	fields fields
+	// 	args   args
+	// }{
+	// 	// TODO: Add test cases.
+	// }
+	// for _, tt := range tests {
+	// 	t.Run(tt.name, func(t *testing.T) {
+	// 		c := &CollectAndSendMetricsService{
+	// 			config: tt.fields.config,
+	// 			sender: tt.fields.sender,
+	// 		}
+	// 		c.Push(tt.args.metrics, tt.args.pollCount)
+	// 	})
 	// }
 }
