@@ -79,9 +79,11 @@ func TestCollectAndSendMetricsService_Init(t *testing.T) {
 	// Создаем экземпляр сервиса, который будем тестировать
 	service := NewCollectAndSendMetricsService(flags.SetDefault())
 
-	var p int64 = 5
+	var pollCount int64 = 5
 	// Инициализируем сервис
-	service.Init(metricsRepo, &p)
+	go func() {
+		service.Init(metricsRepo, &pollCount)
+	}()
 
 	// Ожидаем, что количество горутин воркеров будет равно количеству воркеров
 	// expectedWorkers := 5
@@ -119,4 +121,16 @@ func TestCollectAndSendMetricsService_Push(t *testing.T) {
 	// 		c.Push(tt.args.metrics, tt.args.pollCount)
 	// 	})
 	// }
+
+	// metricsRepo := repository.NewInMemoryMetricsRepository()
+
+	// // Создаем экземпляр сервиса, который будем тестировать
+	// service := NewCollectAndSendMetricsService(flags.SetDefault())
+
+	// var pollCount int64 = 5
+
+	// metrics, _ := metricsRepo.GetMetrics()
+
+	// // Инициализируем сервис
+	// service.Push(metrics, &pollCount)
 }

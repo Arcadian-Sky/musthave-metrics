@@ -80,12 +80,14 @@ func (c *CollectAndSendMetricsService) worker(id int, jobs <-chan int, results c
 }
 
 func (c *CollectAndSendMetricsService) Push(metrics map[string]interface{}, pollCount *int64) {
-	err := c.send(metrics, *pollCount)
+	value := atomic.LoadInt64(pollCount)
+
+	err := c.send(metrics, value)
 	if err != nil {
 		fmt.Println("Error sending metrics:", err)
 	}
 	atomic.AddInt64(pollCount, 1)
-	err = c.sendPack(metrics, *pollCount)
+	err = c.sendPack(metrics, value)
 	if err != nil {
 		fmt.Println("Error sending metrics:", err)
 	}
