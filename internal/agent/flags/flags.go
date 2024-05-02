@@ -56,7 +56,7 @@ func Parse() (Config, error) {
 	key := flag.String("k", "", "hash key")
 	repI := flag.Int("r", 2, "reportInterval")
 	polI := flag.Int("p", 10, "pollInterval")
-	rLim := flag.Int("l", 10, "rateLimit")
+	rLim := flag.Int("l", 0, "rateLimit")
 	flag.Parse()
 
 	config := Config{

@@ -2,7 +2,6 @@ package controller
 
 import (
 	"fmt"
-	"sync/atomic"
 	"time"
 
 	senderPack "github.com/Arcadian-Sky/musthave-metrics/internal/agent/controller/sender"
@@ -37,15 +36,16 @@ func (c *CollectAndSendMetricsService) Run() {
 					fmt.Println("Error collecting metrics:", err)
 					return
 				}
-				err = c.send(metrics, pollCount)
-				if err != nil {
-					fmt.Println("Error sending metrics:", err)
-				}
-				atomic.AddInt64(&pollCount, 1)
-				err = c.sendPack(metrics, pollCount)
-				if err != nil {
-					fmt.Println("Error sending metrics:", err)
-				}
+				// err = c.send(metrics, pollCount)
+				// if err != nil {
+				// 	fmt.Println("Error sending metrics:", err)
+				// }
+				// atomic.AddInt64(&pollCount, 1)
+				// err = c.sendPack(metrics, pollCount)
+				// if err != nil {
+				// 	fmt.Println("Error sending metrics:", err)
+				// }
+				c.Push(metrics, pollCount)
 			} else {
 				c.Init(metricsRepo, pollCount)
 			}
