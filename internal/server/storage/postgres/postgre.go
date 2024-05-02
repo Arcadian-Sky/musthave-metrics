@@ -352,7 +352,7 @@ func (p *PostgresStorage) UpdateJSONMetric(ctx context.Context, metric *models.M
 		_ = p.db.QueryRowContext(ctx, "SELECT counter FROM "+p.getTableName()+" WHERE name = $1 AND type = 'counter'", metric.ID).Scan(&currentCounter)
 
 		*metric.Delta += currentCounter.Int64
-		fmt.Printf("metric.Delta: %v\n", metric.Delta)
+		// fmt.Printf("metric.Delta: %v\n", metric.Delta)
 		query = "INSERT INTO " + p.getTableName() + " (name, type, counter)" +
 			" VALUES ($1, 'counter', $2)" +
 			" ON CONFLICT (name, type) DO UPDATE" +

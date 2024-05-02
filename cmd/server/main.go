@@ -69,6 +69,7 @@ func main() {
 		// mementoStore = storeMetrics
 		return inmemory.NewMemStorage()
 	}(parsed, db)
+
 	memStore, memStoreOk := storeMetrics.(config.MementoStorage)
 	if memStoreOk {
 		// Инициализируем конфигурацию
@@ -81,7 +82,7 @@ func main() {
 	fmt.Println("memStoreOk:", memStoreOk)
 
 	//Инициируем хендлеры
-	vhandler := handler.NewHandler(storeMetrics)
+	vhandler := handler.NewHandler(storeMetrics, parsed)
 	go func() {
 		log.Fatal(http.ListenAndServe(parsed.Endpoint, server.InitRouter(*vhandler)))
 	}()

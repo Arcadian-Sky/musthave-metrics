@@ -10,8 +10,10 @@ import (
 
 type Config struct {
 	serverAddress  string
+	hashKey        string
 	pollInterval   time.Duration
 	reportInterval time.Duration
+	rateLimit      int
 }
 
 func (c *Config) SetConfigServer(s string) {
@@ -20,6 +22,14 @@ func (c *Config) SetConfigServer(s string) {
 
 func (c *Config) GetServerAddress() string {
 	return c.serverAddress
+}
+
+func (c *Config) GetRateLimit() int {
+	return c.rateLimit
+}
+
+func (c *Config) GetHash() string {
+	return c.hashKey
 }
 
 func (c *Config) GetReportInterval() time.Duration {
@@ -36,23 +46,42 @@ func SetDefault() *Config {
 		serverAddress:  "http://localhost:8080",
 		reportInterval: time.Second,
 		pollInterval:   time.Second,
+		rateLimit:      10,
 	}
 }
 
+// Через флаг -l=<ЗНАЧЕНИЕ> и переменную окружения RATE_LIMIT. - количество одновременно исходящих запросов на сервер нужно ограничивать «сверху»
 func Parse() (Config, error) {
 	end := flag.String("a", "localhost:8080", "endpoint")
+	key := flag.String("k", "", "hash key")
 	repI := flag.Int("r", 2, "reportInterval")
 	polI := flag.Int("p", 10, "pollInterval")
+	rLim := flag.Int("l", 0, "rateLimit")
 	flag.Parse()
 
 	config := Config{
 		serverAddress:  "http://" + *end,
+		hashKey:        *key,
+		rateLimit:      *rLim,
 		reportInterval: time.Duration(*repI) * time.Second,
 		pollInterval:   time.Duration(*polI) * time.Second,
 	}
 
 	if envRunAddr := os.Getenv("ADDRESS"); envRunAddr != "" {
 		config.serverAddress = "http://" + envRunAddr
+	}
+
+	if envHashKey := os.Getenv("KEY"); envHashKey != "" {
+		config.hashKey = envHashKey
+	}
+
+	if envRLim := os.Getenv("RATE_LIMIT"); envRLim != "" {
+		rateLimit, err := strconv.Atoi(envRLim)
+		if err != nil {
+			fmt.Println("Error parsing REPORT_INTERVAL:", err)
+			return config, err
+		}
+		config.rateLimit = rateLimit
 	}
 
 	if envRepI := os.Getenv("REPORT_INTERVAL"); envRepI != "" {

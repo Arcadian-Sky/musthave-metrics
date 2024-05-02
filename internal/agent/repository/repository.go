@@ -4,6 +4,7 @@ import (
 	"log"
 	"math/rand"
 	"runtime"
+	"sync"
 )
 
 // MetricsRepository определяет методы для работы с метриками.
@@ -13,6 +14,7 @@ type MetricsRepository interface {
 
 type InMemoryMetricsRepository struct {
 	metrics map[string]interface{}
+	mutex   sync.Mutex
 }
 
 func NewInMemoryMetricsRepository() *InMemoryMetricsRepository {
@@ -69,6 +71,9 @@ func (r *InMemoryMetricsRepository) GetMetrics() (map[string]interface{}, error)
 
 // SaveMetrics сохраняет метрики в хранилище.
 func (r *InMemoryMetricsRepository) SaveMetrics(metrics map[string]interface{}) error {
+	r.mutex.Lock()
+	defer r.mutex.Unlock()
+
 	r.metrics = metrics
 	return nil
 }

@@ -1,12 +1,12 @@
 package controller
 
 import (
-	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
+	"github.com/Arcadian-Sky/musthave-metrics/internal/agent/controller/sender"
 	"github.com/Arcadian-Sky/musthave-metrics/internal/agent/flags"
 	"github.com/Arcadian-Sky/musthave-metrics/internal/agent/models"
 	"github.com/stretchr/testify/assert"
@@ -15,7 +15,8 @@ import (
 func TestNewCollectAndSendMetricsService(t *testing.T) {
 
 	type fields struct {
-		config flags.Config
+		// config flags.Config
+		sender *sender.Sender
 	}
 	type args struct {
 		mType  string
@@ -31,7 +32,8 @@ func TestNewCollectAndSendMetricsService(t *testing.T) {
 		{
 			name: "Test error sending metric value",
 			fields: fields{
-				config: flags.Config{},
+				// config: flags.Config{},
+				sender: sender.NewSender(&flags.Config{}),
 			},
 			args: args{
 				mType:  "gauge",
@@ -44,9 +46,10 @@ func TestNewCollectAndSendMetricsService(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			c := &CollectAndSendMetricsService{
-				config: tt.fields.config,
+				// config: tt.fields.config,
+				sender: tt.fields.sender,
 			}
-			if err := c.sendMetricValue(tt.args.mType, tt.args.mName, tt.args.mValue); (err != nil) != tt.wantErr {
+			if err := c.sender.SendMetricValue(tt.args.mType, tt.args.mName, tt.args.mValue); (err != nil) != tt.wantErr {
 				t.Errorf("CollectAndSendMetricsService.sendMetricValue() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -55,16 +58,17 @@ func TestNewCollectAndSendMetricsService(t *testing.T) {
 
 func TestCollectAndSendMetricsService_send(t *testing.T) {
 	metrics := make(map[string]interface{})
-	pollCount := 10 // Пример значения pollCount
+	pollCount := int64(10) // Пример значения pollCount
 
-	service := NewCollectAndSendMetricsService(*flags.SetDefault())
+	service := NewCollectAndSendMetricsService(flags.SetDefault())
 	err := service.send(metrics, pollCount)
 	assert.Error(t, err, "Функция должна вернуть errоr")
 }
 
 func TestCollectAndSendMetricsService_sendMetricValue(t *testing.T) {
 	type fields struct {
-		config flags.Config
+		// config flags.Config
+		sender *sender.Sender
 	}
 	type args struct {
 		mType  string
@@ -80,7 +84,8 @@ func TestCollectAndSendMetricsService_sendMetricValue(t *testing.T) {
 		{
 			name: "Test with valid data",
 			fields: fields{
-				config: *flags.SetDefault(),
+				// config: *flags.SetDefault(),
+				sender: sender.NewSender(&flags.Config{}),
 			},
 			args: args{
 				mType:  "gauge",
@@ -93,9 +98,10 @@ func TestCollectAndSendMetricsService_sendMetricValue(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			c := &CollectAndSendMetricsService{
-				config: tt.fields.config,
+				// config: tt.fields.config,
+				sender: tt.fields.sender,
 			}
-			if err := c.sendMetricValue(tt.args.mType, tt.args.mName, tt.args.mValue); (err != nil) != tt.wantErr {
+			if err := c.sender.SendMetricValue(tt.args.mType, tt.args.mName, tt.args.mValue); (err != nil) != tt.wantErr {
 				t.Errorf("CollectAndSendMetricsService.sendMetricValue() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -130,7 +136,7 @@ func TestMakePack(t *testing.T) {
 	}
 
 	// Создаем тестовое значение для pollCount
-	pollCount := 10
+	pollCount := int64(10)
 
 	// Вызываем метод makePack
 	pack := c.makePack(metrics, pollCount)
@@ -197,20 +203,19 @@ func TestSendMetricJSONValues(t *testing.T) {
 
 	defer server.Close()
 
-	fmt.Printf("server.URL: %v\n", server.URL)
-
-	config, _ := flags.Parse()
-	config.SetConfigServer(server.URL)
+	conf, _ := flags.Parse()
+	conf.SetConfigServer(server.URL)
 
 	// Создаем экземпляр CollectAndSendMetricsService с фейковым сервером
 	c := &CollectAndSendMetricsService{
-		config: config,
+		// config: conf,
+		sender: sender.NewSender(&conf),
 	}
 	var fl100 = float64(100)
 	var fl200 = float64(200)
 	var de5 = int64(5)
 	// // Тестируемый вызов
-	err := c.sendMetricJSON([]interface{}{
+	err := c.sender.SendMetricJSON([]interface{}{
 		models.Metrics{ID: "metric1", MType: "gauge", Value: &fl100},
 		models.Metrics{ID: "metric2", MType: "gauge", Value: &fl200},
 		models.Metrics{ID: "PollCount", MType: "counter", Delta: &de5},
