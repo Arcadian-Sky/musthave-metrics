@@ -27,7 +27,7 @@ import (
 // @externalDocs.url          https://swagger.io/resources/open-api/
 func InitRouter(handler handler.Handler) chi.Router {
 	r := chi.NewRouter()
-	r.Use(packmiddleware.Logger)
+	// r.Use(packmiddleware.Logger)
 
 	// r.Use(middleware.Logger)
 	// r.Use(packmiddleware.ContentTypeSet("application/json"))

@@ -40,7 +40,7 @@ func getSystemInfo(metricsInfoChan chan<- map[string]interface{}, metricsRepo re
 // worker это наш рабочий, который принимает два канала:
 // jobs - канал задач, это входные данные для обработки
 // results - канал результатов, это результаты работы воркера
-func (c *CollectAndSendMetricsService) worker(id int, jobs <-chan int, results chan<- int, metricsRepo *repository.InMemoryMetricsRepository, pollCount int64) {
+func (c *CollectAndSendMetricsService) worker(id int, jobs <-chan int, results chan<- int, metricsRepo *repository.InMemoryMetricsRepository, pollCount *int64) {
 	for j := range jobs {
 		// для наглядности будем выводить какой рабочий начал работу и какую задачу он выполняет
 		log.Println("рабочий", id, "начал выполнение задачи", j)
@@ -79,19 +79,19 @@ func (c *CollectAndSendMetricsService) worker(id int, jobs <-chan int, results c
 	}
 }
 
-func (c *CollectAndSendMetricsService) Push(metrics map[string]interface{}, pollCount int64) {
-	err := c.send(metrics, pollCount)
+func (c *CollectAndSendMetricsService) Push(metrics map[string]interface{}, pollCount *int64) {
+	err := c.send(metrics, *pollCount)
 	if err != nil {
 		fmt.Println("Error sending metrics:", err)
 	}
-	atomic.AddInt64(&pollCount, 1)
-	err = c.sendPack(metrics, pollCount)
+	atomic.AddInt64(pollCount, 1)
+	err = c.sendPack(metrics, *pollCount)
 	if err != nil {
 		fmt.Println("Error sending metrics:", err)
 	}
 }
 
-func (c *CollectAndSendMetricsService) Init(metricsRepo *repository.InMemoryMetricsRepository, pollCount int64) {
+func (c *CollectAndSendMetricsService) Init(metricsRepo *repository.InMemoryMetricsRepository, pollCount *int64) {
 	numWorkers := c.config.GetRateLimit()
 	numJobs := 5
 	fmt.Printf("кол-во задач: %v\n", numJobs)
