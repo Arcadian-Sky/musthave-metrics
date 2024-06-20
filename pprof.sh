@@ -24,6 +24,13 @@ then
     #   echo "Processing profile: $profile"
     #   go tool pprof -http=":9090" "$profile"
     # done
+elif [ "$2" = "fmt" ]
+then
+    find . -name "*.go" | while read file; do
+        echo "Formatting $file"
+        gofmt -w "$file"
+        goimports -local "github.com/Arcadian-Sky/musthave-metrics" -w "$file"
+    done
 fi
 
 

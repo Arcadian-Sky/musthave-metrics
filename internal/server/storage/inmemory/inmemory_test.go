@@ -7,10 +7,11 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/models"
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/storage"
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/storage/utils"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestMemStorage_GetMetric(t *testing.T) {

@@ -8,11 +8,12 @@ import (
 
 	"time"
 
-	"github.com/Arcadian-Sky/musthave-metrics/internal/server/models"
-	"github.com/Arcadian-Sky/musthave-metrics/internal/server/storage"
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/jackc/pgerrcode"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/Arcadian-Sky/musthave-metrics/internal/server/models"
+	"github.com/Arcadian-Sky/musthave-metrics/internal/server/storage"
 )
 
 func NewTestPostgresStorage(db *sql.DB) *PostgresStorage {
