@@ -2,6 +2,7 @@ package server
 
 import (
 	"net/http"
+	"net/http/pprof"
 
 	"github.com/go-chi/chi/v5"
 
@@ -70,7 +71,17 @@ func InitRouter(handler handler.Handler) chi.Router {
 	r.Get("/swagger/*", httpSwagger.Handler(
 		httpSwagger.URL("./doc.json"), // Ссылка на ваш swagger.json
 	))
+	r.Mount("/debug/pprof", pprofHandler())
 
 	// log.Fatal(http.ListenAndServe(flags.Parse(), r))
 	return r
+}
+func pprofHandler() http.Handler {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/debug/pprof/", pprof.Index)
+	mux.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
+	mux.HandleFunc("/debug/pprof/profile", pprof.Profile)
+	mux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
+	mux.HandleFunc("/debug/pprof/trace", pprof.Trace)
+	return mux
 }

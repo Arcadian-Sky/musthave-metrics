@@ -9,7 +9,10 @@ import (
 	"os/signal"
 	"syscall"
 
+	_ "net/http/pprof"
+
 	_ "github.com/jackc/pgx/v5/stdlib"
+
 	"github.com/pressly/goose/v3"
 
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/flags"
@@ -84,6 +87,7 @@ func main() {
 	//Инициируем хендлеры
 	vhandler := handler.NewHandler(storeMetrics, parsed)
 	go func() {
+		log.Println("Starting pprof server...")
 		log.Fatal(http.ListenAndServe(parsed.Endpoint, server.InitRouter(*vhandler)))
 	}()
 

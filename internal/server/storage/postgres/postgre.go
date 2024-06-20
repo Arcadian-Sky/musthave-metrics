@@ -45,27 +45,6 @@ func NewPostgresStorage(db *sql.DB) *PostgresStorage {
 	return p
 }
 
-// // executeWithRetry - функция для выполнения операции с повторными попытками
-// func (p *PostgresStorage) executeWithRetry(ctx context.Context, operation func() error) error {
-// 	var err error
-// 	delay := p.initialDelay
-// 	for attempt := 0; attempt <= p.maxRetries; attempt++ {
-// 		if err = operation(); err == nil || !p.isRetriableError(err) {
-// 			return err
-// 		}
-
-// 		// Если ошибка retriable, ждем перед следующей попыткой
-// 		fmt.Printf("Retriable error occurred: %v. Retrying after %s...\n", err, delay)
-// 		select {
-// 		case <-time.After(delay):
-// 		case <-ctx.Done():
-// 			return ctx.Err()
-// 		}
-// 		delay *= 2 // Увеличиваем задержку перед следующей попыткой
-// 	}
-// 	return err
-// }
-
 func (p *PostgresStorage) executeWithRetry(_ context.Context, operation func() error) error {
 	// Создаем экземпляр стратегии повторных попыток
 	backoffStrategy := backoff.NewExponentialBackOff()

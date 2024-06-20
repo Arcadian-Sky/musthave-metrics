@@ -270,3 +270,60 @@ func TestPostgreStorage_SetMetrics(t *testing.T) {
 		t.Fatalf("ожидаемые SQL запросы не были выполнены: %s", err)
 	}
 }
+
+func BenchmarkPostgresStorage_GetMetric(b *testing.B) {
+	// Создание mock базы данных и отложенное закрытие соединения
+	db, _, err := sqlmock.New()
+	if err != nil {
+		b.Fatalf("ошибка при создании mock базы данных: %v", err)
+	}
+	defer db.Close()
+
+	// Создание экземпляра PostgresStorage с помощью конструктора NewPostgresStorage
+	p := NewTestPostgresStorage(db)
+
+	ctx := context.Background()
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = p.GetMetric(ctx, storage.Gauge)
+	}
+}
+
+func BenchmarkPostgresStorage_SetMetrics(b *testing.B) {
+	// Создание mock базы данных и отложенное закрытие соединения
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		b.Fatalf("ошибка при создании mock базы данных: %v", err)
+	}
+	defer db.Close()
+
+	// Создание экземпляра PostgresStorage с помощью конструктора NewPostgresStorage
+	p := NewTestPostgresStorage(db)
+
+	ctx := context.Background()
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		mock.ExpectBegin()
+		mock.ExpectExec("INSERT INTO .*").WillReturnResult(sqlmock.NewResult(1, 1))
+		mock.ExpectExec("INSERT INTO .*").WillReturnResult(sqlmock.NewResult(1, 1))
+		mock.ExpectExec("INSERT INTO .*").WillReturnResult(sqlmock.NewResult(1, 1))
+		mock.ExpectExec("INSERT INTO .*").WillReturnResult(sqlmock.NewResult(1, 1))
+		mock.ExpectCommit()
+
+		metrics := map[storage.MetricType]map[string]interface{}{
+			storage.Gauge: {
+				"metric1": 10.0,
+				"metric2": 20.0,
+			},
+			storage.Counter: {
+				"metric3": 100,
+				"metric4": 200,
+			},
+		}
+
+		// Выполнение тестируемого метода
+		p.SetMetrics(ctx, metrics)
+	}
+}
