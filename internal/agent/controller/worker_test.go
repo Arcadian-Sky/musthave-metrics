@@ -5,11 +5,12 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/Arcadian-Sky/musthave-metrics/internal/agent/flags"
-	"github.com/Arcadian-Sky/musthave-metrics/internal/agent/repository"
 	"github.com/shirou/gopsutil/cpu"
 	"github.com/shirou/gopsutil/mem"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/Arcadian-Sky/musthave-metrics/internal/agent/flags"
+	"github.com/Arcadian-Sky/musthave-metrics/internal/agent/repository"
 )
 
 // MockMetricsRepository представляет макет для тестирования.

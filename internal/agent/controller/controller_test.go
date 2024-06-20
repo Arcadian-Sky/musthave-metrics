@@ -6,10 +6,11 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/Arcadian-Sky/musthave-metrics/internal/agent/controller/sender"
 	"github.com/Arcadian-Sky/musthave-metrics/internal/agent/flags"
 	"github.com/Arcadian-Sky/musthave-metrics/internal/agent/models"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestNewCollectAndSendMetricsService(t *testing.T) {
