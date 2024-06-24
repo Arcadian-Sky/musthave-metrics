@@ -1,3 +1,4 @@
+// Модуль server обеспечивает хранение метрик
 package main
 
 import (

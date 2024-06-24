@@ -1,3 +1,4 @@
+// Пакет handler реализует ручки на все точки коннекта к приложению
 package handler
 
 import (
@@ -46,6 +47,7 @@ func NewHandler(mStorage storage.MetricsStorage, cnf *flags.InitedFlags) *Handle
 }
 
 // Получает метрики.
+//
 // @Summary Получает метрики.
 // @Description Обновляет метрику в хранилище.
 // @Success 200 {string} string "OK"
@@ -68,6 +70,7 @@ func (h *Handler) MetricsHandlerFunc(w http.ResponseWriter, r *http.Request) {
 }
 
 // Обновляет метрику.
+//
 // @Summary Обновляет метрику.
 // @Description Обновляет метрику в хранилище.
 // @Param type path string true "Тип метрики (gauge или counter)"
@@ -115,6 +118,7 @@ func (h *Handler) UpdateMetricsHandlerFunc(w http.ResponseWriter, r *http.Reques
 }
 
 // Получает метрику.
+//
 // @Summary Получает метрику.
 // @Description Получает метрику в хранилище.
 // @Param type path string true "Тип метрики (gauge или counter)"
@@ -166,6 +170,8 @@ func (h *Handler) GetMetricHandlerFunc(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// Получает метрики через JSON
+//
 // @Summary Получает метрики.
 // @Accept json
 // @Produce json
@@ -224,6 +230,8 @@ func (h *Handler) GetMetricsJSONHandlerFunc(w http.ResponseWriter, r *http.Reque
 	}
 }
 
+// Обновляет метрику через JSON
+//
 // @Summary Обновляет метрику.
 // @Description Обновляет метрику в хранилище через json обьект.
 // @Accept json
@@ -289,6 +297,7 @@ func (h *Handler) UpdateJSONMetricHandlerFunc(w http.ResponseWriter, r *http.Req
 
 }
 
+// Пинг БД
 func (h *Handler) PingDB(w http.ResponseWriter, r *http.Request) {
 	body, _ := io.ReadAll(r.Body)
 	err := validate.CheckHash(validate.GetHashHead(r), body, h.cfg.HashKey)
@@ -308,6 +317,16 @@ func (h *Handler) PingDB(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+// Обновляет метрики через JSON
+//
+// @Summary Обновляет метрику.
+// @Description Обновляет метрику в хранилище через json обьект.
+// @Accept json
+// @Produce json
+// @Param data body models.Metrics true "Данные в формате JSON"
+// @Success 200 {object} string "OK"
+// @Failure 404 {object} string "Error"
+// @Router /updates [post]
 func (h *Handler) UpdateJSONMetricsHandlerFunc(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
