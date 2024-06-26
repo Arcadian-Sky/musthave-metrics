@@ -4,12 +4,14 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 
+	"net/http"
+
 	_ "github.com/jackc/pgx/v5/stdlib"
+
 	"github.com/pressly/goose/v3"
 
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/flags"
@@ -47,6 +49,18 @@ import (
 //
 // storeMetrics.SetMetrics(m)
 func main() {
+
+	// f, err := os.Create("cpu.prof")
+	// if err != nil {
+	// 	fmt.Println("Could not create CPU profile: ", err)
+	// 	return
+	// }
+	// if err := pprof.StartCPUProfile(f); err != nil {
+	// 	fmt.Println("Could not start CPU profile: ", err)
+	// 	return
+	// }
+	// defer pprof.StopCPUProfile()
+
 	// Создаем канал для обработки сигнала завершения
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
@@ -78,12 +92,13 @@ func main() {
 			log.Fatal(err.Error())
 		}
 	}
-	fmt.Println("cnf.StorageType:", parsed.StorageType)
-	fmt.Println("memStoreOk:", memStoreOk)
+	log.Println("cnf.StorageType:", parsed.StorageType)
+	log.Println("memStoreOk:", memStoreOk)
 
 	//Инициируем хендлеры
 	vhandler := handler.NewHandler(storeMetrics, parsed)
 	go func() {
+		log.Println("Starting server...")
 		log.Fatal(http.ListenAndServe(parsed.Endpoint, server.InitRouter(*vhandler)))
 	}()
 
@@ -91,5 +106,7 @@ func main() {
 	if memStoreOk {
 		config.SaveMetricsToFile(memStore, parsed.FileStorage)
 	}
+
 	fmt.Println("Server stopped gracefully")
+
 }

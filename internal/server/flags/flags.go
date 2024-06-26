@@ -20,9 +20,10 @@ type InitedFlags struct {
 	StoreInterval  time.Duration
 	FileStorage    string
 	RestoreMetrics bool
-	DBSettings     string
-	StorageType    string
-	HashKey        string
+	// BPprofEnabled  bool
+	DBSettings  string
+	StorageType string
+	HashKey     string
 }
 
 func Parse() *InitedFlags {
@@ -74,6 +75,14 @@ func Parse() *InitedFlags {
 	if dbSettings != "" {
 		storageType = "postgres"
 	}
+
+	// var bPprofEnabled = false
+	// if envBPprofEnabled := os.Getenv("BPPROF"); envBPprofEnabled != "" {
+	// 	if val, err := strconv.ParseBool(envBPprofEnabled); err == nil {
+	// 		bPprofEnabled = val
+	// 	}
+	// }
+
 	// fmt.Printf("flag interval: %v\n", interval)
 	// fmt.Printf("flag fileStorage: %v\n", fileStorage)
 	// fmt.Printf("flag restoreMetrics: %v\n", restoreMetrics)
@@ -86,6 +95,7 @@ func Parse() *InitedFlags {
 		DBSettings:     dbSettings,
 		StorageType:    storageType,
 		HashKey:        hashKey,
+		// BPprofEnabled:  bPprofEnabled,
 	}
 
 }

@@ -19,7 +19,7 @@ func (app *Caretaker) SaveToFile(m *storage.Memento, filename string) error {
 	if err != nil {
 		return err
 	}
-	fmt.Printf("jsonData: %v\n", jsonData)
+	// fmt.Printf("jsonData: %v\n", jsonData)
 	// Записываем JSON в файл.
 	err = os.WriteFile(filename, jsonData, 0644)
 	if err != nil {

@@ -6,9 +6,10 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/Arcadian-Sky/musthave-metrics/internal/agent/repository"
 	"github.com/shirou/gopsutil/cpu"
 	"github.com/shirou/gopsutil/mem"
+
+	"github.com/Arcadian-Sky/musthave-metrics/internal/agent/repository"
 )
 
 func getSystemInfo(metricsInfoChan chan<- map[string]interface{}, metricsRepo repository.MetricsRepository) {

@@ -8,9 +8,10 @@ import (
 	context "context"
 	reflect "reflect"
 
+	gomock "github.com/golang/mock/gomock"
+
 	models "github.com/Arcadian-Sky/musthave-metrics/internal/server/models"
 	storage "github.com/Arcadian-Sky/musthave-metrics/internal/server/storage"
-	gomock "github.com/golang/mock/gomock"
 )
 
 // MockMetricsStorage is a mock of MetricsStorage interface.

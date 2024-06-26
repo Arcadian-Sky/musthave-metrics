@@ -1,3 +1,4 @@
+// Пакет validate реализовывает валидацию параметров на ручках
 package validate
 
 import (
@@ -9,6 +10,7 @@ import (
 	"net/http"
 )
 
+// CheckMetricTypeAndName проверяет строки тип и нэйм на пустоту
 func CheckMetricTypeAndName(mType, mName string) error {
 	//Проверяем передачу типа
 	if mType == "" {
@@ -25,10 +27,12 @@ func CheckMetricTypeAndName(mType, mName string) error {
 	return nil
 }
 
+// GetHashHead получает заголовок хэш
 func GetHashHead(r *http.Request) string {
 	return r.Header.Get("HashSHA256")
 }
 
+// CheckHash проверяет хеш переданный в заголовке
 func CheckHash(sha string, body []byte, key string) error {
 	if sha != "" {
 		log.Printf("sha: %v\n", sha)
