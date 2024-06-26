@@ -2,13 +2,24 @@ package validate
 
 import "fmt"
 
+// ExampleCheckMetricTypeAndName - example test
 func ExampleCheckMetricTypeAndName() {
-	error := CheckMetricTypeAndName("", "")
-	fmt.Println(error.Error())
+	err := CheckMetricTypeAndName("", "metricName")
+	if err != nil {
+		fmt.Println(err)
+	}
 
-	error = CheckMetricTypeAndName("111", "222")
-	fmt.Println(error.Error())
+	err = CheckMetricTypeAndName("metricType", "")
+	if err != nil {
+		fmt.Println(err)
+	}
 
-	error = CheckMetricTypeAndName("gauge", "222")
-	fmt.Println(error.Error())
+	err = CheckMetricTypeAndName("metricType", "metricName")
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	// Output:
+	// metric type not provided
+	// metric name not provided
 }

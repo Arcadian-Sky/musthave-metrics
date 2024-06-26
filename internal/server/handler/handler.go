@@ -149,6 +149,7 @@ func (h *Handler) GetMetricHandlerFunc(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Выводим данные
+	fmt.Println("metricTypeID", metricTypeID)
 	currentMetrics := h.s.GetMetric(r.Context(), metricTypeID)
 	if params.Name != "" {
 		fmt.Printf("currentMetrics[metricName]: %v\n", currentMetrics[params.Name])
@@ -254,7 +255,7 @@ func (h *Handler) UpdateJSONMetricHandlerFunc(w http.ResponseWriter, r *http.Req
 
 	var metrics models.Metrics
 
-	fmt.Printf("body2: %v\n", body)
+	// fmt.Printf("body2: %v\n", body)
 	// Проверяем тело запроса на пустоту
 	if len(body) == 0 {
 		http.Error(w, "Request body is empty", http.StatusBadRequest)

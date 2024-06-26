@@ -20,10 +20,6 @@ then
 elif [ "$2" = "trun" ]
 then
     go tool pprof -http=":9090" profiles/server/"$3".test profiles/server/cpu_"$3".out
-    # for profile in $(find ./profiles/server -name "cpu_*.out"); do
-    #   echo "Processing profile: $profile"
-    #   go tool pprof -http=":9090" "$profile"
-    # done
 elif [ "$2" = "fmt" ]
 then
     find . -name "*.go" | while read file; do
@@ -41,6 +37,7 @@ fi
 # go tool pprof -svg -alloc_objects server ./profiles/mem_out.pprof > ./profiles/mem_ao.svg
 # go tool pprof -svg server ./profiles/cpu_out.pprof > ./profiles/cpu.svg
 # pprof -top ./profiles/cpu_out.pprof
+# pprof -http=":9090" ./profiles/cpu_out.pprof
 # pprof -top -diff_base=profiles/base_cpu_out.pprof profiles/cpu_out.pprof
 
 

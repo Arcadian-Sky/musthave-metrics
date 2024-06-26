@@ -71,17 +71,35 @@ func InitRouter(handler handler.Handler) chi.Router {
 	r.Get("/swagger/*", httpSwagger.Handler(
 		httpSwagger.URL("./doc.json"), // Ссылка на ваш swagger.json
 	))
-	r.Mount("/debug/pprof", pprofHandler())
+
+	r.Get("/debug/pprof/", pprof.Index)
+	r.Get("/debug/pprof/cmdline", pprof.Cmdline)
+	r.Get("/debug/pprof/profile", pprof.Profile)
+	r.Get("/debug/pprof/symbol", pprof.Symbol)
+	r.Get("/debug/pprof/trace", pprof.Trace)
 
 	// log.Fatal(http.ListenAndServe(flags.Parse(), r))
 	return r
 }
-func pprofHandler() http.Handler {
-	mux := http.NewServeMux()
-	mux.HandleFunc("/debug/pprof/", pprof.Index)
-	mux.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
-	mux.HandleFunc("/debug/pprof/profile", pprof.Profile)
-	mux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
-	mux.HandleFunc("/debug/pprof/trace", pprof.Trace)
-	return mux
-}
+
+// func InitPprof() chi.Router {
+// 	r := chi.NewRouter()
+
+// 	r.Get("/debug/pprof/", pprof.Index)
+// 	r.Get("/debug/pprof/cmdline", pprof.Cmdline)
+// 	r.Get("/debug/pprof/profile", pprof.Profile)
+// 	r.Get("/debug/pprof/symbol", pprof.Symbol)
+// 	r.Get("/debug/pprof/trace", pprof.Trace)
+
+// 	return r
+// }
+
+// func pprofHandler() http.Handler {
+// 	mux := http.NewServeMux()
+// 	mux.HandleFunc("/debug/pprof/", pprof.Index)
+// 	mux.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
+// 	mux.HandleFunc("/debug/pprof/profile", pprof.Profile)
+// 	mux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
+// 	mux.HandleFunc("/debug/pprof/trace", pprof.Trace)
+// 	return mux
+// }

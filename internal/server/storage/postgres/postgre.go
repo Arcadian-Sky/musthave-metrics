@@ -101,7 +101,7 @@ func (p *PostgresStorage) migrateDB() error {
 func (p *PostgresStorage) GetMetric(ctx context.Context, mtype storage.MetricType) map[string]interface{} {
 	var query string
 	var metrics map[string]interface{}
-	fmt.Printf("mtype: %v\n", mtype)
+	// fmt.Printf("mtype: %v\n", mtype)
 	query = fmt.Sprintf("SELECT name, gauge FROM %s WHERE type = '$1'", p.getTableName())
 	var queryType string
 	switch mtype {

@@ -192,7 +192,7 @@ func TestHandler_GetMetricHandlerFunc(t *testing.T) {
 			assert.Equal(t, tt.expectedCode, response.StatusCode)
 
 			respBody, _ := io.ReadAll(response.Body)
-			fmt.Println(string(respBody))
+			// fmt.Println(string(respBody))
 			assert.Contains(t, string(respBody), tt.expectedValue)
 			defer response.Body.Close()
 		})
@@ -308,7 +308,7 @@ func TestHandler_UpdateMetricsHandlers(t *testing.T) {
 			assert.Equal(t, tt.expectedCode, response.StatusCode)
 
 			respBody, _ := io.ReadAll(response.Body)
-			fmt.Println(string(respBody))
+			// fmt.Println(string(respBody))
 			assert.Contains(t, string(respBody), tt.expectedValue)
 			defer response.Body.Close()
 		})
@@ -353,7 +353,7 @@ func TestHandler_MetricsHandlerFunc(t *testing.T) {
 			assert.Equal(t, tt.expectedCode, response.StatusCode)
 
 			respBody, _ := io.ReadAll(response.Body)
-			fmt.Println(string(respBody))
+			// fmt.Println(string(respBody))
 			assert.Contains(t, string(respBody), tt.expectedValue)
 			defer response.Body.Close()
 		})
@@ -457,12 +457,12 @@ func TestHandler_UpdateMetricJSONHandlerFunc(t *testing.T) {
 
 			var result models.Metrics
 			if tt.expectedCode == http.StatusOK {
-				fmt.Printf("response.Body: %v\n", response.Body)
+				// fmt.Printf("response.Body: %v\n", response.Body)
 				err := json.NewDecoder(response.Body).Decode(&result)
 				if err != nil {
 					t.Fatal(err)
 				}
-				fmt.Printf("result: %v\n", result)
+				// fmt.Printf("result: %v\n", result)
 
 				var buf bytes.Buffer
 				encoder := json.NewEncoder(&buf)

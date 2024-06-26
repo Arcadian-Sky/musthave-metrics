@@ -418,7 +418,7 @@ func TestMemStorage_UpdateJSONMetric(t *testing.T) {
 					fmt.Println("Ошибка при преобразовании в JSON:", err)
 					return
 				}
-				fmt.Printf("tt.args: %v\n", string(jsonData))
+				// fmt.Printf("tt.args: %v\n", string(jsonData))
 
 				assert.Equal(t, tt.want, string(jsonData))
 			}
@@ -651,7 +651,7 @@ func TestMemStorage_UpdateJSONMetrics(t *testing.T) {
 				assert.Equal(t, tt.want, string(jsonData))
 			}
 
-			fmt.Printf("tt.args: %v\n", string(jsonData))
+			// fmt.Printf("tt.args: %v\n", string(jsonData))
 			// fmt.Printf("tt.args: %v\n", tt.args)
 
 		})
