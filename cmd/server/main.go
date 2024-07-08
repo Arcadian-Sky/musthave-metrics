@@ -24,6 +24,12 @@ import (
 	"github.com/Arcadian-Sky/musthave-metrics/migrations"
 )
 
+var (
+	buildVersion string = "N/A"
+	buildDate    string = "N/A"
+	buildCommit  string = "N/A"
+)
+
 // Пример запроса к серверу:
 // POST /update/counter/someMetric/527 HTTP/1.1
 // Host: localhost:8080
@@ -99,6 +105,9 @@ func main() {
 	vhandler := handler.NewHandler(storeMetrics, parsed)
 	go func() {
 		log.Println("Starting server...")
+		fmt.Printf("Build version: %s\n", buildVersion)
+		fmt.Printf("Build date: %s\n", buildDate)
+		fmt.Printf("Build commit: %s\n", buildCommit)
 		log.Fatal(http.ListenAndServe(parsed.Endpoint, server.InitRouter(*vhandler)))
 	}()
 
