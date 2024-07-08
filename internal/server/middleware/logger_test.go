@@ -9,7 +9,7 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-func TesLoggingResponseWriter_GetLogger(t *testing.T) {
+func TesLoggingResponseWriterGetLogger(t *testing.T) {
 	logger := GetLogger()
 	if logger == nil {
 		t.Error("Expected non-nil logger, got nil")
@@ -17,7 +17,7 @@ func TesLoggingResponseWriter_GetLogger(t *testing.T) {
 }
 
 // Тест для метода Write
-func TesLoggingResponseWriter_tWrite(t *testing.T) {
+func TesLoggingResponseWriterTWrite(t *testing.T) {
 	// Создаем фальшивый ResponseWriter
 	rec := httptest.NewRecorder()
 
@@ -107,7 +107,7 @@ func TestHandler_Logger(t *testing.T) {
 
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("OK"))
+		_ := w.Write([]byte("OK"))
 	})
 
 	loggerHandler := Logger(handler)
