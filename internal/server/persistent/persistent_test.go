@@ -6,11 +6,12 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/golang/mock/gomock"
+
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/mock"
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/models"
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/storage"
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/storage/utils"
-	"github.com/golang/mock/gomock"
 )
 
 func TestGetMetric(t *testing.T) {

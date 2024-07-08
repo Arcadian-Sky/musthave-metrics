@@ -7,10 +7,11 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/models"
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/storage"
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/storage/utils"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestMemStorage_GetMetric(t *testing.T) {
@@ -417,7 +418,7 @@ func TestMemStorage_UpdateJSONMetric(t *testing.T) {
 					fmt.Println("Ошибка при преобразовании в JSON:", err)
 					return
 				}
-				fmt.Printf("tt.args: %v\n", string(jsonData))
+				// fmt.Printf("tt.args: %v\n", string(jsonData))
 
 				assert.Equal(t, tt.want, string(jsonData))
 			}
@@ -650,7 +651,7 @@ func TestMemStorage_UpdateJSONMetrics(t *testing.T) {
 				assert.Equal(t, tt.want, string(jsonData))
 			}
 
-			fmt.Printf("tt.args: %v\n", string(jsonData))
+			// fmt.Printf("tt.args: %v\n", string(jsonData))
 			// fmt.Printf("tt.args: %v\n", tt.args)
 
 		})
