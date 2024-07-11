@@ -16,7 +16,6 @@ Usage:
 package main
 
 import (
-	"go/ast"
 	"strings"
 
 	"github.com/fatih/errwrap/errwrap"
@@ -65,6 +64,8 @@ import (
 	"golang.org/x/tools/go/analysis/passes/unusedwrite"
 	"honnef.co/go/tools/staticcheck"
 	"honnef.co/go/tools/stylecheck"
+
+	linter "github.com/Arcadian-Sky/musthave-metrics/internal/staticlint/noosexit"
 )
 
 func main() {
@@ -116,7 +117,7 @@ func main() {
 		errwrap.Analyzer,
 		goone.Analyzer,
 		//Кастомный анализатор
-		NoOsExitAnalyzer,
+		linter.NoOsExitAnalyzer,
 	}
 
 	// Добавляем все SA анализаторы из пакета staticcheck
@@ -134,41 +135,4 @@ func main() {
 
 	// Запуск multichecker
 	multichecker.Main(mychecks...)
-}
-
-var NoOsExitAnalyzer = &analysis.Analyzer{
-	Name: "noosexit",
-	Doc:  "check for direct os.Exit calls in main function of main package",
-	Run:  run,
-}
-
-func run(pass *analysis.Pass) (interface{}, error) {
-	for _, file := range pass.Files {
-		// Проверяем, является ли пакет "main"
-		if pass.Pkg.Name() != "main" {
-			continue
-		}
-
-		for _, decl := range file.Decls {
-			fn, isFn := decl.(*ast.FuncDecl)
-			if !isFn || fn.Name.Name != "main" || fn.Recv != nil {
-				continue
-			}
-
-			// Проверяем тело функции main
-			ast.Inspect(fn.Body, func(n ast.Node) bool {
-				if callExpr, isCall := n.(*ast.CallExpr); isCall {
-					if fun, isIdent := callExpr.Fun.(*ast.SelectorExpr); isIdent {
-						if pkgIdent, isPkg := fun.X.(*ast.Ident); isPkg {
-							if pkgIdent.Name == "os" && fun.Sel.Name == "Exit" {
-								pass.Reportf(callExpr.Pos(), "os.Exit call is not allowed in main function")
-							}
-						}
-					}
-				}
-				return true
-			})
-		}
-	}
-	return nil, nil
 }
