@@ -16,7 +16,7 @@ then
     pprof -top -diff_base=profiles/base_cpu_out.pprof profiles/cpu_out.pprof
 elif [ "$2" = "tests" ]
 then
-    find ../internal/server -type d -exec sh -c 'go test -bench=. -cpuprofile=profiles/cpu_$(basename {}).out {}' \;
+    find ${WORK_DIR}/internal/server -type d -exec sh -c 'go test -bench=. -cpuprofile=profiles/cpu_$(basename {}).out {}' \;
 elif [ "$2" = "trun" ]
 then
     go tool pprof -http=":9090" profiles/server/"$3".test profiles/server/cpu_"$3".out
