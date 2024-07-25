@@ -108,7 +108,7 @@ func main() {
 		fmt.Printf("Build version: %s\n", buildVersion)
 		fmt.Printf("Build date: %s\n", buildDate)
 		fmt.Printf("Build commit: %s\n", buildCommit)
-		log.Fatal(http.ListenAndServe(parsed.Endpoint, server.InitRouter(*vhandler, parsed)))
+		log.Fatal(http.ListenAndServe(parsed.Endpoint, server.InitRouter(*vhandler, *parsed)))
 	}()
 
 	<-stop
