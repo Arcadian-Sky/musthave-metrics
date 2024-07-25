@@ -15,7 +15,7 @@ func TestInitRouter(t *testing.T) {
 	f := flags.InitedFlags{}
 	fakeHandler := handler.NewHandler(inmemory.NewMemStorage(), &f)
 	// Получаем роутер с помощью InitRouter
-	router := InitRouter(*fakeHandler)
+	router := InitRouter(*fakeHandler, flags.InitedFlags{})
 	expectedPaths := []string{
 		"/",
 		"/update/",

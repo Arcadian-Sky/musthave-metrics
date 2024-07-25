@@ -1,7 +1,12 @@
 package flags
 
 import (
+	"crypto/rsa"
+	"crypto/x509"
+	"encoding/pem"
 	"flag"
+	"fmt"
+	"log"
 	"os"
 	"strconv"
 	"time"
@@ -21,13 +26,15 @@ type InitedFlags struct {
 	FileStorage    string
 	RestoreMetrics bool
 	// BPprofEnabled  bool
-	DBSettings  string
-	StorageType string
-	HashKey     string
+	DBSettings    string
+	StorageType   string
+	HashKey       string
+	cryptoKeyPath string
 }
 
 func Parse() *InitedFlags {
 	end := flag.String("a", ":8080", "endpoint address")
+	cryptoKeyFlag := flag.String("crypto-key", "", "Путь до файла с публичным ключом для шифрования")
 	key := flag.String("k", "", "hash key")
 	flagStoreInterval := flag.Int("i", 300, "Интервал сохранения метрик на диск")
 	flagFileStorage := flag.String("f", "/tmp/metrics-db.json", "Путь к файлу для хранения метрик")
@@ -46,6 +53,11 @@ func Parse() *InitedFlags {
 	hashKey := *key
 	if envHashKey := os.Getenv("KEY"); envHashKey != "" {
 		hashKey = envHashKey
+	}
+
+	cryptoKey := *cryptoKeyFlag
+	if envCryptoKey := os.Getenv("CRYPTO_KEY"); envCryptoKey != "" {
+		cryptoKey = envCryptoKey
 	}
 
 	// fmt.Printf("flagStoreInterval: %v\n", *flagStoreInterval)
@@ -95,7 +107,35 @@ func Parse() *InitedFlags {
 		DBSettings:     dbSettings,
 		StorageType:    storageType,
 		HashKey:        hashKey,
+		cryptoKeyPath:  cryptoKey,
 		// BPprofEnabled:  bPprofEnabled,
 	}
 
+}
+func (i *InitedFlags) GetCryptoKey() *rsa.PrivateKey {
+	privateKey, err := i.loadPrivateKey(i.cryptoKeyPath)
+	if err != nil {
+		log.Fatalf("Ошибка при загрузке приватного ключа: %v", err)
+		return nil
+	}
+	return privateKey
+}
+
+func (i *InitedFlags) loadPrivateKey(path string) (*rsa.PrivateKey, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+
+	block, _ := pem.Decode(data)
+	if block == nil || block.Type != "RSA PRIVATE KEY" {
+		return nil, fmt.Errorf("неверный формат ключа")
+	}
+
+	privateKey, err := x509.ParsePKCS1PrivateKey(block.Bytes)
+	if err != nil {
+		return nil, err
+	}
+
+	return privateKey, nil
 }
