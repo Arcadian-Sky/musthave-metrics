@@ -10,6 +10,7 @@ import (
 
 	_ "github.com/Arcadian-Sky/musthave-metrics/docs"
 
+	"github.com/Arcadian-Sky/musthave-metrics/internal/server/flags"
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/handler"
 	packmiddleware "github.com/Arcadian-Sky/musthave-metrics/internal/server/middleware"
 )
@@ -26,7 +27,7 @@ import (
 
 // @externalDocs.description  OpenAPI
 // @externalDocs.url          https://swagger.io/resources/open-api/
-func InitRouter(handler handler.Handler) chi.Router {
+func InitRouter(handler handler.Handler, config flags.InitedFlags) chi.Router {
 	r := chi.NewRouter()
 	// r.Use(packmiddleware.Logger)
 
@@ -35,6 +36,7 @@ func InitRouter(handler handler.Handler) chi.Router {
 	// r.Use(middleware.RealIP)
 	// r.Use(middleware.Recoverer)
 	r.Use(packmiddleware.GzipMiddleware)
+	r.Use(packmiddleware.DecryptMiddleware(config))
 
 	r.Head("/", func(rw http.ResponseWriter, r *http.Request) {
 		r.Header.Set("Content-Type", "Content-Type: application/json")
