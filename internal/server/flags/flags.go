@@ -113,12 +113,16 @@ func Parse() *InitedFlags {
 
 }
 func (i *InitedFlags) GetCryptoKey() *rsa.PrivateKey {
-	privateKey, err := i.loadPrivateKey(i.cryptoKeyPath)
-	if err != nil {
-		log.Fatalf("Ошибка при загрузке приватного ключа: %v", err)
-		return nil
+
+	if i.cryptoKeyPath != "" {
+		privateKey, err := i.loadPrivateKey(i.cryptoKeyPath)
+		if err != nil {
+			log.Fatalf("Ошибка при загрузке приватного ключа: %v", err)
+			return nil
+		}
+		return privateKey
 	}
-	return privateKey
+	return nil
 }
 
 func (i *InitedFlags) loadPrivateKey(path string) (*rsa.PrivateKey, error) {
