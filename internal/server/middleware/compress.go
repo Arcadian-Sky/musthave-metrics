@@ -16,7 +16,7 @@ import (
 func DecryptMiddleware(c flags.InitedFlags) func(http.Handler) http.Handler {
 	return func(h http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			privateKey := c.GetCryptoKey()
+			privateKey, _ := c.GetCryptoKey()
 			if privateKey != nil {
 				// Читаем зашифрованные данные из тела запроса
 				encryptedData, err := io.ReadAll(r.Body)
