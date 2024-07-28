@@ -16,6 +16,7 @@ type CollectAndSendMetricsService struct {
 	config flags.Config
 	sender *senderPack.Sender
 	stopCh chan struct{}
+	Wg     sync.WaitGroup
 }
 
 func NewCollectAndSendMetricsService(conf *flags.Config) *CollectAndSendMetricsService {
@@ -26,14 +27,14 @@ func NewCollectAndSendMetricsService(conf *flags.Config) *CollectAndSendMetricsS
 	}
 }
 
-func (c *CollectAndSendMetricsService) Run(ctx context.Context, wg sync.WaitGroup) error {
+func (c *CollectAndSendMetricsService) Run(ctx context.Context) error {
 	var pollCount int64
 	metricsRepo := repository.NewInMemoryMetricsRepository()
 	// Отправляем метрики на сервер
 	fmt.Println("send")
-	wg.Add(2)
+	c.Wg.Add(2)
 	go func() {
-		defer wg.Done()
+		defer c.Wg.Done()
 		for {
 			select {
 			case <-ctx.Done():
@@ -59,7 +60,7 @@ func (c *CollectAndSendMetricsService) Run(ctx context.Context, wg sync.WaitGrou
 
 	// Собираем метрики
 	go func() {
-		defer wg.Done()
+		defer c.Wg.Done()
 		for {
 			select {
 			case <-ctx.Done():
