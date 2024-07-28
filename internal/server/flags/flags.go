@@ -33,6 +33,15 @@ type InitedFlags struct {
 	ConfigFilePath string
 }
 
+type fileFlags struct {
+	Endpoint       string `json:"address"`
+	StoreInterval  int    `json:"store_interval"`
+	FileStorage    string `json:"store_file"`
+	RestoreMetrics bool   `json:"restore"`
+	DBSettings     string `json:"database_dsn"`
+	CryptoKeyPath  string `json:"crypto_key"`
+}
+
 func Parse() *InitedFlags {
 	address := flag.String("a", "", "endpoint address")
 	flagDBSettings := flag.String("d", "", "Адрес подключения к БД")
@@ -47,7 +56,7 @@ func Parse() *InitedFlags {
 	_ = godotenv.Load()
 
 	var initedConfig InitedFlags
-	var fileConfig InitedFlags
+	var fileConfig fileFlags
 
 	envRunAddr := os.Getenv("ADDRESS")
 	envRunRestoreStorage := os.Getenv("RESTORE")
@@ -112,7 +121,7 @@ func getBool(flagValue bool, envValue string, fileValue bool) bool {
 	return fileValue
 }
 
-func getDurationFromInt(flagValue int, envValue string, fileValue time.Duration, defaultValue int) time.Duration {
+func getDurationFromInt(flagValue int, envValue string, fileValue int, defaultValue int) time.Duration {
 	if envValue != "" {
 		if parsed, err := strconv.Atoi(envValue); err == nil {
 			return time.Duration(parsed) * time.Second
@@ -128,18 +137,6 @@ func getDurationFromInt(flagValue int, envValue string, fileValue time.Duration,
 	}
 
 	return time.Duration(defaultValue) * time.Second
-}
-
-func (i *InitedFlags) LoadConfig(filePath string) error {
-	file, err := os.ReadFile(filePath)
-	if err != nil {
-		return fmt.Errorf("error reading config file: %w", err)
-	}
-	err = json.Unmarshal(file, i)
-	if err != nil {
-		return fmt.Errorf("error parsing config file: %w", err)
-	}
-	return nil
 }
 
 func (i *InitedFlags) GetCryptoKey() (*rsa.PrivateKey, error) {
@@ -170,4 +167,16 @@ func (i *InitedFlags) loadPrivateKey(path string) (*rsa.PrivateKey, error) {
 	}
 
 	return privateKey, nil
+}
+
+func (f *fileFlags) LoadConfig(filePath string) error {
+	file, err := os.ReadFile(filePath)
+	if err != nil {
+		return fmt.Errorf("error reading config file: %w", err)
+	}
+	err = json.Unmarshal(file, f)
+	if err != nil {
+		return fmt.Errorf("error parsing config file: %w", err)
+	}
+	return nil
 }
