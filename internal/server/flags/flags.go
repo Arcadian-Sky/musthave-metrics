@@ -136,17 +136,16 @@ func (c *InitedFlags) LoadConfig(filePath string) error {
 	return nil
 }
 
-func (i *InitedFlags) GetCryptoKey() *rsa.PrivateKey {
+func (i *InitedFlags) GetCryptoKey() (*rsa.PrivateKey, error) {
 
 	if i.CryptoKeyPath != "" {
 		privateKey, err := i.loadPrivateKey(i.CryptoKeyPath)
 		if err != nil {
-			log.Fatalf("Ошибка при загрузке приватного ключа: %v", err)
-			return nil
+			return nil, fmt.Errorf("Ошибка при загрузке приватного ключа: %v", err)
 		}
-		return privateKey
+		return privateKey, nil
 	}
-	return nil
+	return nil, nil
 }
 
 func (i *InitedFlags) loadPrivateKey(path string) (*rsa.PrivateKey, error) {

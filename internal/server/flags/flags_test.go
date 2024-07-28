@@ -452,6 +452,7 @@ func TestGetCryptoKey(t *testing.T) {
 	tests := []struct {
 		name          string
 		cryptoKeyPath string
+		expectError   bool
 		expectNil     bool
 		description   string
 	}{
@@ -464,6 +465,7 @@ func TestGetCryptoKey(t *testing.T) {
 		{
 			name:          "InvalidKeyPath",
 			cryptoKeyPath: "/invalid/path/key.pem",
+			expectError:   true,
 			expectNil:     true,
 			description:   "Should return nil for invalid path",
 		},
@@ -478,8 +480,7 @@ func TestGetCryptoKey(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			config := InitedFlags{CryptoKeyPath: tt.cryptoKeyPath}
-			key := config.GetCryptoKey()
-
+			key, _ := config.GetCryptoKey()
 			if tt.expectNil {
 				assert.Nil(t, key, tt.description)
 			} else {
