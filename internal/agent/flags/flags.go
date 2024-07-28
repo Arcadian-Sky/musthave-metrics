@@ -85,8 +85,12 @@ func Parse() (Config, error) {
 		}
 	}
 
-	config.serverAddress = getString(*end, envRunAddr, fileConfig.ServerAddress, "localhost:8080", "https://")
 	config.cryptoKey = getString(*cryptoKeyPath, cryptoKeyEnv, fileConfig.CryptoKey, "", "")
+	prefix := "http://"
+	if config.cryptoKey != "" {
+		prefix = "https://"
+	}
+	config.serverAddress = getString(*end, envRunAddr, fileConfig.ServerAddress, "localhost:8080", prefix)
 	config.pollInterval = getDurationFromInt(*polI, envPolI, fileConfig.PollInterval, 10)
 	config.reportInterval = getDurationFromInt(*repI, envRepI, fileConfig.ReportInterval, 2)
 
