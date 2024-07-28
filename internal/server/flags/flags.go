@@ -130,12 +130,12 @@ func getDurationFromInt(flagValue int, envValue string, fileValue time.Duration,
 	return time.Duration(defaultValue) * time.Second
 }
 
-func (c *InitedFlags) LoadConfig(filePath string) error {
+func (i *InitedFlags) LoadConfig(filePath string) error {
 	file, err := os.ReadFile(filePath)
 	if err != nil {
 		return fmt.Errorf("error reading config file: %w", err)
 	}
-	err = json.Unmarshal(file, c)
+	err = json.Unmarshal(file, i)
 	if err != nil {
 		return fmt.Errorf("error parsing config file: %w", err)
 	}
@@ -143,11 +143,10 @@ func (c *InitedFlags) LoadConfig(filePath string) error {
 }
 
 func (i *InitedFlags) GetCryptoKey() (*rsa.PrivateKey, error) {
-
 	if i.CryptoKeyPath != "" {
 		privateKey, err := i.loadPrivateKey(i.CryptoKeyPath)
 		if err != nil {
-			return nil, fmt.Errorf("Ошибка при загрузке приватного ключа: %v", err)
+			return nil, fmt.Errorf("ошибка при загрузке приватного ключа: %v", err)
 		}
 		return privateKey, nil
 	}
