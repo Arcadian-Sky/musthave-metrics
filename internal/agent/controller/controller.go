@@ -25,7 +25,7 @@ func NewCollectAndSendMetricsService(conf *flags.Config) *CollectAndSendMetricsS
 	}
 }
 
-func (c *CollectAndSendMetricsService) Run() {
+func (c *CollectAndSendMetricsService) Run() error {
 	var pollCount int64
 	metricsRepo := repository.NewInMemoryMetricsRepository()
 
@@ -61,6 +61,11 @@ func (c *CollectAndSendMetricsService) Run() {
 			time.Sleep(c.config.GetPollInterval())
 		}
 	}()
+
+	select {
+	case <-c.stopCh:
+		return nil
+	}
 }
 
 func (c *CollectAndSendMetricsService) makePack(metrics map[string]interface{}, pollCount int64) []interface{} {
@@ -104,16 +109,6 @@ func (c *CollectAndSendMetricsService) sendPack(metrics map[string]interface{}, 
 	}
 
 	return nil
-}
-
-func (c *CollectAndSendMetricsService) Start() error {
-	c.Run()
-	for {
-		select {
-		case <-c.stopCh:
-			return nil
-		}
-	}
 }
 
 func (c *CollectAndSendMetricsService) Stop() {
