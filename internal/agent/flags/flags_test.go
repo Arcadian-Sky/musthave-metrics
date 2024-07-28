@@ -1,10 +1,6 @@
 package flags
 
 import (
-	"crypto/rsa"
-	"crypto/x509"
-	"encoding/pem"
-	"fmt"
 	"os"
 	"testing"
 	"time"
@@ -272,24 +268,4 @@ func TestParseConfig(t *testing.T) {
 	assert.Equal(t, 5, config.rateLimit)                                     // Переменная окружения имеет высший приоритет
 	assert.Equal(t, 25*time.Second, config.reportInterval)                   // Переменная окружения имеет высший приоритет
 	assert.Equal(t, 35*time.Second, config.pollInterval)                     // Переменная окружения имеет высший приоритет
-}
-
-// parsePublicKey разбирает публичный ключ из данных PEM
-func parsePublicKey(data []byte) (*rsa.PublicKey, error) {
-	block, _ := pem.Decode(data)
-	if block == nil || block.Type != "PUBLIC KEY" {
-		return nil, fmt.Errorf("неверный формат ключа")
-	}
-
-	publicKey, err := x509.ParsePKIXPublicKey(block.Bytes)
-	if err != nil {
-		return nil, err
-	}
-
-	rsaPublicKey, ok := publicKey.(*rsa.PublicKey)
-	if !ok {
-		return nil, fmt.Errorf("неверный тип ключа")
-	}
-
-	return rsaPublicKey, nil
 }
