@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -57,12 +58,11 @@ var (
 //
 // storeMetrics.SetMetrics(m)
 func main() {
-	// Создаем канал для обработки сигнала завершения
-	stop := make(chan os.Signal, 1)
-	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
+	stop := InitSignalHandler()
+
 	parsed := flags.Parse()
 
-	db, err := sql.Open("pgx", parsed.DBSettings)
+	db, err := OpenDatabase(parsed.DBSettings)
 	if err != nil {
 		panic(err)
 	}
@@ -70,33 +70,15 @@ func main() {
 
 	goose.SetBaseFS(migrations.Migrations)
 
-	// NewMemStorage создает новый экземпляр хранилищв
-	// Создаем хранилище
-	storeMetrics := func(cnf *flags.InitedFlags, db *sql.DB) storage.MetricsStorage {
-		if cnf.StorageType == "postgres" {
-			return postgres.NewPostgresStorage(db)
-		}
-		// mementoStore = storeMetrics
-		return inmemory.NewMemStorage()
-	}(parsed, db)
+	storeMetrics := CreateMetricsStorage(parsed, db)
 
-	memStore, memStoreOk := storeMetrics.(config.MementoStorage)
-	if memStoreOk {
-		// Инициализируем конфигурацию
-		err = config.InitConfig(memStore, parsed)
-		if err != nil {
-			log.Fatal(err.Error())
-		}
+	err, memStore, memStoreOk := InitializeConfig(storeMetrics, parsed)
+	if err != nil {
+		log.Fatal(err.Error())
 	}
-	log.Println("cnf.StorageType:", parsed.StorageType)
-	log.Println("memStoreOk:", memStoreOk)
 
-	//Инициируем хендлеры
-	vhandler := handler.NewHandler(storeMetrics, parsed)
-	httpserver := &http.Server{
-		Addr:    parsed.Endpoint,
-		Handler: server.InitRouter(*vhandler, *parsed),
-	}
+	httpserver := InitializeHTTPServer(parsed, storeMetrics)
+
 	go func() {
 		log.Println("Starting server...")
 		fmt.Printf("Build version: %s\n", buildVersion)
@@ -109,7 +91,67 @@ func main() {
 
 	<-stop
 
-	// Таймаут для завершения активных соединений
+	// Handle graceful shutdown
+	GracefulShutdown(httpserver, memStore, memStoreOk, parsed)
+}
+
+func InitSignalHandler() chan os.Signal {
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
+	return stop
+}
+
+func OpenDatabase(dbSettings string) (*sql.DB, error) {
+	db, err := sql.Open("pgx", dbSettings)
+	if err != nil {
+		return nil, err
+	}
+	return db, nil
+}
+
+func CreateMetricsStorage(cnf *flags.InitedFlags, db *sql.DB) storage.MetricsStorage {
+	// NewMemStorage создает новый экземпляр хранилищв
+	// Создаем хранилище
+	if cnf.StorageType == "postgres" {
+		if db == nil {
+			log.Println("CreateMetricsStorage: db is nil")
+		}
+		return postgres.NewPostgresStorage(db)
+	}
+	// mementoStore = storeMetrics
+	return inmemory.NewMemStorage()
+}
+
+func InitializeConfig(storeMetrics storage.MetricsStorage, parsed *flags.InitedFlags) (error, config.MementoStorage, bool) {
+	memStore, memStoreOk := storeMetrics.(config.MementoStorage)
+	if storeMetrics == nil {
+		return errors.New("storemetrics is nil"), nil, false
+	}
+	if memStoreOk {
+		err := config.InitConfig(memStore, parsed)
+		if err != nil {
+			return err, nil, false
+		}
+	}
+
+	log.Println("cnf.StorageType:", parsed.StorageType)
+	log.Println("memStoreOk:", memStoreOk)
+
+	return nil, memStore, memStoreOk
+}
+
+// Инициируем хендлеры
+func InitializeHTTPServer(parsed *flags.InitedFlags, storeMetrics storage.MetricsStorage) *http.Server {
+	vhandler := handler.NewHandler(storeMetrics, parsed)
+	httpserver := &http.Server{
+		Addr:    parsed.Endpoint,
+		Handler: server.InitRouter(*vhandler, *parsed),
+	}
+	return httpserver
+}
+
+func GracefulShutdown(httpserver *http.Server, memStore config.MementoStorage, memStoreOk bool, parsed *flags.InitedFlags) {
+	// Timeout for active connections to close
 	shutdownTimeout := 5 * time.Second
 	ctx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
 	defer cancel()
