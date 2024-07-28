@@ -34,10 +34,10 @@ type InitedFlags struct {
 }
 
 func Parse() *InitedFlags {
-	address := flag.String("a", ":8080", "endpoint address")
+	address := flag.String("a", "", "endpoint address")
 	flagDBSettings := flag.String("d", "", "Адрес подключения к БД")
-	flagStoreInterval := flag.Int("i", 300, "Интервал сохранения метрик на диск")
-	flagFileStorage := flag.String("f", "/tmp/metrics-db.json", "Путь к файлу для хранения метрик")
+	flagStoreInterval := flag.Int("i", 0, "Интервал сохранения метрик на диск")
+	flagFileStorage := flag.String("f", "", "Путь к файлу для хранения метрик")
 	flagRestoreMetrics := flag.Bool("r", false, "Восстановление метрик при старте сервера")
 	flagHashKey := flag.String("k", "", "hash key")
 	cryptoKeyFlag := flag.String("crypto-key", "", "Путь до файла с публичным ключом для шифрования")
@@ -70,13 +70,13 @@ func Parse() *InitedFlags {
 
 	fmt.Printf("fileConfig: %v\n", fileConfig)
 
-	initedConfig.ConfigFilePath = getString(*configFileFlag, configFilePathEnv, "")
-	initedConfig.DBSettings = getString(*flagDBSettings, envRunDBSettings, fileConfig.DBSettings)
-	initedConfig.Endpoint = getString(*address, envRunAddr, fileConfig.Endpoint)
-	initedConfig.StoreInterval = getDurationFromInt(*flagStoreInterval, envRunInterv, fileConfig.StoreInterval)
-	initedConfig.FileStorage = getString(*flagFileStorage, envRunFileStorage, fileConfig.FileStorage)
-	initedConfig.CryptoKeyPath = getString(*cryptoKeyFlag, envCryptoKey, fileConfig.CryptoKeyPath)
-	initedConfig.HashKey = getString(*flagHashKey, envHashKey, "")
+	initedConfig.ConfigFilePath = getString(*configFileFlag, configFilePathEnv, "", "")
+	initedConfig.DBSettings = getString(*flagDBSettings, envRunDBSettings, fileConfig.DBSettings, "")
+	initedConfig.Endpoint = getString(*address, envRunAddr, fileConfig.Endpoint, ":8080")
+	initedConfig.StoreInterval = getDurationFromInt(*flagStoreInterval, envRunInterv, fileConfig.StoreInterval, 300)
+	initedConfig.FileStorage = getString(*flagFileStorage, envRunFileStorage, fileConfig.FileStorage, "/tmp/metrics-db.json")
+	initedConfig.CryptoKeyPath = getString(*cryptoKeyFlag, envCryptoKey, fileConfig.CryptoKeyPath, "")
+	initedConfig.HashKey = getString(*flagHashKey, envHashKey, "", "")
 	initedConfig.RestoreMetrics = getBool(*flagRestoreMetrics, envRunRestoreStorage, fileConfig.RestoreMetrics)
 
 	initedConfig.StorageType = "inmemory"
@@ -87,14 +87,17 @@ func Parse() *InitedFlags {
 	return &initedConfig
 }
 
-func getString(flagValue string, envValue string, fileValue string) string {
+func getString(flagValue string, envValue string, fileValue string, defaultValue string) string {
 	if envValue != "" {
 		return envValue
+	}
+	if flagValue != "" {
+		return flagValue
 	}
 	if fileValue != "" {
 		return fileValue
 	}
-	return flagValue
+	return defaultValue
 }
 
 func getBool(flagValue bool, envValue string, fileValue bool) bool {
@@ -103,24 +106,28 @@ func getBool(flagValue bool, envValue string, fileValue bool) bool {
 			return parsed
 		}
 	}
-	if fileValue {
-		return fileValue
+	if flagValue {
+		return flagValue
 	}
-	return flagValue
+	return fileValue
 }
 
-func getDurationFromInt(flagValue int, envValue string, fileValue time.Duration) time.Duration {
+func getDurationFromInt(flagValue int, envValue string, fileValue time.Duration, defaultValue int) time.Duration {
 	if envValue != "" {
 		if parsed, err := strconv.Atoi(envValue); err == nil {
 			return time.Duration(parsed) * time.Second
 		}
 	}
 
+	if flagValue != 0 {
+		return time.Duration(flagValue) * time.Second
+	}
+
 	if fileValue != 0 {
 		return time.Duration(fileValue) * time.Second
 	}
 
-	return time.Duration(flagValue) * time.Second
+	return time.Duration(defaultValue) * time.Second
 }
 
 func (c *InitedFlags) LoadConfig(filePath string) error {
@@ -132,7 +139,6 @@ func (c *InitedFlags) LoadConfig(filePath string) error {
 	if err != nil {
 		return fmt.Errorf("error parsing config file: %w", err)
 	}
-	fmt.Printf("c: %v\n", c)
 	return nil
 }
 

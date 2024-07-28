@@ -185,8 +185,8 @@ func TestGetString(t *testing.T) {
 		{
 			name:        "FlagValue set",
 			envValue:    "",
-			fileValue:   "",
 			flagValue:   "flag",
+			fileValue:   "file",
 			expected:    "flag",
 			description: "Should return flag value",
 		},
@@ -201,8 +201,8 @@ func TestGetString(t *testing.T) {
 		{
 			name:        "FileValue set",
 			envValue:    "",
+			flagValue:   "",
 			fileValue:   "file",
-			flagValue:   "flag",
 			expected:    "file",
 			description: "Should return file value",
 		},
@@ -218,7 +218,7 @@ func TestGetString(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := getString(tt.flagValue, tt.envValue, tt.fileValue)
+			result := getString(tt.flagValue, tt.envValue, tt.fileValue, "")
 			assert.Equal(t, tt.expected, result, tt.description)
 		})
 	}
@@ -295,24 +295,24 @@ func TestGetDurationFromInt(t *testing.T) {
 		{
 			name:        "FlagValue set",
 			envValue:    "",
-			fileValue:   0,
 			flagValue:   60,
+			fileValue:   0,
 			expected:    60 * time.Second,
 			description: "Should return duration from flag",
 		},
 		{
 			name:        "EnvValue set",
 			envValue:    "120",
-			fileValue:   300,
 			flagValue:   0,
+			fileValue:   300,
 			expected:    120 * time.Second,
 			description: "Should return duration from env",
 		},
 		{
 			name:        "FileValue set",
 			envValue:    "",
+			flagValue:   0,
 			fileValue:   300,
-			flagValue:   150,
 			expected:    300 * time.Second,
 			description: "Should return duration from file",
 		},
@@ -328,7 +328,7 @@ func TestGetDurationFromInt(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := getDurationFromInt(tt.flagValue, tt.envValue, tt.fileValue)
+			result := getDurationFromInt(tt.flagValue, tt.envValue, tt.fileValue, 0)
 			assert.Equal(t, tt.expected, result, tt.description)
 		})
 	}
