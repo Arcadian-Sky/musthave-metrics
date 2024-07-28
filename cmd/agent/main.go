@@ -34,9 +34,7 @@ func main() {
 	agent := controller.NewCollectAndSendMetricsService(&config)
 
 	// Запуск агента в отдельной горутине
-	go func() {
-		agent.Run()
-	}()
+	agent.Run()
 
 	<-stop
 

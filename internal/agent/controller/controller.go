@@ -62,10 +62,7 @@ func (c *CollectAndSendMetricsService) Run() error {
 		}
 	}()
 
-	select {
-	case <-c.stopCh:
-		return nil
-	}
+	select {}
 }
 
 func (c *CollectAndSendMetricsService) makePack(metrics map[string]interface{}, pollCount int64) []interface{} {

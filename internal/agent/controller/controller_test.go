@@ -18,6 +18,7 @@ func TestNewCollectAndSendMetricsService(t *testing.T) {
 	type fields struct {
 		// config flags.Config
 		sender *sender.Sender
+		stopCh chan struct{}
 	}
 	type args struct {
 		mType  string
@@ -35,6 +36,7 @@ func TestNewCollectAndSendMetricsService(t *testing.T) {
 			fields: fields{
 				// config: flags.Config{},
 				sender: sender.NewSender(&flags.Config{}),
+				stopCh: make(chan struct{}),
 			},
 			args: args{
 				mType:  "gauge",
@@ -49,6 +51,7 @@ func TestNewCollectAndSendMetricsService(t *testing.T) {
 			c := &CollectAndSendMetricsService{
 				// config: tt.fields.config,
 				sender: tt.fields.sender,
+				stopCh: tt.fields.stopCh,
 			}
 			if err := c.sender.SendMetricValue(tt.args.mType, tt.args.mName, tt.args.mValue); (err != nil) != tt.wantErr {
 				t.Errorf("CollectAndSendMetricsService.sendMetricValue() error = %v, wantErr %v", err, tt.wantErr)
