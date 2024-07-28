@@ -35,9 +35,7 @@ func main() {
 
 	// Запуск агента в отдельной горутине
 	go func() {
-		if err := agent.Start(); err != nil {
-			log.Fatalf("Agent failed: %v", err)
-		}
+		agent.Run()
 	}()
 
 	<-stop
