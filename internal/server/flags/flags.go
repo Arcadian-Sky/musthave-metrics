@@ -3,6 +3,7 @@ package flags
 import (
 	"crypto/rsa"
 	"crypto/x509"
+	"encoding/json"
 	"encoding/pem"
 	"flag"
 	"fmt"
@@ -21,101 +22,124 @@ import (
 // Флаг -d, переменная окружения DATABASE_DSN - cтрока с адресом подключения к БД (по умолчанию пусто).
 
 type InitedFlags struct {
-	Endpoint       string
-	StoreInterval  time.Duration
-	FileStorage    string
-	RestoreMetrics bool
-	// BPprofEnabled  bool
-	DBSettings    string
-	StorageType   string
-	HashKey       string
-	cryptoKeyPath string
+	Endpoint       string        `json:"address"`
+	StoreInterval  time.Duration `json:"store_interval"`
+	FileStorage    string        `json:"store_file"`
+	RestoreMetrics bool          `json:"restore"`
+	DBSettings     string        `json:"database_dsn"`
+	CryptoKeyPath  string        `json:"crypto_key"`
+	StorageType    string
+	HashKey        string
+	ConfigFilePath string
 }
 
 func Parse() *InitedFlags {
-	end := flag.String("a", ":8080", "endpoint address")
-	cryptoKeyFlag := flag.String("crypto-key", "", "Путь до файла с публичным ключом для шифрования")
-	key := flag.String("k", "", "hash key")
+	address := flag.String("a", ":8080", "endpoint address")
+	flagDBSettings := flag.String("d", "", "Адрес подключения к БД")
 	flagStoreInterval := flag.Int("i", 300, "Интервал сохранения метрик на диск")
 	flagFileStorage := flag.String("f", "/tmp/metrics-db.json", "Путь к файлу для хранения метрик")
-	flagRestoreMetrics := flag.Bool("r", true, "Восстановление метрик при старте сервера")
-	flagDBSettings := flag.String("d", "", "Адрес подключения к БД")
-	storageType := "inmemory"
+	flagRestoreMetrics := flag.Bool("r", false, "Восстановление метрик при старте сервера")
+	flagHashKey := flag.String("k", "", "hash key")
+	cryptoKeyFlag := flag.String("crypto-key", "", "Путь до файла с публичным ключом для шифрования")
+	configFileFlag := flag.String("c", "", "Путь к файлу конфигурации JSON")
 
 	flag.Parse()
 	_ = godotenv.Load()
 
-	endpoint := *end
-	if envRunAddr := os.Getenv("ADDRESS"); envRunAddr != "" {
-		endpoint = envRunAddr
-	}
+	var initedConfig InitedFlags
+	var fileConfig InitedFlags
 
-	hashKey := *key
-	if envHashKey := os.Getenv("KEY"); envHashKey != "" {
-		hashKey = envHashKey
-	}
+	envRunAddr := os.Getenv("ADDRESS")
+	envRunRestoreStorage := os.Getenv("RESTORE")
+	envRunInterv := os.Getenv("STORE_INTERVAL")
+	envRunFileStorage := os.Getenv("FILE_STORAGE_PATH")
+	envRunDBSettings := os.Getenv("DATABASE_DSN")
+	envCryptoKey := os.Getenv("CRYPTO_KEY")
+	envHashKey := os.Getenv("KEY")
+	configFilePathEnv := os.Getenv("CONFIG")
 
-	cryptoKey := *cryptoKeyFlag
-	if envCryptoKey := os.Getenv("CRYPTO_KEY"); envCryptoKey != "" {
-		cryptoKey = envCryptoKey
+	configFilePath := *configFileFlag
+	if configFilePathEnv != "" {
+		configFilePath = configFilePathEnv
 	}
-
-	// fmt.Printf("flagStoreInterval: %v\n", *flagStoreInterval)
-	interval := time.Duration(*flagStoreInterval) * time.Second
-	if envRunInterv := os.Getenv("STORE_INTERVAL"); envRunInterv != "" {
-		if dur, err := time.ParseDuration(envRunInterv); err == nil {
-			interval = dur
+	if configFilePath != "" {
+		if err := fileConfig.LoadConfig(configFilePath); err != nil {
+			log.Fatalf("Ошибка загрузки конфигурации из файла: %v", err)
 		}
 	}
 
-	fileStorage := *flagFileStorage
-	if envRunFileStorage := os.Getenv("FILE_STORAGE_PATH"); envRunFileStorage != "" {
-		fileStorage = envRunFileStorage
+	fmt.Printf("fileConfig: %v\n", fileConfig)
+
+	initedConfig.ConfigFilePath = getString(*configFileFlag, configFilePathEnv, "")
+	initedConfig.DBSettings = getString(*flagDBSettings, envRunDBSettings, fileConfig.DBSettings)
+	initedConfig.Endpoint = getString(*address, envRunAddr, fileConfig.Endpoint)
+	initedConfig.StoreInterval = getDurationFromInt(*flagStoreInterval, envRunInterv, fileConfig.StoreInterval)
+	initedConfig.FileStorage = getString(*flagFileStorage, envRunFileStorage, fileConfig.FileStorage)
+	initedConfig.CryptoKeyPath = getString(*cryptoKeyFlag, envCryptoKey, fileConfig.CryptoKeyPath)
+	initedConfig.HashKey = getString(*flagHashKey, envHashKey, "")
+	initedConfig.RestoreMetrics = getBool(*flagRestoreMetrics, envRunRestoreStorage, fileConfig.RestoreMetrics)
+
+	initedConfig.StorageType = "inmemory"
+	if initedConfig.DBSettings != "" {
+		initedConfig.StorageType = "postgres"
 	}
 
-	restoreMetrics := *flagRestoreMetrics
-	if envRunFileStorage := os.Getenv("RESTORE"); envRunFileStorage != "" {
-		if val, err := strconv.ParseBool(envRunFileStorage); err == nil {
-			restoreMetrics = val
-		}
-	}
-
-	dbSettings := *flagDBSettings
-	if envRunDBSettings := os.Getenv("DATABASE_DSN"); envRunDBSettings != "" {
-		dbSettings = envRunDBSettings
-	}
-	if dbSettings != "" {
-		storageType = "postgres"
-	}
-
-	// var bPprofEnabled = false
-	// if envBPprofEnabled := os.Getenv("BPPROF"); envBPprofEnabled != "" {
-	// 	if val, err := strconv.ParseBool(envBPprofEnabled); err == nil {
-	// 		bPprofEnabled = val
-	// 	}
-	// }
-
-	// fmt.Printf("flag interval: %v\n", interval)
-	// fmt.Printf("flag fileStorage: %v\n", fileStorage)
-	// fmt.Printf("flag restoreMetrics: %v\n", restoreMetrics)
-
-	return &InitedFlags{
-		Endpoint:       endpoint,
-		StoreInterval:  interval,
-		FileStorage:    fileStorage,
-		RestoreMetrics: restoreMetrics,
-		DBSettings:     dbSettings,
-		StorageType:    storageType,
-		HashKey:        hashKey,
-		cryptoKeyPath:  cryptoKey,
-		// BPprofEnabled:  bPprofEnabled,
-	}
-
+	return &initedConfig
 }
+
+func getString(flagValue string, envValue string, fileValue string) string {
+	if envValue != "" {
+		return envValue
+	}
+	if fileValue != "" {
+		return fileValue
+	}
+	return flagValue
+}
+
+func getBool(flagValue bool, envValue string, fileValue bool) bool {
+	if envValue != "" {
+		if parsed, err := strconv.ParseBool(envValue); err == nil {
+			return parsed
+		}
+	}
+	if fileValue {
+		return fileValue
+	}
+	return flagValue
+}
+
+func getDurationFromInt(flagValue int, envValue string, fileValue time.Duration) time.Duration {
+	if envValue != "" {
+		if parsed, err := strconv.Atoi(envValue); err == nil {
+			return time.Duration(parsed) * time.Second
+		}
+	}
+
+	if fileValue != 0 {
+		return time.Duration(fileValue) * time.Second
+	}
+
+	return time.Duration(flagValue) * time.Second
+}
+
+func (c *InitedFlags) LoadConfig(filePath string) error {
+	file, err := os.ReadFile(filePath)
+	if err != nil {
+		return fmt.Errorf("error reading config file: %w", err)
+	}
+	err = json.Unmarshal(file, c)
+	if err != nil {
+		return fmt.Errorf("error parsing config file: %w", err)
+	}
+	fmt.Printf("c: %v\n", c)
+	return nil
+}
+
 func (i *InitedFlags) GetCryptoKey() *rsa.PrivateKey {
 
-	if i.cryptoKeyPath != "" {
-		privateKey, err := i.loadPrivateKey(i.cryptoKeyPath)
+	if i.CryptoKeyPath != "" {
+		privateKey, err := i.loadPrivateKey(i.CryptoKeyPath)
 		if err != nil {
 			log.Fatalf("Ошибка при загрузке приватного ключа: %v", err)
 			return nil
