@@ -14,9 +14,8 @@ import (
 // MemStorage представляет хранилище метрик
 type MemStorage struct {
 	metrics map[storage.MetricType]map[string]interface{}
+	mu      sync.RWMutex
 }
-
-var mapMutex = sync.RWMutex{}
 
 // NewMemStorage создает новый экземпляр MemStorage
 func NewMemStorage() *MemStorage {
@@ -26,6 +25,8 @@ func NewMemStorage() *MemStorage {
 }
 
 func (m *MemStorage) GetJSONMetric(ctx context.Context, metric *models.Metrics) error {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
 	metricType, err := utils.GetMetricTypeByCode(metric.MType)
 
 	if err != nil {
@@ -96,6 +97,8 @@ func (m *MemStorage) GetJSONMetrics(ctx context.Context, metric *[]models.Metric
 }
 
 func (m *MemStorage) UpdateJSONMetric(ctx context.Context, metric *models.Metrics) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	metricType, err := utils.GetMetricTypeByCode(metric.MType)
 
 	if err != nil {
@@ -128,11 +131,14 @@ func (m *MemStorage) UpdateJSONMetric(ctx context.Context, metric *models.Metric
 	default:
 		return fmt.Errorf("invalid metric type")
 	}
+
 	return nil
 }
 
 // UpdateMetric обновляет значение метрики в хранилище
 func (m *MemStorage) UpdateMetric(ctx context.Context, mtype string, name string, value string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	// var metricType MetricType
 	metricType, err := utils.GetMetricTypeByCode(mtype)
 	if err != nil {
@@ -164,6 +170,7 @@ func (m *MemStorage) UpdateMetric(ctx context.Context, mtype string, name string
 	default:
 		return fmt.Errorf("invalid metric type")
 	}
+
 	return nil
 }
 
@@ -175,16 +182,22 @@ func (m *MemStorage) UpdateJSONMetrics(ctx context.Context, metrics *[]models.Me
 
 // GetMetric возвращает текущие метрики из хранилища для типа
 func (m *MemStorage) GetMetric(ctx context.Context, mtype storage.MetricType) map[string]interface{} {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
 	return m.metrics[mtype]
 }
 
 // GetMetrics возвращает текущие метрики из хранилища == getState
 func (m *MemStorage) GetMetrics(ctx context.Context) map[storage.MetricType]map[string]interface{} {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
 	return m.metrics
 }
 
 // SetMetrics метод вызывается при инициализации для перезаписи всего хранилища == setState
 func (m *MemStorage) SetMetrics(ctx context.Context, metrics map[storage.MetricType]map[string]interface{}) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	m.metrics = metrics
 }
 
