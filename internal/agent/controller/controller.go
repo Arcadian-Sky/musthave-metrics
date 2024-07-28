@@ -78,11 +78,9 @@ func (c *CollectAndSendMetricsService) Run(ctx context.Context) error {
 		}
 	}()
 
-	select {
-	case <-ctx.Done():
-		fmt.Printf("Горутина run остановлена.\n")
-		return nil
-	}
+	<-ctx.Done()
+	fmt.Printf("Горутина run остановлена.\n")
+	return nil
 }
 
 func (c *CollectAndSendMetricsService) makePack(metrics map[string]interface{}, pollCount int64) []interface{} {
