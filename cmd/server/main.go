@@ -72,7 +72,7 @@ func main() {
 
 	storeMetrics := CreateMetricsStorage(parsed, db)
 
-	err, memStore, memStoreOk := InitializeConfig(storeMetrics, parsed)
+	memStore, memStoreOk, err := InitializeConfig(storeMetrics, parsed)
 	if err != nil {
 		log.Fatal(err.Error())
 	}
@@ -122,22 +122,22 @@ func CreateMetricsStorage(cnf *flags.InitedFlags, db *sql.DB) storage.MetricsSto
 	return inmemory.NewMemStorage()
 }
 
-func InitializeConfig(storeMetrics storage.MetricsStorage, parsed *flags.InitedFlags) (error, config.MementoStorage, bool) {
+func InitializeConfig(storeMetrics storage.MetricsStorage, parsed *flags.InitedFlags) (config.MementoStorage, bool, error) {
 	memStore, memStoreOk := storeMetrics.(config.MementoStorage)
 	if storeMetrics == nil {
-		return errors.New("storemetrics is nil"), nil, false
+		return nil, false, errors.New("storemetrics is nil")
 	}
 	if memStoreOk {
 		err := config.InitConfig(memStore, parsed)
 		if err != nil {
-			return err, nil, false
+			return nil, false, err
 		}
 	}
 
 	log.Println("cnf.StorageType:", parsed.StorageType)
 	log.Println("memStoreOk:", memStoreOk)
 
-	return nil, memStore, memStoreOk
+	return memStore, memStoreOk, nil
 }
 
 // Инициируем хендлеры
