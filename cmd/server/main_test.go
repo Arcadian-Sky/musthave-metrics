@@ -4,29 +4,72 @@
 package main
 
 import (
-	"os"
-	"os/signal"
-	"syscall"
 	"testing"
-	"time"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/Arcadian-Sky/musthave-metrics/internal/server/flags"
+	"github.com/Arcadian-Sky/musthave-metrics/internal/server/storage"
 )
 
-func TestServerGracefulShutdown(t *testing.T) {
-	stop := make(chan os.Signal, 1)
-	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+func TestOpenDatabase(t *testing.T) {
+	tests := []struct {
+		name        string
+		dbSettings  string
+		expectError bool
+	}{
+		{
+			name:        "Valid connection",
+			dbSettings:  "postgres://user:password@localhost/dbname?sslmode=disable",
+			expectError: false,
+		},
+	}
 
-	// Запускаем сервер
-	go main()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			db, err := OpenDatabase(tt.dbSettings)
 
-	// Отправляем сигнал завершения
-	stop <- syscall.SIGTERM
+			if (err != nil) != tt.expectError {
+				t.Errorf("OpenDatabase() error = %v, expectError %v", err, tt.expectError)
+			}
 
-	// Ожидаем завершения работы
-	time.Sleep(1 * time.Second)
+			if db != nil {
+				db.Close()
+			}
+		})
+	}
+}
 
-	// Проверяем, что сервер корректно завершился
+type MockStorage struct {
+	storage.MetricsStorage
+}
 
-	assert.True(t, true)
+// TestInitializeConfig tests the InitializeConfig function
+func TestInitializeConfig(t *testing.T) {
+	tests := []struct {
+		name        string
+		memStore    storage.MetricsStorage
+		expectError bool
+	}{
+		{
+			name:        "Successful initialization",
+			memStore:    &MockStorage{},
+			expectError: false,
+		},
+		{
+			name:        "Failed initialization",
+			memStore:    nil,
+			expectError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			parsed := &flags.InitedFlags{}
+
+			err, _, _ := InitializeConfig(tt.memStore, parsed)
+
+			if (err != nil) != tt.expectError {
+				t.Errorf("InitializeConfig() error = %v, expectError %v", err, tt.expectError)
+			}
+		})
+	}
 }
