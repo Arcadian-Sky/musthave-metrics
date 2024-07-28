@@ -27,7 +27,7 @@ func NewCollectAndSendMetricsService(conf *flags.Config) *CollectAndSendMetricsS
 	}
 }
 
-func (c *CollectAndSendMetricsService) Run(ctx context.Context) error {
+func (c *CollectAndSendMetricsService) Run(ctx context.Context) {
 	var pollCount int64
 	metricsRepo := repository.NewInMemoryMetricsRepository()
 	// Отправляем метрики на сервер
@@ -80,7 +80,7 @@ func (c *CollectAndSendMetricsService) Run(ctx context.Context) error {
 
 	<-ctx.Done()
 	fmt.Printf("Горутина run остановлена.\n")
-	return nil
+	return
 }
 
 func (c *CollectAndSendMetricsService) makePack(metrics map[string]interface{}, pollCount int64) []interface{} {
