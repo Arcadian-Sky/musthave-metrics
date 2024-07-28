@@ -1,8 +1,9 @@
 package controller
 
 import (
+	"context"
 	"fmt"
-	"log"
+	"sync"
 	"time"
 
 	senderPack "github.com/Arcadian-Sky/musthave-metrics/internal/agent/controller/sender"
@@ -25,44 +26,62 @@ func NewCollectAndSendMetricsService(conf *flags.Config) *CollectAndSendMetricsS
 	}
 }
 
-func (c *CollectAndSendMetricsService) Run() error {
+func (c *CollectAndSendMetricsService) Run(ctx context.Context, wg sync.WaitGroup) error {
 	var pollCount int64
 	metricsRepo := repository.NewInMemoryMetricsRepository()
-
 	// Отправляем метрики на сервер
 	fmt.Println("send")
+	wg.Add(2)
 	go func() {
+		defer wg.Done()
 		for {
-			if c.config.GetRateLimit() == 0 {
-				metrics, err := metricsRepo.GetMetrics()
-				if err != nil {
-					fmt.Println("Error collecting metrics:", err)
-					return
+			select {
+			case <-ctx.Done():
+				fmt.Printf("Горутина 1 остановлена.\n")
+				return
+			default:
+				if c.config.GetRateLimit() == 0 {
+					metrics, err := metricsRepo.GetMetrics()
+					if err != nil {
+						fmt.Println("Error collecting metrics:", err)
+						return
+					}
+					c.Push(metrics, &pollCount)
+				} else {
+					c.Init(metricsRepo, &pollCount)
 				}
-				c.Push(metrics, &pollCount)
-			} else {
-				c.Init(metricsRepo, &pollCount)
+
+				time.Sleep(c.config.GetPollInterval())
 			}
 
-			time.Sleep(c.config.GetPollInterval())
 		}
-
 	}()
 
 	// Собираем метрики
 	go func() {
+		defer wg.Done()
 		for {
-			// fmt.Println("updateMterics")
-			_, err := metricsRepo.GetMetrics()
-			if err != nil {
-				// fmt.Println("Error collecting metrics:", err)
+			select {
+			case <-ctx.Done():
+				fmt.Printf("Горутина 2 остановлена.\n")
 				return
+			default:
+				// fmt.Println("updateMterics")
+				_, err := metricsRepo.GetMetrics()
+				if err != nil {
+					// fmt.Println("Error collecting metrics:", err)
+					return
+				}
+				time.Sleep(c.config.GetPollInterval())
 			}
-			time.Sleep(c.config.GetPollInterval())
 		}
 	}()
 
-	select {}
+	select {
+	case <-ctx.Done():
+		fmt.Printf("Горутина run остановлена.\n")
+		return nil
+	}
 }
 
 func (c *CollectAndSendMetricsService) makePack(metrics map[string]interface{}, pollCount int64) []interface{} {
@@ -106,9 +125,4 @@ func (c *CollectAndSendMetricsService) sendPack(metrics map[string]interface{}, 
 	}
 
 	return nil
-}
-
-func (c *CollectAndSendMetricsService) Stop() {
-	close(c.stopCh)
-	log.Println("Agent stopped sending metrics.")
 }

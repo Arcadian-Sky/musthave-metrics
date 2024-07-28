@@ -1,10 +1,12 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 
 	"github.com/Arcadian-Sky/musthave-metrics/internal/agent/controller"
@@ -21,6 +23,10 @@ func main() {
 	// Создаем канал для обработки сигнала завершения
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+	// Создаем контекст с отменой
+	ctx, cancel := context.WithCancel(context.Background())
+	// Создаем WaitGroup для синхронизации завершения всех горутин
+	var wg sync.WaitGroup
 
 	// Загружаем конфигурацию агента
 	config, err := flags.Parse()
@@ -31,16 +37,16 @@ func main() {
 	fmt.Printf("Build date: %s\n", buildDate)
 	fmt.Printf("Build commit: %s\n", buildCommit)
 
-	agent := controller.NewCollectAndSendMetricsService(&config)
-
-	// Запуск агента в отдельной горутине
-	agent.Run()
+	go controller.NewCollectAndSendMetricsService(&config).Run(ctx, wg)
 
 	<-stop
+	fmt.Println("Получен сигнал, останавливаем все горутины...")
 
-	// Корректное завершение работы агента
-	log.Println("Shutting down agent gracefully...")
-	agent.Stop()
+	// Отменяем контекст, чтобы уведомить все горутины о завершении
+	cancel()
+
+	// Ожидаем завершения всех горутин
+	wg.Wait()
 
 	log.Println("Agent stopped gracefully")
 }
