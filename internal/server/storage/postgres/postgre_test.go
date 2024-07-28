@@ -80,7 +80,7 @@ func TestPostgreStorage_GetJSONMetrics(t *testing.T) {
 	// Ожидается, что метод вернет nil без каких-либо действий
 }
 
-func TestPostgreStorage_GetMetric(t *testing.T) {
+func TestPostgreStorage_GetMetricGauge(t *testing.T) {
 	// Создание mock базы данных и отложенное закрытие соединения
 	db, mock, err := sqlmock.New()
 	if err != nil {
@@ -107,6 +107,40 @@ func TestPostgreStorage_GetMetric(t *testing.T) {
 	expectedMetrics := map[string]interface{}{
 		"metric1": 10.5,
 		"metric2": 20.0,
+	}
+
+	// Проверка на соответствие ожидаемому результату
+	assert.Equal(t, expectedMetrics, metrics)
+}
+
+func TestPostgreStorage_GetMetricCounter(t *testing.T) {
+	// Создание mock базы данных и отложенное закрытие соединения
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("ошибка при создании mock базы данных: %v", err)
+	}
+	defer db.Close()
+
+	// Создание экземпляра PostgresStorage с помощью конструктора NewPostgresStorage
+	p := NewTestPostgresStorage(db)
+
+	// Ожидаемый результат выполнения mock запроса
+	mock.ExpectQuery("SELECT .*").
+		WillReturnRows(sqlmock.NewRows([]string{"name", "counter"}).
+			AddRow("metric1", 105).
+			AddRow("metric2", 200))
+
+	// Выполнение тестируемого метода для типа метрики Gauge
+	metrics := p.GetMetric(context.Background(), storage.Counter)
+	fmt.Printf("metrics: %v\n", metrics)
+	if metrics == nil {
+		t.Fatalf("метрики не были получены")
+	}
+
+	// Ожидаемый результат
+	expectedMetrics := map[string]interface{}{
+		"metric1": 105,
+		"metric2": 200,
 	}
 
 	// Проверка на соответствие ожидаемому результату
@@ -144,7 +178,7 @@ func TestPostgreStorage_GetJSONMetric(t *testing.T) {
 	assert.Equal(t, 42.0, *testMetric.Value)
 }
 
-func TestPostgreStorage_UpdateMetric(t *testing.T) {
+func TestPostgreStorage_UpdateMetricGauge(t *testing.T) {
 	// Создание mock базы данных и отложенное закрытие соединения
 	db, mock, err := sqlmock.New()
 	if err != nil {
@@ -166,7 +200,29 @@ func TestPostgreStorage_UpdateMetric(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestPostgreStorage_UpdateJSONMetric(t *testing.T) {
+func TestPostgreStorage_UpdateMetricCounter(t *testing.T) {
+	// Создание mock базы данных и отложенное закрытие соединения
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("ошибка при создании mock базы данных: %v", err)
+	}
+	defer db.Close()
+
+	// Создание экземпляра PostgresStorage
+	p := NewTestPostgresStorage(db)
+
+	// Ожидаемый запрос SQL
+	mock.ExpectExec("INSERT INTO .*").WithArgs("test", 42).
+		WillReturnResult(sqlmock.NewResult(1, 1))
+
+	// Выполнение тестируемого метода
+	err = p.UpdateMetric(context.Background(), "counter", "test", "42")
+
+	// Проверка на отсутствие ошибки
+	assert.NoError(t, err)
+}
+
+func TestPostgreStorage_UpdateJSONMetricGauge(t *testing.T) {
 	// Создание mock базы данных и отложенное закрытие соединения
 	db, mock, err := sqlmock.New()
 	if err != nil {
@@ -182,6 +238,37 @@ func TestPostgreStorage_UpdateJSONMetric(t *testing.T) {
 	metric := &models.Metrics{
 		ID:    "metric1",
 		MType: "gauge",
+		Value: &v,
+	}
+
+	// Ожидаемый результат выполнения mock запроса
+	mock.ExpectExec("INSERT INTO .*").
+		WithArgs("metric1", metric.Value).
+		WillReturnResult(sqlmock.NewResult(1, 1))
+
+	// Выполнение тестируемого метода
+	err = p.UpdateJSONMetric(context.Background(), metric)
+	if err != nil {
+		t.Fatalf("ошибка при обновлении метрики: %v", err)
+	}
+}
+
+func TestPostgreStorage_UpdateJSONMetricCounter(t *testing.T) {
+	// Создание mock базы данных и отложенное закрытие соединения
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("ошибка при создании mock базы данных: %v", err)
+	}
+	defer db.Close()
+
+	// Создание экземпляра PostgresStorage с помощью конструктора NewPostgresStorage
+	p := NewTestPostgresStorage(db)
+
+	var v = float64(10.5)
+	// Создание метрики для обновления
+	metric := &models.Metrics{
+		ID:    "metric1",
+		MType: "counter",
 		Value: &v,
 	}
 
