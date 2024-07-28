@@ -8,6 +8,7 @@ import (
 
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/flags"
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/storage"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestOpenDatabase(t *testing.T) {
@@ -65,10 +66,10 @@ func TestInitializeConfig(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			parsed := &flags.InitedFlags{}
 
-			err, _, _ := InitializeConfig(tt.memStore, parsed)
+			_, _, err := InitializeConfig(tt.memStore, parsed)
 
-			if (err != nil) != tt.expectError {
-				t.Errorf("InitializeConfig() error = %v, expectError %v", err, tt.expectError)
+			if tt.expectError {
+				assert.Error(t, err, "InitializeConfig() assert error", err)
 			}
 		})
 	}
