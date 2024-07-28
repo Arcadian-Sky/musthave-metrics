@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"sync"
 
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/models"
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/storage"
@@ -14,6 +15,8 @@ import (
 type MemStorage struct {
 	metrics map[storage.MetricType]map[string]interface{}
 }
+
+var mapMutex = sync.RWMutex{}
 
 // NewMemStorage создает новый экземпляр MemStorage
 func NewMemStorage() *MemStorage {
@@ -125,7 +128,6 @@ func (m *MemStorage) UpdateJSONMetric(ctx context.Context, metric *models.Metric
 	default:
 		return fmt.Errorf("invalid metric type")
 	}
-
 	return nil
 }
 
@@ -162,7 +164,6 @@ func (m *MemStorage) UpdateMetric(ctx context.Context, mtype string, name string
 	default:
 		return fmt.Errorf("invalid metric type")
 	}
-
 	return nil
 }
 

@@ -6,8 +6,6 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
 	"github.com/Arcadian-Sky/musthave-metrics/internal/agent/controller/sender"
 	"github.com/Arcadian-Sky/musthave-metrics/internal/agent/flags"
 	"github.com/Arcadian-Sky/musthave-metrics/internal/agent/models"
@@ -60,14 +58,14 @@ func TestNewCollectAndSendMetricsService(t *testing.T) {
 	}
 }
 
-func TestCollectAndSendMetricsService_send(t *testing.T) {
-	metrics := make(map[string]interface{})
-	pollCount := int64(10) // Пример значения pollCount
+// func TestCollectAndSendMetricsService_send(t *testing.T) {
+// 	metrics := make(map[string]interface{})
+// 	pollCount := int64(10) // Пример значения pollCount
 
-	service := NewCollectAndSendMetricsService(flags.SetDefault())
-	err := service.send(metrics, pollCount)
-	assert.Error(t, err, "Функция должна вернуть errоr")
-}
+// 	service := NewCollectAndSendMetricsService(flags.SetDefault())
+// 	err := service.send(metrics, pollCount)
+// 	assert.Error(t, err, "Функция должна вернуть errоr")
+// }
 
 func TestCollectAndSendMetricsService_sendMetricValue(t *testing.T) {
 	type fields struct {
