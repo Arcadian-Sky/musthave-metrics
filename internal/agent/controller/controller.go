@@ -80,7 +80,6 @@ func (c *CollectAndSendMetricsService) Run(ctx context.Context) {
 
 	<-ctx.Done()
 	fmt.Printf("Горутина run остановлена.\n")
-	return
 }
 
 func (c *CollectAndSendMetricsService) makePack(metrics map[string]interface{}, pollCount int64) []interface{} {
