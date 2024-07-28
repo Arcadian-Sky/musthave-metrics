@@ -2,6 +2,7 @@ package controller
 
 import (
 	"fmt"
+	"log"
 	"time"
 
 	senderPack "github.com/Arcadian-Sky/musthave-metrics/internal/agent/controller/sender"
@@ -13,12 +14,14 @@ import (
 type CollectAndSendMetricsService struct {
 	config flags.Config
 	sender *senderPack.Sender
+	stopCh chan struct{}
 }
 
 func NewCollectAndSendMetricsService(conf *flags.Config) *CollectAndSendMetricsService {
 	return &CollectAndSendMetricsService{
 		config: *conf,
 		sender: senderPack.NewSender(conf),
+		stopCh: make(chan struct{}),
 	}
 }
 
@@ -58,8 +61,6 @@ func (c *CollectAndSendMetricsService) Run() {
 			time.Sleep(c.config.GetPollInterval())
 		}
 	}()
-
-	select {}
 }
 
 func (c *CollectAndSendMetricsService) makePack(metrics map[string]interface{}, pollCount int64) []interface{} {
@@ -103,4 +104,19 @@ func (c *CollectAndSendMetricsService) sendPack(metrics map[string]interface{}, 
 	}
 
 	return nil
+}
+
+func (c *CollectAndSendMetricsService) Start() error {
+	c.Run()
+	for {
+		select {
+		case <-c.stopCh:
+			return nil
+		}
+	}
+}
+
+func (c *CollectAndSendMetricsService) Stop() {
+	close(c.stopCh)
+	log.Println("Agent stopped sending metrics.")
 }
