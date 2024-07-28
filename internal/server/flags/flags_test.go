@@ -288,7 +288,7 @@ func TestGetDurationFromInt(t *testing.T) {
 		name        string
 		flagValue   int
 		envValue    string
-		fileValue   time.Duration
+		fileValue   int
 		expected    time.Duration
 		description string
 	}{
@@ -320,7 +320,7 @@ func TestGetDurationFromInt(t *testing.T) {
 			name:        "AllValuesZero",
 			flagValue:   0,
 			envValue:    "",
-			fileValue:   0 * time.Second,
+			fileValue:   0,
 			expected:    0 * time.Second,
 			description: "Should return zero duration",
 		},
@@ -343,7 +343,7 @@ func TestLoadConfig(t *testing.T) {
 	tests := []struct {
 		name          string
 		configData    string
-		expected      *InitedFlags
+		expected      *fileFlags
 		expectedError bool
 		description   string
 	}{
@@ -357,7 +357,7 @@ func TestLoadConfig(t *testing.T) {
 				"database_dsn": "user:password@tcp(localhost:3306)/dbname",
 				"crypto_key": "/path/to/key.pem"
 			}`,
-			expected: &InitedFlags{
+			expected: &fileFlags{
 				Endpoint:       "localhost:8080",
 				StoreInterval:  2,
 				FileStorage:    "/path/to/file.db",
@@ -371,21 +371,21 @@ func TestLoadConfig(t *testing.T) {
 		{
 			name:          "InvalidConfig",
 			configData:    `{"address": "localhost:8080", "restore": "yes"}`,
-			expected:      &InitedFlags{},
+			expected:      &fileFlags{},
 			expectedError: true,
 			description:   "Should fail on invalid boolean",
 		},
 		{
 			name:          "EmptyConfig",
 			configData:    `{}`,
-			expected:      &InitedFlags{},
+			expected:      &fileFlags{},
 			expectedError: false,
 			description:   "Should load empty config",
 		},
 		{
 			name:          "ConfigWithInvalidDuration",
 			configData:    `{"store_interval": "invalid_duration"}`,
-			expected:      &InitedFlags{},
+			expected:      &fileFlags{},
 			expectedError: true,
 			description:   "Should fail on invalid duration",
 		},
@@ -395,8 +395,8 @@ func TestLoadConfig(t *testing.T) {
 				"store_interval": 0,
 				"restore": false
 			}`,
-			expected: &InitedFlags{
-				StoreInterval:  0 * time.Second,
+			expected: &fileFlags{
+				StoreInterval:  0,
 				RestoreMetrics: false,
 			},
 			expectedError: false,
@@ -410,7 +410,7 @@ func TestLoadConfig(t *testing.T) {
 			err := os.WriteFile(configPath, []byte(tt.configData), 0644)
 			assert.NoError(t, err)
 
-			var config InitedFlags
+			var config fileFlags
 			err = config.LoadConfig(configPath)
 
 			if tt.expectedError {
