@@ -1,12 +1,14 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"log"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"net/http"
 
@@ -55,18 +57,6 @@ var (
 //
 // storeMetrics.SetMetrics(m)
 func main() {
-
-	// f, err := os.Create("cpu.prof")
-	// if err != nil {
-	// 	fmt.Println("Could not create CPU profile: ", err)
-	// 	return
-	// }
-	// if err := pprof.StartCPUProfile(f); err != nil {
-	// 	fmt.Println("Could not start CPU profile: ", err)
-	// 	return
-	// }
-	// defer pprof.StopCPUProfile()
-
 	// Создаем канал для обработки сигнала завершения
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
@@ -103,19 +93,34 @@ func main() {
 
 	//Инициируем хендлеры
 	vhandler := handler.NewHandler(storeMetrics, parsed)
+	httpserver := &http.Server{
+		Addr:    parsed.Endpoint,
+		Handler: server.InitRouter(*vhandler, *parsed),
+	}
 	go func() {
 		log.Println("Starting server...")
 		fmt.Printf("Build version: %s\n", buildVersion)
 		fmt.Printf("Build date: %s\n", buildDate)
 		fmt.Printf("Build commit: %s\n", buildCommit)
-		log.Fatal(http.ListenAndServe(parsed.Endpoint, server.InitRouter(*vhandler, *parsed)))
+		if err := httpserver.ListenAndServe(); err != http.ErrServerClosed {
+			log.Fatalf("Server failed: %v", err)
+		}
 	}()
 
 	<-stop
+
+	// Таймаут для завершения активных соединений
+	shutdownTimeout := 5 * time.Second
+	ctx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
+	defer cancel()
+
+	if err := httpserver.Shutdown(ctx); err != nil {
+		log.Fatalf("Server shutdown failed: %v", err)
+	}
+
 	if memStoreOk {
 		config.SaveMetricsToFile(memStore, parsed.FileStorage)
 	}
 
 	fmt.Println("Server stopped gracefully")
-
 }
