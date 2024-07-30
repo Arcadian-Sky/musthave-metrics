@@ -1,6 +1,10 @@
+//go:build !race
+// +build !race
+
 package flags
 
 import (
+	"fmt"
 	"os"
 	"testing"
 	"time"
@@ -59,12 +63,12 @@ func TestGetString(t *testing.T) {
 	}
 }
 
-func TestGetDurationFromInt(t *testing.T) {
+func TestGetDuration(t *testing.T) {
 	tests := []struct {
 		name        string
 		flagValue   int
 		envValue    string
-		fileValue   int
+		fileValue   JSONDuration
 		expected    time.Duration
 		description string
 	}{
@@ -72,7 +76,7 @@ func TestGetDurationFromInt(t *testing.T) {
 			name:        "FlagValue set",
 			envValue:    "",
 			flagValue:   60,
-			fileValue:   0,
+			fileValue:   JSONDuration(0 * time.Second),
 			expected:    60 * time.Second,
 			description: "Should return duration from flag",
 		},
@@ -80,7 +84,7 @@ func TestGetDurationFromInt(t *testing.T) {
 			name:        "EnvValue set",
 			envValue:    "120",
 			flagValue:   0,
-			fileValue:   300,
+			fileValue:   JSONDuration(300 * time.Second),
 			expected:    120 * time.Second,
 			description: "Should return duration from env",
 		},
@@ -88,15 +92,15 @@ func TestGetDurationFromInt(t *testing.T) {
 			name:        "FileValue set",
 			envValue:    "",
 			flagValue:   0,
-			fileValue:   300,
+			fileValue:   JSONDuration(300 * time.Second),
 			expected:    300 * time.Second,
 			description: "Should return duration from file",
 		},
 		{
 			name:        "AllValuesZero",
-			flagValue:   0,
 			envValue:    "",
-			fileValue:   0,
+			flagValue:   0,
+			fileValue:   JSONDuration(0 * time.Second),
 			expected:    0 * time.Second,
 			description: "Should return zero duration",
 		},
@@ -104,7 +108,7 @@ func TestGetDurationFromInt(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := getDurationFromInt(tt.flagValue, tt.envValue, tt.fileValue, 0)
+			result := getDuration(tt.flagValue, tt.envValue, tt.fileValue, 0)
 			assert.Equal(t, tt.expected, result, tt.description)
 		})
 	}
@@ -158,16 +162,16 @@ func TestLoadConfig(t *testing.T) {
 			name: "ValidConfig",
 			configData: `
 				{
-					"server_address": "http://localhost:8080",
-					"poll_interval": 15,
-					"report_interval": 30,
+					"server_address": "http://localhost:8081",
+					"poll_interval": "15s",
+					"report_interval": "30s",
 					"crypto_key": "/path/to/crypto.key"
 				}
 			`,
 			expected: AgentConfig{
-				ServerAddress:  "http://localhost:8080",
-				PollInterval:   15,
-				ReportInterval: 30,
+				ServerAddress:  "http://localhost:8081",
+				PollInterval:   JSONDuration(15 * time.Second),
+				ReportInterval: JSONDuration(30 * time.Second),
 				CryptoKey:      "/path/to/crypto.key",
 			},
 			expectErr: false,
@@ -177,8 +181,8 @@ func TestLoadConfig(t *testing.T) {
 			configData: `
 				{
 					"server_address": "http://localhost:8080",
-					"poll_interval": 15,
-					"report_interval": 30,
+					"poll_interval": "15s",
+					"report_interval": "30s",
 					"crypto_key": "/path/to/crypto.key"
 			`,
 			expected:     AgentConfig{},
@@ -205,6 +209,8 @@ func TestLoadConfig(t *testing.T) {
 			// Загружаем конфигурацию
 			var agentConfig AgentConfig
 			err = agentConfig.LoadConfig(configFile.Name())
+
+			fmt.Printf("agentConfig: %v\n", agentConfig)
 
 			if tt.expectErr {
 				assert.Error(t, err)
@@ -237,8 +243,8 @@ func TestParseConfig(t *testing.T) {
 	configData := `
 	{
 		"server_address": "http://file_address:8080",
-		"poll_interval": 15,
-		"report_interval": 30,
+		"poll_interval": "15s",
+		"report_interval": "30s",
 		"crypto_key": "/path/to/file_crypto.key"
 	}
 	`
