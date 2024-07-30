@@ -123,7 +123,7 @@ func TestParse(t *testing.T) {
 				"CONFIG": "config.json",
 			},
 			configFilePath:    "config.json",
-			configFileContent: `{"address": ":8081", "store_interval": 600, "store_file": "/tmp/config-db.json", "restore": true, "database_dsn": "postgres://localhost", "crypto_key": "/keys/key.pem"}`,
+			configFileContent: `{"address": ":8081", "store_interval": "600s", "store_file": "/tmp/config-db.json", "restore": true, "database_dsn": "postgres://localhost", "crypto_key": "/keys/key.pem"}`,
 			want: &InitedFlags{
 				Endpoint:       ":8081",
 				StoreInterval:  600 * time.Second,
@@ -283,12 +283,12 @@ func TestGetBool(t *testing.T) {
 	}
 }
 
-func TestGetDurationFromInt(t *testing.T) {
+func TestGetDuration(t *testing.T) {
 	tests := []struct {
 		name        string
 		flagValue   int
 		envValue    string
-		fileValue   int
+		fileValue   JSONDuration
 		expected    time.Duration
 		description string
 	}{
@@ -296,7 +296,7 @@ func TestGetDurationFromInt(t *testing.T) {
 			name:        "FlagValue set",
 			envValue:    "",
 			flagValue:   60,
-			fileValue:   0,
+			fileValue:   JSONDuration(0 * time.Second),
 			expected:    60 * time.Second,
 			description: "Should return duration from flag",
 		},
@@ -304,7 +304,7 @@ func TestGetDurationFromInt(t *testing.T) {
 			name:        "EnvValue set",
 			envValue:    "120",
 			flagValue:   0,
-			fileValue:   300,
+			fileValue:   JSONDuration(300 * time.Second),
 			expected:    120 * time.Second,
 			description: "Should return duration from env",
 		},
@@ -312,7 +312,7 @@ func TestGetDurationFromInt(t *testing.T) {
 			name:        "FileValue set",
 			envValue:    "",
 			flagValue:   0,
-			fileValue:   300,
+			fileValue:   JSONDuration(300 * time.Second),
 			expected:    300 * time.Second,
 			description: "Should return duration from file",
 		},
@@ -320,7 +320,7 @@ func TestGetDurationFromInt(t *testing.T) {
 			name:        "AllValuesZero",
 			flagValue:   0,
 			envValue:    "",
-			fileValue:   0,
+			fileValue:   JSONDuration(0 * time.Second),
 			expected:    0 * time.Second,
 			description: "Should return zero duration",
 		},
@@ -328,7 +328,7 @@ func TestGetDurationFromInt(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := getDurationFromInt(tt.flagValue, tt.envValue, tt.fileValue, 0)
+			result := getDuration(tt.flagValue, tt.envValue, tt.fileValue, 0)
 			assert.Equal(t, tt.expected, result, tt.description)
 		})
 	}
@@ -351,7 +351,7 @@ func TestLoadConfig(t *testing.T) {
 			name: "ValidConfig",
 			configData: `{
 				"address": "localhost:8080",
-				"store_interval": 2,
+				"store_interval": "2s",
 				"store_file": "/path/to/file.db",
 				"restore": true,
 				"database_dsn": "user:password@tcp(localhost:3306)/dbname",
@@ -359,7 +359,7 @@ func TestLoadConfig(t *testing.T) {
 			}`,
 			expected: &fileFlags{
 				Endpoint:       "localhost:8080",
-				StoreInterval:  2,
+				StoreInterval:  JSONDuration(2 * time.Second),
 				FileStorage:    "/path/to/file.db",
 				RestoreMetrics: true,
 				DBSettings:     "user:password@tcp(localhost:3306)/dbname",
@@ -392,7 +392,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			name: "ConfigWithDefaultValues",
 			configData: `{
-				"store_interval": 0,
+				"store_interval": "0",
 				"restore": false
 			}`,
 			expected: &fileFlags{

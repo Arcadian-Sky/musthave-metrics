@@ -22,10 +22,37 @@ type Config struct {
 	rateLimit      int
 }
 type AgentConfig struct {
-	ServerAddress  string `json:"server_address"`
-	PollInterval   int    `json:"poll_interval"`
-	ReportInterval int    `json:"report_interval"`
-	CryptoKey      string `json:"crypto_key"`
+	ServerAddress  string       `json:"server_address"`
+	PollInterval   JSONDuration `json:"poll_interval"`
+	ReportInterval JSONDuration `json:"report_interval"`
+	CryptoKey      string       `json:"crypto_key"`
+}
+
+type JSONDuration time.Duration
+
+func (d JSONDuration) MarshalJSON() ([]byte, error) {
+	return json.Marshal(d.String())
+}
+
+func (d *JSONDuration) UnmarshalJSON(b []byte) error {
+	var s string
+	if err := json.Unmarshal(b, &s); err != nil {
+		return err
+	}
+
+	// Convert the string into a time.Duration
+	duration, err := time.ParseDuration(s)
+	if err != nil {
+		return err
+	}
+
+	*d = JSONDuration(duration)
+	return nil
+}
+
+// String returns the duration as a string
+func (d JSONDuration) String() string {
+	return time.Duration(d).String()
 }
 
 // Дефолтные значения для теста
@@ -91,8 +118,8 @@ func Parse() (Config, error) {
 		prefix = "https://"
 	}
 	config.serverAddress = getString(*end, envRunAddr, fileConfig.ServerAddress, "localhost:8080", prefix)
-	config.pollInterval = getDurationFromInt(*polI, envPolI, fileConfig.PollInterval, 10)
-	config.reportInterval = getDurationFromInt(*repI, envRepI, fileConfig.ReportInterval, 2)
+	config.pollInterval = getDuration(*polI, envPolI, fileConfig.PollInterval, 10)
+	config.reportInterval = getDuration(*repI, envRepI, fileConfig.ReportInterval, 2)
 
 	return config, nil
 }
@@ -110,7 +137,7 @@ func getString(flagValue string, envValue string, fileValue string, defaultValue
 	return prefix + defaultValue
 }
 
-func getDurationFromInt(flagValue int, envValue string, fileValue int, defaultValue int) time.Duration {
+func getDuration(flagValue int, envValue string, fileValue JSONDuration, defaultValue int) time.Duration {
 	if envValue != "" {
 		if parsed, err := strconv.Atoi(envValue); err == nil {
 			return time.Duration(parsed) * time.Second
@@ -121,8 +148,8 @@ func getDurationFromInt(flagValue int, envValue string, fileValue int, defaultVa
 		return time.Duration(flagValue) * time.Second
 	}
 
-	if fileValue != 0 {
-		return time.Duration(fileValue) * time.Second
+	if fileValue != JSONDuration(0) {
+		return time.Duration(fileValue)
 	}
 
 	return time.Duration(defaultValue) * time.Second

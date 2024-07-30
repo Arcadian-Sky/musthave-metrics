@@ -34,13 +34,42 @@ type InitedFlags struct {
 }
 
 type fileFlags struct {
-	Endpoint       string `json:"address"`
-	StoreInterval  int    `json:"store_interval"`
-	FileStorage    string `json:"store_file"`
-	RestoreMetrics bool   `json:"restore"`
-	DBSettings     string `json:"database_dsn"`
-	CryptoKeyPath  string `json:"crypto_key"`
+	Endpoint       string       `json:"address"`
+	StoreInterval  JSONDuration `json:"store_interval"`
+	FileStorage    string       `json:"store_file"`
+	RestoreMetrics bool         `json:"restore"`
+	DBSettings     string       `json:"database_dsn"`
+	CryptoKeyPath  string       `json:"crypto_key"`
 }
+
+type JSONDuration time.Duration
+
+func (d JSONDuration) MarshalJSON() ([]byte, error) {
+	return json.Marshal(d.String())
+}
+
+func (d *JSONDuration) UnmarshalJSON(b []byte) error {
+	var s string
+	if err := json.Unmarshal(b, &s); err != nil {
+		return err
+	}
+
+	// Convert the string into a time.Duration
+	duration, err := time.ParseDuration(s)
+	if err != nil {
+		return err
+	}
+
+	*d = JSONDuration(duration)
+	return nil
+}
+
+// String returns the duration as a string
+func (d JSONDuration) String() string {
+	return time.Duration(d).String()
+}
+
+const RSAPrivateKeyType = "RSA PRIVATE KEY"
 
 func Parse() *InitedFlags {
 	address := flag.String("a", "", "endpoint address")
@@ -82,7 +111,7 @@ func Parse() *InitedFlags {
 	initedConfig.ConfigFilePath = getString(*configFileFlag, configFilePathEnv, "", "")
 	initedConfig.DBSettings = getString(*flagDBSettings, envRunDBSettings, fileConfig.DBSettings, "")
 	initedConfig.Endpoint = getString(*address, envRunAddr, fileConfig.Endpoint, ":8080")
-	initedConfig.StoreInterval = getDurationFromInt(*flagStoreInterval, envRunInterv, fileConfig.StoreInterval, 300)
+	initedConfig.StoreInterval = getDuration(*flagStoreInterval, envRunInterv, fileConfig.StoreInterval, 300)
 	initedConfig.FileStorage = getString(*flagFileStorage, envRunFileStorage, fileConfig.FileStorage, "/tmp/metrics-db.json")
 	initedConfig.CryptoKeyPath = getString(*cryptoKeyFlag, envCryptoKey, fileConfig.CryptoKeyPath, "")
 	initedConfig.HashKey = getString(*flagHashKey, envHashKey, "", "")
@@ -121,7 +150,7 @@ func getBool(flagValue bool, envValue string, fileValue bool) bool {
 	return fileValue
 }
 
-func getDurationFromInt(flagValue int, envValue string, fileValue int, defaultValue int) time.Duration {
+func getDuration(flagValue int, envValue string, fileValue JSONDuration, defaultValue int) time.Duration {
 	if envValue != "" {
 		if parsed, err := strconv.Atoi(envValue); err == nil {
 			return time.Duration(parsed) * time.Second
@@ -132,8 +161,8 @@ func getDurationFromInt(flagValue int, envValue string, fileValue int, defaultVa
 		return time.Duration(flagValue) * time.Second
 	}
 
-	if fileValue != 0 {
-		return time.Duration(fileValue) * time.Second
+	if fileValue != JSONDuration(0) {
+		return time.Duration(fileValue)
 	}
 
 	return time.Duration(defaultValue) * time.Second
@@ -157,7 +186,7 @@ func (i *InitedFlags) loadPrivateKey(path string) (*rsa.PrivateKey, error) {
 	}
 
 	block, _ := pem.Decode(data)
-	if block == nil || block.Type != "RSA PRIVATE KEY" {
+	if block == nil || block.Type != RSAPrivateKeyType {
 		return nil, fmt.Errorf("неверный формат ключа")
 	}
 
