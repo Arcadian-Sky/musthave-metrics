@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/mock"
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/models"
@@ -82,4 +83,112 @@ func TestGetJSONMetric(t *testing.T) {
 	if string(expectedJSON) != string(modelMetricsJSON) {
 		t.Errorf("Expected metric %s, got %s", expectedJSON, modelMetricsJSON)
 	}
+}
+
+func TestGetMetrics(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockMetricsStorage := mock.NewMockMetricsStorage(ctrl)
+	ctx := context.Background()
+
+	expectedResult := map[storage.MetricType]map[string]interface{}{
+		"gauge": {
+			"metric1": 100,
+			"metric2": 200,
+		},
+		"counter": {
+			"metric1": 100,
+			"metric2": 200,
+		},
+	}
+
+	mockMetricsStorage.EXPECT().GetMetrics(ctx).Return(expectedResult)
+
+	result := mockMetricsStorage.GetMetrics(context.Background())
+
+	// Добавьте проверку результата
+	if !reflect.DeepEqual(result, expectedResult) {
+		t.Errorf("Expected result %v, got %v", expectedResult, result)
+	}
+}
+
+func TestPing(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockMetricsStorage := mock.NewMockMetricsStorage(ctrl)
+
+	mockMetricsStorage.EXPECT().Ping().Return(nil)
+
+	result := mockMetricsStorage.Ping()
+
+	// Добавьте проверку результата
+	if !reflect.DeepEqual(result, nil) {
+		t.Errorf("Expected result %v, got %v", nil, result)
+	}
+}
+
+func TestSetMetrics(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockMetricsStorage := mock.NewMockMetricsStorage(ctrl)
+	ctx := context.Background()
+
+	metrics := map[storage.MetricType]map[string]interface{}{
+		"gauge": {
+			"metric1": 100,
+			"metric2": 200,
+		},
+		"counter": {
+			"metric1": 100,
+			"metric2": 200,
+		},
+	}
+
+	expectedResult := map[storage.MetricType]map[string]interface{}{
+		"gauge": {
+			"metric1": 100,
+			"metric2": 200,
+		},
+		"counter": {
+			"metric1": 100,
+			"metric2": 200,
+		},
+	}
+
+	mockMetricsStorage.EXPECT().SetMetrics(ctx, expectedResult)
+
+	mockMetricsStorage.SetMetrics(context.Background(), metrics)
+
+	ctrl.Finish()
+}
+
+func TestUpdateJSONMetric(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockMetricsStorage := mock.NewMockMetricsStorage(ctrl)
+	ctx := context.Background()
+	var int123 = int64(123)
+	metrics := models.Metrics{
+		ID:    "23123",
+		MType: "gauge",
+		Delta: &int123,
+	}
+
+	expectedResult := models.Metrics{
+		ID:    "23123",
+		MType: "gauge",
+		Delta: &int123,
+	}
+
+	mockMetricsStorage.EXPECT().UpdateJSONMetric(ctx, &expectedResult)
+
+	err := mockMetricsStorage.UpdateJSONMetric(context.Background(), &metrics)
+
+	assert.NoError(t, err, "UpdateJSONMetric() should not return an error")
+
+	ctrl.Finish()
 }

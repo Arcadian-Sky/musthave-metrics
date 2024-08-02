@@ -1,7 +1,9 @@
 package controller
 
 import (
+	"context"
 	"fmt"
+	"sync"
 	"time"
 
 	senderPack "github.com/Arcadian-Sky/musthave-metrics/internal/agent/controller/sender"
@@ -13,62 +15,71 @@ import (
 type CollectAndSendMetricsService struct {
 	config flags.Config
 	sender *senderPack.Sender
+	stopCh chan struct{}
+	Wg     sync.WaitGroup
 }
 
 func NewCollectAndSendMetricsService(conf *flags.Config) *CollectAndSendMetricsService {
 	return &CollectAndSendMetricsService{
 		config: *conf,
 		sender: senderPack.NewSender(conf),
+		stopCh: make(chan struct{}),
 	}
 }
 
-func (c *CollectAndSendMetricsService) Run() {
+func (c *CollectAndSendMetricsService) Run(ctx context.Context) {
 	var pollCount int64
 	metricsRepo := repository.NewInMemoryMetricsRepository()
-
 	// Отправляем метрики на сервер
 	fmt.Println("send")
+	c.Wg.Add(2)
 	go func() {
+		defer c.Wg.Done()
 		for {
-			if c.config.GetRateLimit() == 0 {
-				metrics, err := metricsRepo.GetMetrics()
-				if err != nil {
-					fmt.Println("Error collecting metrics:", err)
-					return
+			select {
+			case <-ctx.Done():
+				fmt.Printf("Горутина 1 остановлена.\n")
+				return
+			default:
+				if c.config.GetRateLimit() == 0 {
+					metrics, err := metricsRepo.GetMetrics()
+					if err != nil {
+						fmt.Println("Error collecting metrics:", err)
+						return
+					}
+					c.Push(metrics, &pollCount)
+				} else {
+					c.Init(metricsRepo, &pollCount)
 				}
-				// err = c.send(metrics, pollCount)
-				// if err != nil {
-				// 	fmt.Println("Error sending metrics:", err)
-				// }
-				// atomic.AddInt64(&pollCount, 1)
-				// err = c.sendPack(metrics, pollCount)
-				// if err != nil {
-				// 	fmt.Println("Error sending metrics:", err)
-				// }
-				c.Push(metrics, &pollCount)
-			} else {
-				c.Init(metricsRepo, &pollCount)
+
+				time.Sleep(c.config.GetPollInterval())
 			}
 
-			time.Sleep(c.config.GetPollInterval())
 		}
-
 	}()
 
 	// Собираем метрики
 	go func() {
+		defer c.Wg.Done()
 		for {
-			// fmt.Println("updateMterics")
-			_, err := metricsRepo.GetMetrics()
-			if err != nil {
-				// fmt.Println("Error collecting metrics:", err)
+			select {
+			case <-ctx.Done():
+				fmt.Printf("Горутина 2 остановлена.\n")
 				return
+			default:
+				// fmt.Println("updateMterics")
+				_, err := metricsRepo.GetMetrics()
+				if err != nil {
+					// fmt.Println("Error collecting metrics:", err)
+					return
+				}
+				time.Sleep(c.config.GetPollInterval())
 			}
-			time.Sleep(c.config.GetPollInterval())
 		}
 	}()
 
-	select {}
+	<-ctx.Done()
+	fmt.Printf("Горутина run остановлена.\n")
 }
 
 func (c *CollectAndSendMetricsService) makePack(metrics map[string]interface{}, pollCount int64) []interface{} {

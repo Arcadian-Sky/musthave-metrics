@@ -3,10 +3,13 @@ package sender
 import (
 	"bytes"
 	"crypto/hmac"
+	"crypto/rand"
+	"crypto/rsa"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"time"
 
@@ -19,13 +22,19 @@ const UpdatePathPack = "/updates"
 type Sender struct {
 	getHash       string
 	serverAddress string
+	cryptoKey     *rsa.PublicKey
 }
 
 func NewSender(config *flags.Config) *Sender {
-	return &Sender{
+	cKp, ok := config.GetCryptoKeyPath()
+	sender := Sender{
 		getHash:       config.GetHash(),
 		serverAddress: config.GetServerAddress(),
 	}
+	if ok {
+		sender.cryptoKey = cKp
+	}
+	return &sender
 }
 
 // Отправляем запрос на сервер
@@ -39,15 +48,28 @@ func (s *Sender) SendMetricJSON(m any, method string) error {
 		return err
 	}
 	fmt.Printf("m: %v\n", string(jsonData))
+	fmt.Printf("m: %v\n", []byte(jsonData))
 
 	// Формируем адрес запроса
 	url := fmt.Sprintf("%s"+method, s.serverAddress)
-
-	// Создание HTTP-запроса POST
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return err
 	}
+
+	if s.cryptoKey != nil {
+		// Шифруем данные
+		encryptedMessage, err := s.encryptMessage([]byte(jsonData), s.cryptoKey)
+		if err != nil {
+			log.Fatalf("Ошибка при шифровании сообщения: %v", err)
+		}
+		req, err = http.NewRequest("POST", url, bytes.NewBuffer(encryptedMessage))
+		if err != nil {
+			return err
+		}
+	}
+
+	// Создание HTTP-запроса POST
 	req.Header.Set("Content-Type", "application/json")
 
 	hashKey := s.getHash
@@ -75,6 +97,10 @@ func (s *Sender) SendMetricJSON(m any, method string) error {
 	defer resp.Body.Close()
 
 	return nil
+}
+
+func (s *Sender) encryptMessage(message []byte, publicKey *rsa.PublicKey) ([]byte, error) {
+	return rsa.EncryptPKCS1v15(rand.Reader, publicKey, message)
 }
 
 func (s *Sender) SendMetricValue(mType string, mName string, mValue interface{}) error {

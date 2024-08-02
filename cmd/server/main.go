@@ -1,12 +1,15 @@
 package main
 
 import (
+	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"log"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"net/http"
 
@@ -55,24 +58,11 @@ var (
 //
 // storeMetrics.SetMetrics(m)
 func main() {
+	stop := InitSignalHandler()
 
-	// f, err := os.Create("cpu.prof")
-	// if err != nil {
-	// 	fmt.Println("Could not create CPU profile: ", err)
-	// 	return
-	// }
-	// if err := pprof.StartCPUProfile(f); err != nil {
-	// 	fmt.Println("Could not start CPU profile: ", err)
-	// 	return
-	// }
-	// defer pprof.StopCPUProfile()
-
-	// Создаем канал для обработки сигнала завершения
-	stop := make(chan os.Signal, 1)
-	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
 	parsed := flags.Parse()
 
-	db, err := sql.Open("pgx", parsed.DBSettings)
+	db, err := OpenDatabase(parsed.DBSettings)
 	if err != nil {
 		panic(err)
 	}
@@ -80,42 +70,99 @@ func main() {
 
 	goose.SetBaseFS(migrations.Migrations)
 
-	// NewMemStorage создает новый экземпляр хранилищв
-	// Создаем хранилище
-	storeMetrics := func(cnf *flags.InitedFlags, db *sql.DB) storage.MetricsStorage {
-		if cnf.StorageType == "postgres" {
-			return postgres.NewPostgresStorage(db)
-		}
-		// mementoStore = storeMetrics
-		return inmemory.NewMemStorage()
-	}(parsed, db)
+	storeMetrics := CreateMetricsStorage(parsed, db)
 
-	memStore, memStoreOk := storeMetrics.(config.MementoStorage)
-	if memStoreOk {
-		// Инициализируем конфигурацию
-		err = config.InitConfig(memStore, parsed)
-		if err != nil {
-			log.Fatal(err.Error())
-		}
+	memStore, memStoreOk, err := InitializeConfig(storeMetrics, parsed)
+	if err != nil {
+		log.Fatal(err.Error())
 	}
-	log.Println("cnf.StorageType:", parsed.StorageType)
-	log.Println("memStoreOk:", memStoreOk)
 
-	//Инициируем хендлеры
-	vhandler := handler.NewHandler(storeMetrics, parsed)
+	httpserver := InitializeHTTPServer(parsed, storeMetrics)
+
 	go func() {
 		log.Println("Starting server...")
 		fmt.Printf("Build version: %s\n", buildVersion)
 		fmt.Printf("Build date: %s\n", buildDate)
 		fmt.Printf("Build commit: %s\n", buildCommit)
-		log.Fatal(http.ListenAndServe(parsed.Endpoint, server.InitRouter(*vhandler)))
+		if err := httpserver.ListenAndServe(); err != http.ErrServerClosed {
+			log.Fatalf("Server failed: %v", err)
+		}
 	}()
 
 	<-stop
+
+	// Handle graceful shutdown
+	GracefulShutdown(httpserver, memStore, memStoreOk, parsed)
+}
+
+func InitSignalHandler() chan os.Signal {
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
+	return stop
+}
+
+func OpenDatabase(dbSettings string) (*sql.DB, error) {
+	db, err := sql.Open("pgx", dbSettings)
+	if err != nil {
+		return nil, err
+	}
+	return db, nil
+}
+
+func CreateMetricsStorage(cnf *flags.InitedFlags, db *sql.DB) storage.MetricsStorage {
+	// NewMemStorage создает новый экземпляр хранилищв
+	// Создаем хранилище
+	if cnf.StorageType == "postgres" {
+		if db == nil {
+			log.Println("CreateMetricsStorage: db is nil")
+		}
+		return postgres.NewPostgresStorage(db)
+	}
+	// mementoStore = storeMetrics
+	return inmemory.NewMemStorage()
+}
+
+func InitializeConfig(storeMetrics storage.MetricsStorage, parsed *flags.InitedFlags) (config.MementoStorage, bool, error) {
+	memStore, memStoreOk := storeMetrics.(config.MementoStorage)
+	if storeMetrics == nil {
+		return nil, false, errors.New("storemetrics is nil")
+	}
+	if memStoreOk {
+		err := config.InitConfig(memStore, parsed)
+		if err != nil {
+			return nil, false, err
+		}
+	}
+
+	log.Println("cnf.StorageType:", parsed.StorageType)
+	log.Println("memStoreOk:", memStoreOk)
+
+	return memStore, memStoreOk, nil
+}
+
+// Инициируем хендлеры
+func InitializeHTTPServer(parsed *flags.InitedFlags, storeMetrics storage.MetricsStorage) *http.Server {
+	vhandler := handler.NewHandler(storeMetrics, parsed)
+	httpserver := &http.Server{
+		Addr:    parsed.Endpoint,
+		Handler: server.InitRouter(*vhandler, *parsed),
+	}
+	return httpserver
+}
+
+func GracefulShutdown(httpserver *http.Server, memStore config.MementoStorage, memStoreOk bool, parsed *flags.InitedFlags) {
+	// Timeout for active connections to close
+	shutdownTimeout := 5 * time.Second
+	ctx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
+	defer cancel()
+
+	if err := httpserver.Shutdown(ctx); err != nil {
+		log.Fatalf("Server shutdown failed: %v", err)
+	}
+
 	if memStoreOk {
 		config.SaveMetricsToFile(memStore, parsed.FileStorage)
 	}
 
 	fmt.Println("Server stopped gracefully")
-
 }

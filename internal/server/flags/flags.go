@@ -1,7 +1,13 @@
 package flags
 
 import (
+	"crypto/rsa"
+	"crypto/x509"
+	"encoding/json"
+	"encoding/pem"
 	"flag"
+	"fmt"
+	"log"
 	"os"
 	"strconv"
 	"time"
@@ -16,86 +22,190 @@ import (
 // Флаг -d, переменная окружения DATABASE_DSN - cтрока с адресом подключения к БД (по умолчанию пусто).
 
 type InitedFlags struct {
-	Endpoint       string
-	StoreInterval  time.Duration
-	FileStorage    string
-	RestoreMetrics bool
-	// BPprofEnabled  bool
-	DBSettings  string
-	StorageType string
-	HashKey     string
+	Endpoint       string        `json:"address"`
+	StoreInterval  time.Duration `json:"store_interval"`
+	FileStorage    string        `json:"store_file"`
+	RestoreMetrics bool          `json:"restore"`
+	DBSettings     string        `json:"database_dsn"`
+	CryptoKeyPath  string        `json:"crypto_key"`
+	StorageType    string
+	HashKey        string
+	ConfigFilePath string
 }
 
+type fileFlags struct {
+	Endpoint       string       `json:"address"`
+	StoreInterval  JSONDuration `json:"store_interval"`
+	FileStorage    string       `json:"store_file"`
+	RestoreMetrics bool         `json:"restore"`
+	DBSettings     string       `json:"database_dsn"`
+	CryptoKeyPath  string       `json:"crypto_key"`
+}
+
+type JSONDuration time.Duration
+
+func (d JSONDuration) MarshalJSON() ([]byte, error) {
+	return json.Marshal(d.String())
+}
+
+func (d *JSONDuration) UnmarshalJSON(b []byte) error {
+	var s string
+	if err := json.Unmarshal(b, &s); err != nil {
+		return err
+	}
+
+	// Convert the string into a time.Duration
+	duration, err := time.ParseDuration(s)
+	if err != nil {
+		return err
+	}
+
+	*d = JSONDuration(duration)
+	return nil
+}
+
+// String returns the duration as a string
+func (d JSONDuration) String() string {
+	return time.Duration(d).String()
+}
+
+const RSAPrivateKeyType = "RSA PRIVATE KEY"
+
 func Parse() *InitedFlags {
-	end := flag.String("a", ":8080", "endpoint address")
-	key := flag.String("k", "", "hash key")
-	flagStoreInterval := flag.Int("i", 300, "Интервал сохранения метрик на диск")
-	flagFileStorage := flag.String("f", "/tmp/metrics-db.json", "Путь к файлу для хранения метрик")
-	flagRestoreMetrics := flag.Bool("r", true, "Восстановление метрик при старте сервера")
+	address := flag.String("a", "", "endpoint address")
 	flagDBSettings := flag.String("d", "", "Адрес подключения к БД")
-	storageType := "inmemory"
+	flagStoreInterval := flag.Int("i", 0, "Интервал сохранения метрик на диск")
+	flagFileStorage := flag.String("f", "", "Путь к файлу для хранения метрик")
+	flagRestoreMetrics := flag.Bool("r", false, "Восстановление метрик при старте сервера")
+	flagHashKey := flag.String("k", "", "hash key")
+	cryptoKeyFlag := flag.String("crypto-key", "", "Путь до файла с публичным ключом для шифрования")
+	configFileFlag := flag.String("c", "", "Путь к файлу конфигурации JSON")
 
 	flag.Parse()
 	_ = godotenv.Load()
 
-	endpoint := *end
-	if envRunAddr := os.Getenv("ADDRESS"); envRunAddr != "" {
-		endpoint = envRunAddr
-	}
+	var initedConfig InitedFlags
+	var fileConfig fileFlags
 
-	hashKey := *key
-	if envHashKey := os.Getenv("KEY"); envHashKey != "" {
-		hashKey = envHashKey
-	}
+	envRunAddr := os.Getenv("ADDRESS")
+	envRunRestoreStorage := os.Getenv("RESTORE")
+	envRunInterv := os.Getenv("STORE_INTERVAL")
+	envRunFileStorage := os.Getenv("FILE_STORAGE_PATH")
+	envRunDBSettings := os.Getenv("DATABASE_DSN")
+	envCryptoKey := os.Getenv("CRYPTO_KEY")
+	envHashKey := os.Getenv("KEY")
+	configFilePathEnv := os.Getenv("CONFIG")
 
-	// fmt.Printf("flagStoreInterval: %v\n", *flagStoreInterval)
-	interval := time.Duration(*flagStoreInterval) * time.Second
-	if envRunInterv := os.Getenv("STORE_INTERVAL"); envRunInterv != "" {
-		if dur, err := time.ParseDuration(envRunInterv); err == nil {
-			interval = dur
+	configFilePath := *configFileFlag
+	if configFilePathEnv != "" {
+		configFilePath = configFilePathEnv
+	}
+	if configFilePath != "" {
+		if err := fileConfig.LoadConfig(configFilePath); err != nil {
+			log.Fatalf("Ошибка загрузки конфигурации из файла: %v", err)
 		}
 	}
 
-	fileStorage := *flagFileStorage
-	if envRunFileStorage := os.Getenv("FILE_STORAGE_PATH"); envRunFileStorage != "" {
-		fileStorage = envRunFileStorage
+	fmt.Printf("fileConfig: %v\n", fileConfig)
+
+	initedConfig.ConfigFilePath = getString(*configFileFlag, configFilePathEnv, "", "")
+	initedConfig.DBSettings = getString(*flagDBSettings, envRunDBSettings, fileConfig.DBSettings, "")
+	initedConfig.Endpoint = getString(*address, envRunAddr, fileConfig.Endpoint, ":8080")
+	initedConfig.StoreInterval = getDuration(*flagStoreInterval, envRunInterv, fileConfig.StoreInterval, 300)
+	initedConfig.FileStorage = getString(*flagFileStorage, envRunFileStorage, fileConfig.FileStorage, "/tmp/metrics-db.json")
+	initedConfig.CryptoKeyPath = getString(*cryptoKeyFlag, envCryptoKey, fileConfig.CryptoKeyPath, "")
+	initedConfig.HashKey = getString(*flagHashKey, envHashKey, "", "")
+	initedConfig.RestoreMetrics = getBool(*flagRestoreMetrics, envRunRestoreStorage, fileConfig.RestoreMetrics)
+
+	initedConfig.StorageType = "inmemory"
+	if initedConfig.DBSettings != "" {
+		initedConfig.StorageType = "postgres"
 	}
 
-	restoreMetrics := *flagRestoreMetrics
-	if envRunFileStorage := os.Getenv("RESTORE"); envRunFileStorage != "" {
-		if val, err := strconv.ParseBool(envRunFileStorage); err == nil {
-			restoreMetrics = val
+	return &initedConfig
+}
+
+func getString(flagValue string, envValue string, fileValue string, defaultValue string) string {
+	if envValue != "" {
+		return envValue
+	}
+	if flagValue != "" {
+		return flagValue
+	}
+	if fileValue != "" {
+		return fileValue
+	}
+	return defaultValue
+}
+
+func getBool(flagValue bool, envValue string, fileValue bool) bool {
+	if envValue != "" {
+		if parsed, err := strconv.ParseBool(envValue); err == nil {
+			return parsed
+		}
+	}
+	if flagValue {
+		return flagValue
+	}
+	return fileValue
+}
+
+func getDuration(flagValue int, envValue string, fileValue JSONDuration, defaultValue int) time.Duration {
+	if envValue != "" {
+		if parsed, err := strconv.Atoi(envValue); err == nil {
+			return time.Duration(parsed) * time.Second
 		}
 	}
 
-	dbSettings := *flagDBSettings
-	if envRunDBSettings := os.Getenv("DATABASE_DSN"); envRunDBSettings != "" {
-		dbSettings = envRunDBSettings
-	}
-	if dbSettings != "" {
-		storageType = "postgres"
+	if flagValue != 0 {
+		return time.Duration(flagValue) * time.Second
 	}
 
-	// var bPprofEnabled = false
-	// if envBPprofEnabled := os.Getenv("BPPROF"); envBPprofEnabled != "" {
-	// 	if val, err := strconv.ParseBool(envBPprofEnabled); err == nil {
-	// 		bPprofEnabled = val
-	// 	}
-	// }
-
-	// fmt.Printf("flag interval: %v\n", interval)
-	// fmt.Printf("flag fileStorage: %v\n", fileStorage)
-	// fmt.Printf("flag restoreMetrics: %v\n", restoreMetrics)
-
-	return &InitedFlags{
-		Endpoint:       endpoint,
-		StoreInterval:  interval,
-		FileStorage:    fileStorage,
-		RestoreMetrics: restoreMetrics,
-		DBSettings:     dbSettings,
-		StorageType:    storageType,
-		HashKey:        hashKey,
-		// BPprofEnabled:  bPprofEnabled,
+	if fileValue != JSONDuration(0) {
+		return time.Duration(fileValue)
 	}
 
+	return time.Duration(defaultValue) * time.Second
+}
+
+func (i *InitedFlags) GetCryptoKey() (*rsa.PrivateKey, error) {
+	if i.CryptoKeyPath != "" {
+		privateKey, err := i.loadPrivateKey(i.CryptoKeyPath)
+		if err != nil {
+			return nil, fmt.Errorf("ошибка при загрузке приватного ключа: %v", err)
+		}
+		return privateKey, nil
+	}
+	return nil, nil
+}
+
+func (i *InitedFlags) loadPrivateKey(path string) (*rsa.PrivateKey, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+
+	block, _ := pem.Decode(data)
+	if block == nil || block.Type != RSAPrivateKeyType {
+		return nil, fmt.Errorf("неверный формат ключа")
+	}
+
+	privateKey, err := x509.ParsePKCS1PrivateKey(block.Bytes)
+	if err != nil {
+		return nil, err
+	}
+
+	return privateKey, nil
+}
+
+func (f *fileFlags) LoadConfig(filePath string) error {
+	file, err := os.ReadFile(filePath)
+	if err != nil {
+		return fmt.Errorf("error reading config file: %w", err)
+	}
+	err = json.Unmarshal(file, f)
+	if err != nil {
+		return fmt.Errorf("error parsing config file: %w", err)
+	}
+	return nil
 }
