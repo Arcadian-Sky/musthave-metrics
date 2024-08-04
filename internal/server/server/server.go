@@ -37,6 +37,7 @@ func InitRouter(handler handler.Handler, config flags.InitedFlags) chi.Router {
 	// r.Use(middleware.Recoverer)
 	r.Use(packmiddleware.GzipMiddleware)
 	r.Use(packmiddleware.DecryptMiddleware(config))
+	r.Use(packmiddleware.SubnetMiddleware(config))
 
 	r.Head("/", func(rw http.ResponseWriter, r *http.Request) {
 		r.Header.Set("Content-Type", "Content-Type: application/json")

@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"time"
 
@@ -68,10 +69,10 @@ func (s *Sender) SendMetricJSON(m any, method string) error {
 			return err
 		}
 	}
-
+	agentIP := s.getAgentIP() // Получаем IP-адрес агента
 	// Создание HTTP-запроса POST
 	req.Header.Set("Content-Type", "application/json")
-
+	req.Header.Set("X-Real-IP", agentIP)
 	hashKey := s.getHash
 	if hashKey != "" {
 		h := hmac.New(sha256.New, []byte(hashKey))
@@ -123,4 +124,31 @@ func (s *Sender) SendMetricValue(mType string, mName string, mValue interface{})
 	defer resp.Body.Close()
 
 	return nil
+}
+
+func (s *Sender) getAgentIP() string {
+	//  Interfaces returns a list of the system's network interfaces
+	interfaces, err := net.Interfaces()
+	if err != nil {
+		fmt.Printf("Error getting network interfaces: %v\n", err)
+		return "unknown"
+	}
+	// Addrs returns a list of unicast interface addresses for a specific interface
+	for _, iface := range interfaces {
+		addrs, err := iface.Addrs()
+		if err != nil {
+			fmt.Printf("Error getting addresses for interface %s: %v\n", iface.Name, err)
+			continue
+		}
+		// Возвращаем первый подходящий IP-адрес
+		for _, addr := range addrs {
+			ipNet, ok := addr.(*net.IPNet)
+			fmt.Printf("ipNet.IP: %v\n", ipNet.IP)
+			if ok && !ipNet.IP.IsLoopback() && ipNet.IP.To4() != nil {
+				return ipNet.IP.String()
+			}
+		}
+	}
+
+	return "unknown"
 }
