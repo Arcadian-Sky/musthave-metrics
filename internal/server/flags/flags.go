@@ -8,6 +8,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"net"
 	"os"
 	"strconv"
 	"time"
@@ -22,15 +23,17 @@ import (
 // Флаг -d, переменная окружения DATABASE_DSN - cтрока с адресом подключения к БД (по умолчанию пусто).
 
 type InitedFlags struct {
-	Endpoint       string        `json:"address"`
-	StoreInterval  time.Duration `json:"store_interval"`
-	FileStorage    string        `json:"store_file"`
-	RestoreMetrics bool          `json:"restore"`
-	DBSettings     string        `json:"database_dsn"`
-	CryptoKeyPath  string        `json:"crypto_key"`
+	Endpoint       string
+	StoreInterval  time.Duration
+	FileStorage    string
+	RestoreMetrics bool
+	DBSettings     string
+	CryptoKeyPath  string
 	StorageType    string
 	HashKey        string
 	ConfigFilePath string
+	TrustedSubnetS string
+	TrustedSubnet  *net.IPNet
 }
 
 type fileFlags struct {
@@ -40,6 +43,7 @@ type fileFlags struct {
 	RestoreMetrics bool         `json:"restore"`
 	DBSettings     string       `json:"database_dsn"`
 	CryptoKeyPath  string       `json:"crypto_key"`
+	TrustedSubnet  string       `json:"trusted_subnet"`
 }
 
 type JSONDuration time.Duration
@@ -80,6 +84,7 @@ func Parse() *InitedFlags {
 	flagHashKey := flag.String("k", "", "hash key")
 	cryptoKeyFlag := flag.String("crypto-key", "", "Путь до файла с публичным ключом для шифрования")
 	configFileFlag := flag.String("c", "", "Путь к файлу конфигурации JSON")
+	trustedSubnetFlag := flag.String("t", "", "Строковое представление бесклассовой адресации")
 
 	flag.Parse()
 	_ = godotenv.Load()
@@ -94,11 +99,12 @@ func Parse() *InitedFlags {
 	envRunDBSettings := os.Getenv("DATABASE_DSN")
 	envCryptoKey := os.Getenv("CRYPTO_KEY")
 	envHashKey := os.Getenv("KEY")
-	configFilePathEnv := os.Getenv("CONFIG")
+	envConfigFilePath := os.Getenv("CONFIG")
+	envtrustedSubnet := os.Getenv("TRUSTED_SUBNET")
 
 	configFilePath := *configFileFlag
-	if configFilePathEnv != "" {
-		configFilePath = configFilePathEnv
+	if envConfigFilePath != "" {
+		configFilePath = envConfigFilePath
 	}
 	if configFilePath != "" {
 		if err := fileConfig.LoadConfig(configFilePath); err != nil {
@@ -108,7 +114,7 @@ func Parse() *InitedFlags {
 
 	fmt.Printf("fileConfig: %v\n", fileConfig)
 
-	initedConfig.ConfigFilePath = getString(*configFileFlag, configFilePathEnv, "", "")
+	initedConfig.ConfigFilePath = getString(*configFileFlag, envConfigFilePath, "", "")
 	initedConfig.DBSettings = getString(*flagDBSettings, envRunDBSettings, fileConfig.DBSettings, "")
 	initedConfig.Endpoint = getString(*address, envRunAddr, fileConfig.Endpoint, ":8080")
 	initedConfig.StoreInterval = getDuration(*flagStoreInterval, envRunInterv, fileConfig.StoreInterval, 300)
@@ -116,10 +122,20 @@ func Parse() *InitedFlags {
 	initedConfig.CryptoKeyPath = getString(*cryptoKeyFlag, envCryptoKey, fileConfig.CryptoKeyPath, "")
 	initedConfig.HashKey = getString(*flagHashKey, envHashKey, "", "")
 	initedConfig.RestoreMetrics = getBool(*flagRestoreMetrics, envRunRestoreStorage, fileConfig.RestoreMetrics)
+	initedConfig.TrustedSubnetS = getString(*trustedSubnetFlag, envtrustedSubnet, fileConfig.TrustedSubnet, "")
 
 	initedConfig.StorageType = "inmemory"
 	if initedConfig.DBSettings != "" {
 		initedConfig.StorageType = "postgres"
+	}
+
+	if initedConfig.TrustedSubnetS != "" {
+		_, subnet, err := net.ParseCIDR(initedConfig.TrustedSubnetS)
+		if err != nil {
+			log.Fatalf("Error parsing trusted subnet: %v\n", err)
+		} else {
+			initedConfig.TrustedSubnet = subnet
+		}
 	}
 
 	return &initedConfig
