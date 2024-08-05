@@ -34,6 +34,8 @@ type InitedFlags struct {
 	ConfigFilePath string
 	TrustedSubnetS string
 	TrustedSubnet  *net.IPNet
+	TEndpoint      string
+	TcpEnable      bool
 }
 
 type fileFlags struct {
@@ -85,6 +87,8 @@ func Parse() *InitedFlags {
 	cryptoKeyFlag := flag.String("crypto-key", "", "Путь до файла с публичным ключом для шифрования")
 	configFileFlag := flag.String("c", "", "Путь к файлу конфигурации JSON")
 	trustedSubnetFlag := flag.String("t", "", "Строковое представление бесклассовой адресации")
+	tcpEndpoint := flag.String("tcpa", "", "tcp endpoint address")
+	tcpEnable := flag.Bool("tb", false, "использовать tcp")
 
 	flag.Parse()
 	_ = godotenv.Load()
@@ -101,6 +105,8 @@ func Parse() *InitedFlags {
 	envHashKey := os.Getenv("KEY")
 	envConfigFilePath := os.Getenv("CONFIG")
 	envtrustedSubnet := os.Getenv("TRUSTED_SUBNET")
+	envTcpRunAddr := os.Getenv("TCP_ADDRESS")
+	envTcpEnable := os.Getenv("TCP_ENABLE")
 
 	configFilePath := *configFileFlag
 	if envConfigFilePath != "" {
@@ -121,8 +127,10 @@ func Parse() *InitedFlags {
 	initedConfig.FileStorage = getString(*flagFileStorage, envRunFileStorage, fileConfig.FileStorage, "/tmp/metrics-db.json")
 	initedConfig.CryptoKeyPath = getString(*cryptoKeyFlag, envCryptoKey, fileConfig.CryptoKeyPath, "")
 	initedConfig.HashKey = getString(*flagHashKey, envHashKey, "", "")
-	initedConfig.RestoreMetrics = getBool(*flagRestoreMetrics, envRunRestoreStorage, fileConfig.RestoreMetrics)
+	initedConfig.RestoreMetrics = getBool(*flagRestoreMetrics, envRunRestoreStorage, fileConfig.RestoreMetrics, false)
 	initedConfig.TrustedSubnetS = getString(*trustedSubnetFlag, envtrustedSubnet, fileConfig.TrustedSubnet, "")
+	initedConfig.TEndpoint = getString(*tcpEndpoint, envTcpRunAddr, "", ":3200")
+	initedConfig.TcpEnable = getBool(*tcpEnable, envTcpEnable, false, false)
 
 	initedConfig.StorageType = "inmemory"
 	if initedConfig.DBSettings != "" {
@@ -154,7 +162,7 @@ func getString(flagValue string, envValue string, fileValue string, defaultValue
 	return defaultValue
 }
 
-func getBool(flagValue bool, envValue string, fileValue bool) bool {
+func getBool(flagValue bool, envValue string, fileValue bool, defaultValue bool) bool {
 	if envValue != "" {
 		if parsed, err := strconv.ParseBool(envValue); err == nil {
 			return parsed
@@ -163,7 +171,10 @@ func getBool(flagValue bool, envValue string, fileValue bool) bool {
 	if flagValue {
 		return flagValue
 	}
-	return fileValue
+	if fileValue {
+		return fileValue
+	}
+	return defaultValue
 }
 
 func getDuration(flagValue int, envValue string, fileValue JSONDuration, defaultValue int) time.Duration {

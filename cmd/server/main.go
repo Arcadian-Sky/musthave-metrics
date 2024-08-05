@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"net"
 	"os"
 	"os/signal"
 	"syscall"
@@ -13,18 +14,29 @@ import (
 
 	"net/http"
 
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	_ "github.com/jackc/pgx/v5/stdlib"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/metadata"
 
 	"github.com/pressly/goose/v3"
 
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/flags"
-	"github.com/Arcadian-Sky/musthave-metrics/internal/server/handler"
-	"github.com/Arcadian-Sky/musthave-metrics/internal/server/server"
+	appgrpc "github.com/Arcadian-Sky/musthave-metrics/internal/server/handler/grpc"
+	apphttp "github.com/Arcadian-Sky/musthave-metrics/internal/server/handler/http"
+	pb "github.com/Arcadian-Sky/musthave-metrics/internal/server/handler/protometrics"
+	"github.com/Arcadian-Sky/musthave-metrics/internal/server/router"
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/storage"
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/storage/config"
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/storage/inmemory"
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/storage/postgres"
 	"github.com/Arcadian-Sky/musthave-metrics/migrations"
+
+	_ "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	_ "google.golang.org/grpc"
+	_ "google.golang.org/grpc/credentials/insecure"
+	_ "google.golang.org/grpc/grpclog"
 )
 
 var (
@@ -77,13 +89,39 @@ func main() {
 		log.Fatal(err.Error())
 	}
 
+	fmt.Printf("Build version: %s\n", buildVersion)
+	fmt.Printf("Build date: %s\n", buildDate)
+	fmt.Printf("Build commit: %s\n", buildCommit)
+
+	if parsed.TcpEnable == true {
+		grpcserver := InitializeGRPCServer(parsed, storeMetrics)
+		go func() {
+			log.Println("Starting GRPC server...")
+
+			// определяем порт для сервера
+			listen, err := net.Listen("tcp", parsed.TEndpoint)
+			if err != nil {
+				log.Fatalf("GRPC failed to listen: %v", err)
+			}
+			// получаем запрос gRPC
+			if err := grpcserver.Serve(listen); err != nil {
+				log.Fatalf("GRPC failed to serve: %v", err)
+			}
+
+		}()
+	}
+
 	httpserver := InitializeHTTPServer(parsed, storeMetrics)
+	if parsed.TcpEnable == true {
+		ctx := context.Background()
+		ctx, cancel := context.WithCancel(ctx)
+		defer cancel()
+
+		httpserver = InitializeTCP2HTTPServer(parsed, storeMetrics, ctx)
+	}
 
 	go func() {
-		log.Println("Starting server...")
-		fmt.Printf("Build version: %s\n", buildVersion)
-		fmt.Printf("Build date: %s\n", buildDate)
-		fmt.Printf("Build commit: %s\n", buildCommit)
+		log.Println("Starting HTTP server...")
 		if err := httpserver.ListenAndServe(); err != http.ErrServerClosed {
 			log.Fatalf("Server failed: %v", err)
 		}
@@ -140,14 +178,59 @@ func InitializeConfig(storeMetrics storage.MetricsStorage, parsed *flags.InitedF
 	return memStore, memStoreOk, nil
 }
 
+func metadataHandler(ctx context.Context, req *http.Request) metadata.MD {
+	md := metadata.MD{}
+	for key, values := range req.Header {
+		// Используем ключи и значения заголовков для создания пар в metadata.MD
+		for _, value := range values {
+			md = metadata.Join(md, metadata.Pairs(key, value))
+		}
+	}
+
+	fmt.Printf("md: %v\n", md)
+	return md
+}
+
 // Инициируем хендлеры
-func InitializeHTTPServer(parsed *flags.InitedFlags, storeMetrics storage.MetricsStorage) *http.Server {
-	vhandler := handler.NewHandler(storeMetrics, parsed)
+func InitializeTCP2HTTPServer(parsed *flags.InitedFlags, storeMetrics storage.MetricsStorage, ctx context.Context) *http.Server {
+	mux := runtime.NewServeMux()
+	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
+	err := pb.RegisterMetricsServiceHandlerFromEndpoint(ctx, mux, parsed.TEndpoint, opts)
+	if err != nil {
+		log.Fatalf("Failed to register gRPC Gateway handler: %v", err)
+	}
+	// Start HTTP server (and proxy calls to gRPC server endpoint)
 	httpserver := &http.Server{
 		Addr:    parsed.Endpoint,
-		Handler: server.InitRouter(*vhandler, *parsed),
+		Handler: mux,
 	}
 	return httpserver
+}
+
+func InitializeHTTPServer(parsed *flags.InitedFlags, storeMetrics storage.MetricsStorage) *http.Server {
+	vhandler := apphttp.NewHandler(storeMetrics, parsed)
+	httpserver := &http.Server{
+		Addr:    parsed.Endpoint,
+		Handler: router.InitRouter(*vhandler, *parsed),
+	}
+	return httpserver
+}
+
+func InitializeGRPCServer(parsed *flags.InitedFlags, storeMetrics storage.MetricsStorage) *grpc.Server {
+	metricsServer := appgrpc.NewServer(storeMetrics, parsed)
+	// создаём gRPC-сервер без зарегистрированной службы
+	grpcServer := grpc.NewServer()
+	// регистрируем сервис
+	pb.RegisterMetricsServiceServer(grpcServer, metricsServer)
+
+	// ctx := context.Background()
+	// ctx, cancel := context.WithCancel(ctx)
+	// defer cancel()
+
+	// Создайте HTTP/gRPC Gateway сервер
+	// mux := runtime.NewServeMux()
+	// err := pb.RegisterMetricsServiceHandlerServer(ctx, mux, metricsServer)
+	return grpcServer
 }
 
 func GracefulShutdown(httpserver *http.Server, memStore config.MementoStorage, memStoreOk bool, parsed *flags.InitedFlags) {
