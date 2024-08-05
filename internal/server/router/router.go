@@ -1,4 +1,4 @@
-package server
+package router
 
 import (
 	"net/http"
@@ -11,7 +11,7 @@ import (
 	_ "github.com/Arcadian-Sky/musthave-metrics/docs"
 
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/flags"
-	"github.com/Arcadian-Sky/musthave-metrics/internal/server/handler"
+	handler "github.com/Arcadian-Sky/musthave-metrics/internal/server/handler/http"
 	packmiddleware "github.com/Arcadian-Sky/musthave-metrics/internal/server/middleware"
 )
 
@@ -84,25 +84,3 @@ func InitRouter(handler handler.Handler, config flags.InitedFlags) chi.Router {
 	// log.Fatal(http.ListenAndServe(flags.Parse(), r))
 	return r
 }
-
-// func InitPprof() chi.Router {
-// 	r := chi.NewRouter()
-
-// 	r.Get("/debug/pprof/", pprof.Index)
-// 	r.Get("/debug/pprof/cmdline", pprof.Cmdline)
-// 	r.Get("/debug/pprof/profile", pprof.Profile)
-// 	r.Get("/debug/pprof/symbol", pprof.Symbol)
-// 	r.Get("/debug/pprof/trace", pprof.Trace)
-
-// 	return r
-// }
-
-// func pprofHandler() http.Handler {
-// 	mux := http.NewServeMux()
-// 	mux.HandleFunc("/debug/pprof/", pprof.Index)
-// 	mux.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
-// 	mux.HandleFunc("/debug/pprof/profile", pprof.Profile)
-// 	mux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
-// 	mux.HandleFunc("/debug/pprof/trace", pprof.Trace)
-// 	return mux
-// }

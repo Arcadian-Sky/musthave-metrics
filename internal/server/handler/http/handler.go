@@ -1,5 +1,5 @@
 // Пакет handler реализует ручки на все точки коннекта к приложению
-package handler
+package http
 
 import (
 	"encoding/json"
@@ -23,6 +23,12 @@ type MetricParams struct {
 	Value string
 }
 
+// MetricsHandlerServer
+type Handler struct {
+	s   storage.MetricsStorage
+	cfg *flags.InitedFlags
+}
+
 // NewMetricParams создает экземпляр MetricParams из объекта *http.Request
 func NewMetricParams(r *http.Request) MetricParams {
 	return MetricParams{
@@ -30,12 +36,6 @@ func NewMetricParams(r *http.Request) MetricParams {
 		Name:  chi.URLParam(r, "name"),
 		Value: chi.URLParam(r, "value"),
 	}
-}
-
-// Server handlers
-type Handler struct {
-	s   storage.MetricsStorage
-	cfg *flags.InitedFlags
 }
 
 // NewHandler создает экземпляр Handler
@@ -268,6 +268,7 @@ func (h *Handler) UpdateJSONMetricHandlerFunc(w http.ResponseWriter, r *http.Req
 		return
 	}
 	ctx := r.Context()
+
 	// Обновляем метрику
 	err = h.s.UpdateJSONMetric(ctx, &metrics)
 	if err != nil {
@@ -295,7 +296,6 @@ func (h *Handler) UpdateJSONMetricHandlerFunc(w http.ResponseWriter, r *http.Req
 		fmt.Println("Ошибка записи Body:", err)
 		return
 	}
-
 }
 
 // Пинг БД
@@ -334,11 +334,6 @@ func (h *Handler) UpdateJSONMetricsHandlerFunc(w http.ResponseWriter, r *http.Re
 		http.Error(w, "Failed to read request body: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
-	// err = validate.CheckHash(validate.GetHashHead(r), body, h.cfg.HashKey)
-	// if err != nil {
-	// 	http.Error(w, err.Error(), http.StatusBadRequest)
-	// 	return
-	// }
 
 	var metrics []models.Metrics
 
@@ -359,15 +354,6 @@ func (h *Handler) UpdateJSONMetricsHandlerFunc(w http.ResponseWriter, r *http.Re
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-
-	// Выводим данные
-	// for range metrics{
-	// 	err = h.s.GetJSONMetrics(&metrics)
-	// 	if err != nil {
-	// 		http.Error(w, err.Error(), http.StatusBadRequest)
-	// 		return
-	// 	}
-	// }
 
 	resp, err := json.Marshal(&metrics)
 	if err != nil {
