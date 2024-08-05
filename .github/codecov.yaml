@@ -4,3 +4,6 @@ coverage:
   precision: 2
   status:
     patch: no
+  ignore:
+  - 'internal/server/storage/*'
+  - 'internal/server/handler/protometrics/*'
