@@ -18,7 +18,6 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-	"google.golang.org/grpc/metadata"
 
 	"github.com/pressly/goose/v3"
 
@@ -176,19 +175,6 @@ func InitializeConfig(storeMetrics storage.MetricsStorage, parsed *flags.InitedF
 	log.Println("memStoreOk:", memStoreOk)
 
 	return memStore, memStoreOk, nil
-}
-
-func metadataHandler(ctx context.Context, req *http.Request) metadata.MD {
-	md := metadata.MD{}
-	for key, values := range req.Header {
-		// Используем ключи и значения заголовков для создания пар в metadata.MD
-		for _, value := range values {
-			md = metadata.Join(md, metadata.Pairs(key, value))
-		}
-	}
-
-	fmt.Printf("md: %v\n", md)
-	return md
 }
 
 // Инициируем хендлеры
