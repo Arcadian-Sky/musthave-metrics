@@ -31,6 +31,7 @@ type Sender struct {
 	tcpEnabled    bool
 	tcpEndpoint   string
 	cryptoKey     *rsa.PublicKey
+	tcpClient     pb.AgentServiceClient
 }
 
 func NewSender(config *flags.Config) *Sender {
@@ -44,12 +45,27 @@ func NewSender(config *flags.Config) *Sender {
 	if ok {
 		sender.cryptoKey = cKp
 	}
+
+	if sender.tcpEnabled {
+		// Подключение к gRPC серверу
+		conn, err := grpc.NewClient(
+			sender.tcpEndpoint,
+			grpc.WithTransportCredentials(insecure.NewCredentials()),
+		)
+		if err != nil {
+			log.Printf("failed to connect to server: %s", err)
+		}
+		defer conn.Close()
+
+		// Создание клиента gRPC
+		sender.tcpClient = pb.NewAgentServiceClient(conn)
+	}
+
 	return &sender
 }
 
 // Отправляем запрос на сервер
 func (s *Sender) SendMetricJSON(m any, method string) error {
-	fmt.Printf("s.tcpEnabled: %v\n", s.tcpEnabled)
 	if s.tcpEnabled {
 		return s.SendMetricJSONbyGRPC(m, method)
 	} else {
@@ -145,19 +161,6 @@ func (s *Sender) SendMetricJSONbyHTTP(m any, method string) error {
 }
 
 func (s *Sender) SendMetricJSONbyGRPC(m any, method string) error {
-	// Подключение к gRPC серверу
-	conn, err := grpc.NewClient(
-		s.tcpEndpoint,
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
-	)
-	if err != nil {
-		return fmt.Errorf("failed to connect to server: %w", err)
-	}
-	defer conn.Close()
-
-	// Создание клиента gRPC
-	client := pb.NewAgentServiceClient(conn)
-
 	// Сериализация данных
 	jsonData, err := json.Marshal(m)
 	if err != nil {
@@ -194,7 +197,7 @@ func (s *Sender) SendMetricJSONbyGRPC(m any, method string) error {
 	ctx := metadata.NewOutgoingContext(context.Background(), md)
 
 	// Отправка запроса
-	_, err = client.SendMetricJSON(ctx, &req)
+	_, err = s.tcpClient.SendMetricJSON(ctx, &req)
 	if err != nil {
 		return fmt.Errorf("failed to send metric: %w", err)
 	}
@@ -221,19 +224,6 @@ func (s *Sender) SendValueByHTTP(mType string, mName string, mValue interface{})
 	return nil
 }
 func (s *Sender) SendValueByGRPC(mType string, mName string, mValue interface{}) error {
-	// Создание подключения
-	conn, err := grpc.NewClient(
-		s.tcpEndpoint,
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
-	)
-	if err != nil {
-		return fmt.Errorf("did not connect: %v", err)
-	}
-	defer conn.Close()
-
-	// Создание клиента
-	client := pb.NewAgentServiceClient(conn)
-
 	// Преобразование mValue в строку
 	valueStr, ok := mValue.(string)
 	if !ok {
@@ -250,7 +240,7 @@ func (s *Sender) SendValueByGRPC(mType string, mName string, mValue interface{})
 	defer cancel()
 
 	// Отправка метрики
-	resp, err := client.SendMetric(ctx, req)
+	resp, err := s.tcpClient.SendMetric(ctx, req)
 	if err != nil {
 		return fmt.Errorf("could not send metric: %v", err)
 	}
