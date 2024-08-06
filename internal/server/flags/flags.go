@@ -35,7 +35,7 @@ type InitedFlags struct {
 	TrustedSubnetS string
 	TrustedSubnet  *net.IPNet
 	TEndpoint      string
-	TcpEnable      bool
+	TCPEnable      bool
 }
 
 type fileFlags struct {
@@ -105,8 +105,8 @@ func Parse() *InitedFlags {
 	envHashKey := os.Getenv("KEY")
 	envConfigFilePath := os.Getenv("CONFIG")
 	envtrustedSubnet := os.Getenv("TRUSTED_SUBNET")
-	envTcpRunAddr := os.Getenv("TCP_ADDRESS")
-	envTcpEnable := os.Getenv("TCP_ENABLE")
+	envTCPRunAddr := os.Getenv("TCP_ADDRESS")
+	envTCPEnable := os.Getenv("TCP_ENABLE")
 
 	configFilePath := *configFileFlag
 	if envConfigFilePath != "" {
@@ -129,8 +129,8 @@ func Parse() *InitedFlags {
 	initedConfig.HashKey = getString(*flagHashKey, envHashKey, "", "")
 	initedConfig.RestoreMetrics = getBool(*flagRestoreMetrics, envRunRestoreStorage, fileConfig.RestoreMetrics, false)
 	initedConfig.TrustedSubnetS = getString(*trustedSubnetFlag, envtrustedSubnet, fileConfig.TrustedSubnet, "")
-	initedConfig.TEndpoint = getString(*tcpEndpoint, envTcpRunAddr, "", ":3200")
-	initedConfig.TcpEnable = getBool(*tcpEnable, envTcpEnable, false, false)
+	initedConfig.TEndpoint = getString(*tcpEndpoint, envTCPRunAddr, "", ":3200")
+	initedConfig.TCPEnable = getBool(*tcpEnable, envTCPEnable, false, false)
 
 	initedConfig.StorageType = "inmemory"
 	if initedConfig.DBSettings != "" {
