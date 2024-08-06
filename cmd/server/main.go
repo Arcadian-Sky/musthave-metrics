@@ -14,10 +14,11 @@ import (
 
 	"net/http"
 
-	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	runtime "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	_ "google.golang.org/grpc/grpclog"
 
 	"github.com/pressly/goose/v3"
 
@@ -31,11 +32,6 @@ import (
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/storage/inmemory"
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/storage/postgres"
 	"github.com/Arcadian-Sky/musthave-metrics/migrations"
-
-	_ "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
-	_ "google.golang.org/grpc"
-	_ "google.golang.org/grpc/credentials/insecure"
-	_ "google.golang.org/grpc/grpclog"
 )
 
 var (
