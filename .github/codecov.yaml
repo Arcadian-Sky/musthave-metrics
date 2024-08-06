@@ -5,6 +5,6 @@ coverage:
   status:
     patch: no
   ignore:
-  - 'internal/server/storage/*'
+  - 'internal/server/mock/*'
   - 'internal/server/handler/protometrics/*'
   - 'internal/agent/generated/protoagent/*'
