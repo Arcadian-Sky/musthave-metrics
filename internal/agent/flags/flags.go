@@ -127,7 +127,7 @@ func Parse() (Config, error) {
 	config.serverAddress = getString(*end, envRunAddr, fileConfig.ServerAddress, "localhost:8080", prefix)
 	config.pollInterval = getDuration(*polI, envPolI, fileConfig.PollInterval, 10)
 	config.reportInterval = getDuration(*repI, envRepI, fileConfig.ReportInterval, 2)
-	config.tEndpoint = getString(*tcpEndpoint, envTCPRunAddr, "", ":3200", "")
+	config.tEndpoint = getString(*tcpEndpoint, envTCPRunAddr, "", "", ":3200")
 	config.tcpEnable = getBool(*tcpEnable, envTCPEnable, false, false)
 
 	return config, nil
