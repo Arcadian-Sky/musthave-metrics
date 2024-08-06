@@ -49,10 +49,11 @@ func NewSender(config *flags.Config) *Sender {
 
 // Отправляем запрос на сервер
 func (s *Sender) SendMetricJSON(m any, method string) error {
+	fmt.Printf("s.tcpEnabled: %v\n", s.tcpEnabled)
 	if s.tcpEnabled {
-		return s.SendMetricJSONbyHTTP(m, method)
-	} else {
 		return s.SendMetricJSONbyGRPC(m, method)
+	} else {
+		return s.SendMetricJSONbyHTTP(m, method)
 	}
 }
 
