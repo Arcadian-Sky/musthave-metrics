@@ -92,7 +92,7 @@ func main() {
 	fmt.Printf("Build date: %s\n", buildDate)
 	fmt.Printf("Build commit: %s\n", buildCommit)
 
-	if parsed.TcpEnable {
+	if parsed.TCPEnable {
 		grpcserver := InitializeGRPCServer(parsed, storeMetrics)
 		go func() {
 			log.Println("Starting GRPC server...")
@@ -111,7 +111,7 @@ func main() {
 	}
 
 	httpserver := InitializeHTTPServer(parsed, storeMetrics)
-	if parsed.TcpEnable {
+	if parsed.TCPEnable {
 		ctx := context.Background()
 		ctx, cancel := context.WithCancel(ctx)
 		defer cancel()

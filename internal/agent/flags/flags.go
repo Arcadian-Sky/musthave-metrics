@@ -92,8 +92,8 @@ func Parse() (Config, error) {
 	cryptoKeyEnv := os.Getenv("CRYPTO_KEY")
 	envRepI := os.Getenv("REPORT_INTERVAL")
 	envPolI := os.Getenv("POLL_INTERVAL")
-	envTcpRunAddr := os.Getenv("TCP_ADDRESS")
-	envTcpEnable := os.Getenv("TCP_ENABLE")
+	envTCPRunAddr := os.Getenv("TCP_ADDRESS")
+	envTCPEnable := os.Getenv("TCP_ENABLE")
 
 	if envConfigFilePath := os.Getenv("CONFIG"); envConfigFilePath != "" {
 		config.configFilePath = envConfigFilePath
@@ -127,8 +127,8 @@ func Parse() (Config, error) {
 	config.serverAddress = getString(*end, envRunAddr, fileConfig.ServerAddress, "localhost:8080", prefix)
 	config.pollInterval = getDuration(*polI, envPolI, fileConfig.PollInterval, 10)
 	config.reportInterval = getDuration(*repI, envRepI, fileConfig.ReportInterval, 2)
-	config.tEndpoint = getString(*tcpEndpoint, envTcpRunAddr, "", ":3200", "")
-	config.tcpEnable = getBool(*tcpEnable, envTcpEnable, false, false)
+	config.tEndpoint = getString(*tcpEndpoint, envTCPRunAddr, "", ":3200", "")
+	config.tcpEnable = getBool(*tcpEnable, envTCPEnable, false, false)
 
 	return config, nil
 }
