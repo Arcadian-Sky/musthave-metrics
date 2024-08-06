@@ -38,7 +38,7 @@ func NewSender(config *flags.Config) *Sender {
 	sender := Sender{
 		getHash:       config.GetHash(),
 		serverAddress: config.GetServerAddress(),
-		tcpEnabled:    config.GetTcpEnable(),
+		tcpEnabled:    config.GetTCPEnable(),
 		tcpEndpoint:   config.GetTEndpoint(),
 	}
 	if ok {

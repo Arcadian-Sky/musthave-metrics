@@ -234,7 +234,7 @@ func (c *Config) GetTEndpoint() string {
 	return c.tEndpoint
 }
 
-func (c *Config) GetTcpEnable() bool {
+func (c *Config) GetTCPEnable() bool {
 	return c.tcpEnable
 }
 
