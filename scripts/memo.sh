@@ -9,3 +9,4 @@
 
 # protoc -I proto/googleapi/ -I proto/. --grpc-gateway_out=. --grpc-gateway_opt=paths=source_relative --openapiv2_out=./api/. proto/metrics.proto
 # protoc -I proto/googleapi/ -I proto/. --go_out=. --go_opt=paths=import --go-grpc_out=. --go-grpc_opt=paths=import proto/metrics.proto
+# protoc -I proto/. --go_out=. --go_opt=paths=import --go-grpc_out=. --go-grpc_opt=paths=import proto/agent.proto
