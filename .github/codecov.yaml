@@ -7,4 +7,4 @@ coverage:
   ignore:
   - 'internal/server/mock/*'
   - 'internal/server/handler/protometrics/*'
-  - 'internal/agent/generated/protoagent/*'
+  - 'internal/agent/generated/*'
