@@ -53,9 +53,3 @@ jobs:
 
           # Optional: The mode to install golangci-lint. It can be 'binary' or 'goinstall'.
           # install-mode: "goinstall"
-      - name: Install buf-setup
-        uses: bufbuild/buf-setup-action@v1.36.0
-      - name: Install buf
-        uses: bufbuild/buf-action@v1
-      - name: Check buf
-        run: buf --version
