@@ -57,4 +57,5 @@ jobs:
         uses: bufbuild/buf-setup-action@v1.36.0
       - name: Install buf
         uses: bufbuild/buf-action@v1
-      - run: buf --version
+      - name: Check buf
+        run: buf --version
