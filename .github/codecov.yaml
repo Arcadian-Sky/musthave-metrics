@@ -9,3 +9,5 @@ coverage:
   - 'internal/server/handler/protometrics/*'
   - 'internal/agent/generated/protoagent/*'
   - 'internal/agent/generated/mocks/*'
+  - 'gen*'
+  - 'gen/proto/internal/server/handler/protometrics*'
