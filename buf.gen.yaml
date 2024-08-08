@@ -1,0 +1,19 @@
+version: v2
+# deps:
+#   - buf.build/googleapis/googleapis
+plugins:
+  # - name: go
+  #   out: ./gen/go
+  #   opt: paths=source_relative
+  # - name: go-grpc
+  #   out: ./gen/go
+  #   opt: paths=source_relative
+  # - name: grpc-gateway
+  #   out: ./gen/go
+  #   opt:
+  #     - paths=source_relative
+  #     - generate_unbound_methods=true
+  - remote: buf.build/protocolbuffers/go
+    out: gen/proto
+
+# protoc -I proto/googleapi/ -I proto/. --go_out=. --go_opt=paths=import --go-grpc_out=. --go-grpc_opt=paths=import proto/metrics.proto

@@ -2,12 +2,31 @@
 //protoc -I proto/googleapi/ -I proto/. --grpc-gateway_out=. --grpc-gateway_opt=logtostderr=true --grpc-gateway_opt=paths=source_relative metrics.proto
 syntax = "proto3";
 
-package metrics;
-option go_package = "/internal/server/handler/protometrics";
-import "googleapi/google/api/annotations.proto";
+package proto.api.metrics.v1;
+option go_package = "internal/server/handler/protometrics";
+import "google/api/annotations.proto";
+import "google/protobuf/empty.proto";
 
-// Запрос для получения метрик
-message GetMetricsRequest {}
+enum Type {
+    TYPE_UNSPECIFIED = 0;
+    TYPE_GAUGE = 1;
+    TYPE_CIUNTER = 2;
+  }
+
+// Определение метрики
+message Metric {
+    string id = 1;
+    Type type = 2;
+    oneof value {
+        int64 delta = 3;
+        double gvalue = 4;
+    }
+}
+// message GetMetricRequest {
+//     Metric metric = 1;
+// }
+
+
 
 // Ответ для получения метрик
 message GetMetricsResponse {
@@ -24,13 +43,6 @@ message UpdateJSONMetricsResponse {
     repeated Metric metrics = 1;
 }
 
-// Запрос для обновления метрики
-message UpdateMetricRequest {
-    string type = 1;
-    string name = 2;
-    string value = 3;
-}
-
 // Ответ для обновления метрики
 message UpdateMetricResponse {
      repeated Metric metrics = 1;
@@ -38,13 +50,16 @@ message UpdateMetricResponse {
 
 // Запрос для получения метрики
 message GetMetricRequest {
-    string type = 1;
+    Type type = 1;
     string name = 2;
 }
 
 // Ответ для получения метрики
 message GetMetricResponse {
-    string value = 1;
+    oneof value {
+        int64 delta = 1;
+        double gvalue = 2;
+    }
 }
 
 // Ответ для получения метрики
@@ -52,7 +67,6 @@ message GetJSONMetricsResponse {
     repeated Metric metrics = 1;
 }
 
-// Запрос для проверки соединения с базой данных
 message PingDBRequest {}
 
 // Ответ для проверки соединения с базой данных
@@ -60,13 +74,7 @@ message PingDBResponse {
     string message = 1;
 }
 
-// Определение метрики
-message Metric {
-    string id = 1;
-    string type = 2;
-    int64 delta = 3;
-    double value = 4;
-}
+
 
 service MetricsService {
     // Получает метрику
@@ -77,13 +85,13 @@ service MetricsService {
     }
 
     // Получает метрики
-    rpc GetMetrics (GetMetricsRequest) returns (GetMetricsResponse) {
+    rpc GetMetrics (google.protobuf.Empty) returns (GetMetricsResponse) {
         option (google.api.http) = {
             get: "/value"
         };
     }
     
-    rpc GetMetricsRoot (GetMetricsRequest) returns (GetMetricsResponse) {
+    rpc GetMetricsRoot (google.protobuf.Empty) returns (GetMetricsResponse) {
         option (google.api.http) = {
             get: "/value"
         };
@@ -113,7 +121,7 @@ service MetricsService {
     }
 
     // Обновляет метрику
-    rpc UpdateMetric (UpdateMetricRequest) returns (UpdateMetricResponse) {
+    rpc UpdateMetric (Metric) returns (UpdateMetricResponse) {
         option (google.api.http) = {
             post: "/update/{type}/{name}/{value}"
             body: "*"
