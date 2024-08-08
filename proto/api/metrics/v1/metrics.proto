@@ -3,81 +3,81 @@
 syntax = "proto3";
 
 package proto.api.metrics.v1;
-option go_package = "internal/server/handler/protometrics";
+
 import "google/api/annotations.proto";
 import "google/protobuf/empty.proto";
 
+option go_package = "internal/server/handler/protometrics";
+
 enum Type {
-    TYPE_UNSPECIFIED = 0;
-    TYPE_GAUGE = 1;
-    TYPE_CIUNTER = 2;
-  }
+  TYPE_UNSPECIFIED = 0;
+  TYPE_GAUGE = 1;
+  TYPE_CIUNTER = 2;
+}
 
 // Определение метрики
 message Metric {
-    string id = 1;
-    Type type = 2;
-    oneof value {
-        int64 delta = 3;
-        double gvalue = 4;
-    }
+  string id = 1;
+  Type type = 2;
+  oneof value {
+    int64 delta = 3;
+    double gvalue = 4;
+  }
 }
 
 message UpdateMetricRequest {
-    string id = 1;
-    Type type = 2;
-    string value = 3;
+  string id = 1;
+  Type type = 2;
+  string value = 3;
 }
 message GetMetricsRootResponse {
-    Metric metric = 1;
+  Metric metric = 1;
 }
 
 message UpdateJSONMetricRequest {
-    Metric metric = 1;
+  Metric metric = 1;
 }
 message UpdateJSONMetricResponse {
-    Metric metric = 1;
+  Metric metric = 1;
 }
-
-
 
 // Ответ для получения метрик
 message GetMetricsResponse {
-    repeated Metric metrics = 1;
+  repeated Metric metrics = 1;
 }
 
 // Запрос для обновления метрик через JSON
 message UpdateJSONMetricsRequest {
-    repeated Metric metrics = 1;
+  repeated Metric metrics = 1;
 }
 
 // Ответ для обновления метрик через JSON
 message UpdateJSONMetricsResponse {
-    repeated Metric metrics = 1;
+  repeated Metric metrics = 1;
 }
 
 // Ответ для обновления метрики
 message UpdateMetricResponse {
-     repeated Metric metrics = 1;
+  repeated Metric metrics = 1;
 }
 
 // Запрос для получения метрики
 message GetMetricRequest {
-    Type type = 1;
-    string id = 2;
+  Type type = 1;
+  string id = 2;
 }
 
 // Ответ для получения метрики
 message GetMetricResponse {
-    oneof value {
-        int64 delta = 1;
-        double gvalue = 2;
-    }
+  oneof value {
+    int64 delta = 1;
+    double gvalue = 2;
+  }
 }
 
 // Ответ для получения метрики
 message GetJSONMetricsResponse {
-    repeated Metric metrics = 1;
+  repeated Metric metrics = 1;
 }
 
 message PingDBRequest {}
@@ -87,67 +87,55 @@ message GetJSONMetricsRequest {}
 
 // Ответ для проверки соединения с базой данных
 message PingDBResponse {
-    string message = 1;
+  string message = 1;
 }
 
-
-
 service MetricsService {
-    // Получает метрику
-    rpc GetMetric (GetMetricRequest) returns (GetMetricResponse) {
-        option (google.api.http) = {
-            get: "/value/{type}/{id}"
-        };
-    }
+  // Получает метрику
+  rpc GetMetric(GetMetricRequest) returns (GetMetricResponse) {
+    option (google.api.http) = {get: "/value/{type}/{id}"};
+  }
 
-    // Получает метрики
-    rpc GetMetrics (GetMetricsRequest) returns (GetMetricsResponse) {
-        option (google.api.http) = {
-            get: "/value"
-        };
-    }
-    
-    rpc GetMetricsRoot (GetMetricsRootRequest) returns (GetMetricsRootResponse) {
-        option (google.api.http) = {
-            get: "/"
-        };
-    }
-    
-    // Получает метрики
-    rpc GetJSONMetrics (GetJSONMetricsRequest) returns (GetJSONMetricsResponse) {
-        option (google.api.http) = {
-            post: "/value"
-        };
-    }
-    
-    // Обновляет метрики через JSON
-    rpc UpdateJSONMetrics (UpdateJSONMetricsRequest) returns (UpdateJSONMetricsResponse) {
-        option (google.api.http) = {
-            post: "/updates"
-            body: "*"
-        };
-    }
+  // Получает метрики
+  rpc GetMetrics(GetMetricsRequest) returns (GetMetricsResponse) {
+    option (google.api.http) = {get: "/value"};
+  }
 
-    // Обновляет метрику (для маршрута /update/)
-    rpc UpdateJSONMetric (UpdateJSONMetricRequest) returns (UpdateJSONMetricResponse) {
-        option (google.api.http) = {
-            post: "/update"
-            body: "*"
-        };
-    }
+  rpc GetMetricsRoot(GetMetricsRootRequest) returns (GetMetricsRootResponse) {
+    option (google.api.http) = {get: "/"};
+  }
 
-    // Обновляет метрику
-    rpc UpdateMetric (UpdateMetricRequest) returns (UpdateMetricResponse) {
-        option (google.api.http) = {
-            post: "/update/{type}/{id}/{value}"
-            body: "*"
-        };
-    }
+  // Получает метрики
+  rpc GetJSONMetrics(GetJSONMetricsRequest) returns (GetJSONMetricsResponse) {
+    option (google.api.http) = {post: "/value"};
+  }
 
-    // Проверяет соединение с базой данных
-    rpc PingDB (PingDBRequest) returns (PingDBResponse) {
-        option (google.api.http) = {
-            get: "/ping"
-        };
-    }
+  // Обновляет метрики через JSON
+  rpc UpdateJSONMetrics(UpdateJSONMetricsRequest) returns (UpdateJSONMetricsResponse) {
+    option (google.api.http) = {
+      post: "/updates"
+      body: "*"
+    };
+  }
+
+  // Обновляет метрику (для маршрута /update/)
+  rpc UpdateJSONMetric(UpdateJSONMetricRequest) returns (UpdateJSONMetricResponse) {
+    option (google.api.http) = {
+      post: "/update"
+      body: "*"
+    };
+  }
+
+  // Обновляет метрику
+  rpc UpdateMetric(UpdateMetricRequest) returns (UpdateMetricResponse) {
+    option (google.api.http) = {
+      post: "/update/{type}/{id}/{value}"
+      body: "*"
+    };
+  }
+
+  // Проверяет соединение с базой данных
+  rpc PingDB(PingDBRequest) returns (PingDBResponse) {
+    option (google.api.http) = {get: "/ping"};
+  }
 }
