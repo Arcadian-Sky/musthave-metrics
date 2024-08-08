@@ -22,9 +22,22 @@ message Metric {
         double gvalue = 4;
     }
 }
-// message GetMetricRequest {
-//     Metric metric = 1;
-// }
+
+message UpdateMetricRequest {
+    string id = 1;
+    Type type = 2;
+    string value = 3;
+}
+message GetMetricsRootResponse {
+    Metric metric = 1;
+}
+
+message UpdateJSONMetricRequest {
+    Metric metric = 1;
+}
+message UpdateJSONMetricResponse {
+    Metric metric = 1;
+}
 
 
 
@@ -51,7 +64,7 @@ message UpdateMetricResponse {
 // Запрос для получения метрики
 message GetMetricRequest {
     Type type = 1;
-    string name = 2;
+    string id = 2;
 }
 
 // Ответ для получения метрики
@@ -68,6 +81,9 @@ message GetJSONMetricsResponse {
 }
 
 message PingDBRequest {}
+message GetMetricsRequest {}
+message GetMetricsRootRequest {}
+message GetJSONMetricsRequest {}
 
 // Ответ для проверки соединения с базой данных
 message PingDBResponse {
@@ -78,27 +94,27 @@ message PingDBResponse {
 
 service MetricsService {
     // Получает метрику
-    rpc GetMetric (Metric) returns (GetMetricResponse) {
+    rpc GetMetric (GetMetricRequest) returns (GetMetricResponse) {
         option (google.api.http) = {
             get: "/value/{type}/{id}"
         };
     }
 
     // Получает метрики
-    rpc GetMetrics (google.protobuf.Empty) returns (GetMetricsResponse) {
+    rpc GetMetrics (GetMetricsRequest) returns (GetMetricsResponse) {
         option (google.api.http) = {
             get: "/value"
         };
     }
     
-    rpc GetMetricsRoot (google.protobuf.Empty) returns (GetMetricsResponse) {
+    rpc GetMetricsRoot (GetMetricsRootRequest) returns (GetMetricsRootResponse) {
         option (google.api.http) = {
-            get: "/value"
+            get: "/"
         };
     }
     
     // Получает метрики
-    rpc GetJSONMetrics (Metric) returns (GetJSONMetricsResponse) {
+    rpc GetJSONMetrics (GetJSONMetricsRequest) returns (GetJSONMetricsResponse) {
         option (google.api.http) = {
             post: "/value"
         };
@@ -113,7 +129,7 @@ service MetricsService {
     }
 
     // Обновляет метрику (для маршрута /update/)
-    rpc UpdateJSONMetric (Metric) returns (Metric) {
+    rpc UpdateJSONMetric (UpdateJSONMetricRequest) returns (UpdateJSONMetricResponse) {
         option (google.api.http) = {
             post: "/update"
             body: "*"
@@ -121,9 +137,9 @@ service MetricsService {
     }
 
     // Обновляет метрику
-    rpc UpdateMetric (Metric) returns (UpdateMetricResponse) {
+    rpc UpdateMetric (UpdateMetricRequest) returns (UpdateMetricResponse) {
         option (google.api.http) = {
-            post: "/update/{type}/{name}/{value}"
+            post: "/update/{type}/{id}/{value}"
             body: "*"
         };
     }
