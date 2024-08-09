@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package agent;
+option go_package = "/internal/agent/generated/protoagent";
+
+message MetricRequest {
+    string type = 1;
+    string name = 2;
+    string value = 3;
+}
+
+message MetricResponse {
+    string status = 1;
+}
+message MetricJSONRequest {
+    string json_string = 1;
+}
+
+service AgentService {
+    rpc SendMetric (MetricRequest) returns (MetricResponse);
+    rpc SendMetricJSON (MetricJSONRequest) returns (MetricResponse);
+}

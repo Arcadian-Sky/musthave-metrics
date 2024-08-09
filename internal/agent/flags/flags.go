@@ -17,10 +17,13 @@ type Config struct {
 	cryptoKey      string
 	hashKey        string
 	configFilePath string
+	tEndpoint      string
+	tcpEnable      bool
 	pollInterval   time.Duration
 	reportInterval time.Duration
 	rateLimit      int
 }
+
 type AgentConfig struct {
 	ServerAddress  string       `json:"server_address"`
 	PollInterval   JSONDuration `json:"poll_interval"`
@@ -75,6 +78,8 @@ func Parse() (Config, error) {
 	polI := flag.Int("p", 0, "pollInterval")
 	rLim := flag.Int("l", 0, "rateLimit")
 	configFileFlag := flag.String("c", "", "Путь к файлу конфигурации JSON")
+	tcpEndpoint := flag.String("tcpa", "", "tcp endpoint address")
+	tcpEnable := flag.Bool("tb", false, "использовать tcp")
 
 	flag.Parse()
 
@@ -87,6 +92,8 @@ func Parse() (Config, error) {
 	cryptoKeyEnv := os.Getenv("CRYPTO_KEY")
 	envRepI := os.Getenv("REPORT_INTERVAL")
 	envPolI := os.Getenv("POLL_INTERVAL")
+	envTCPRunAddr := os.Getenv("TCP_ADDRESS")
+	envTCPEnable := os.Getenv("TCP_ENABLE")
 
 	if envConfigFilePath := os.Getenv("CONFIG"); envConfigFilePath != "" {
 		config.configFilePath = envConfigFilePath
@@ -120,6 +127,8 @@ func Parse() (Config, error) {
 	config.serverAddress = getString(*end, envRunAddr, fileConfig.ServerAddress, "localhost:8080", prefix)
 	config.pollInterval = getDuration(*polI, envPolI, fileConfig.PollInterval, 10)
 	config.reportInterval = getDuration(*repI, envRepI, fileConfig.ReportInterval, 2)
+	config.tEndpoint = getString(*tcpEndpoint, envTCPRunAddr, "", "", ":3200")
+	config.tcpEnable = getBool(*tcpEnable, envTCPEnable, false, false)
 
 	return config, nil
 }
@@ -153,6 +162,21 @@ func getDuration(flagValue int, envValue string, fileValue JSONDuration, default
 	}
 
 	return time.Duration(defaultValue) * time.Second
+}
+
+func getBool(flagValue bool, envValue string, fileValue bool, defaultValue bool) bool {
+	if envValue != "" {
+		if parsed, err := strconv.ParseBool(envValue); err == nil {
+			return parsed
+		}
+	}
+	if flagValue {
+		return flagValue
+	}
+	if fileValue {
+		return fileValue
+	}
+	return defaultValue
 }
 
 func (a *AgentConfig) LoadConfig(filePath string) error {
@@ -204,6 +228,14 @@ func (c *Config) GetReportInterval() time.Duration {
 
 func (c *Config) GetPollInterval() time.Duration {
 	return c.pollInterval
+}
+
+func (c *Config) GetTEndpoint() string {
+	return c.tEndpoint
+}
+
+func (c *Config) GetTCPEnable() bool {
+	return c.tcpEnable
 }
 
 // loadPublicKey загружает публичный ключ из PEM файла

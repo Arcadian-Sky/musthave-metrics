@@ -4,3 +4,12 @@ coverage:
   precision: 2
   status:
     patch: no
+  ignore:
+  - 'internal/server/mock/*'
+  - 'internal/server/handler/protometrics/*'
+  - 'internal/agent/generated/protoagent/*'
+  - 'internal/agent/generated/mocks/*'
+  - 'gen/*'
+  - 'gen/proto*'
+  - 'gen/proto/api/metrics/*'
+  - 'gen/proto/api/metrics/v1/*'

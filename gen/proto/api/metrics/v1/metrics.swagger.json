@@ -1,0 +1,447 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "proto/api/metrics/v1/metrics.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "MetricsService"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/": {
+      "get": {
+        "operationId": "MetricsService_GetMetricsRoot",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1GetMetricsRootResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "tags": [
+          "MetricsService"
+        ]
+      }
+    },
+    "/ping": {
+      "get": {
+        "summary": "Проверяет соединение с базой данных",
+        "operationId": "MetricsService_PingDB",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1PingDBResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "tags": [
+          "MetricsService"
+        ]
+      }
+    },
+    "/update": {
+      "post": {
+        "summary": "Обновляет метрику (для маршрута /update/)",
+        "operationId": "MetricsService_UpdateJSONMetric",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1UpdateJSONMetricResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1UpdateJSONMetricRequest"
+            }
+          }
+        ],
+        "tags": [
+          "MetricsService"
+        ]
+      }
+    },
+    "/update/{type}/{id}/{value}": {
+      "post": {
+        "summary": "Обновляет метрику",
+        "operationId": "MetricsService_UpdateMetric",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1UpdateMetricResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "type",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "enum": [
+              "TYPE_UNSPECIFIED",
+              "TYPE_GAUGE",
+              "TYPE_CIUNTER"
+            ]
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "value",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/MetricsServiceUpdateMetricBody"
+            }
+          }
+        ],
+        "tags": [
+          "MetricsService"
+        ]
+      }
+    },
+    "/updates": {
+      "post": {
+        "summary": "Обновляет метрики через JSON",
+        "operationId": "MetricsService_UpdateJSONMetrics",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1UpdateJSONMetricsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1UpdateJSONMetricsRequest"
+            }
+          }
+        ],
+        "tags": [
+          "MetricsService"
+        ]
+      }
+    },
+    "/value": {
+      "get": {
+        "summary": "Получает метрики",
+        "operationId": "MetricsService_GetMetrics",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1GetMetricsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "tags": [
+          "MetricsService"
+        ]
+      },
+      "post": {
+        "summary": "Получает метрики",
+        "operationId": "MetricsService_GetJSONMetrics",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1GetJSONMetricsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "tags": [
+          "MetricsService"
+        ]
+      }
+    },
+    "/value/{type}/{id}": {
+      "get": {
+        "summary": "Получает метрику",
+        "operationId": "MetricsService_GetMetric",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1GetMetricResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "type",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "enum": [
+              "TYPE_UNSPECIFIED",
+              "TYPE_GAUGE",
+              "TYPE_CIUNTER"
+            ]
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "MetricsService"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "MetricsServiceUpdateMetricBody": {
+      "type": "object"
+    },
+    "metricsv1Type": {
+      "type": "string",
+      "enum": [
+        "TYPE_UNSPECIFIED",
+        "TYPE_GAUGE",
+        "TYPE_CIUNTER"
+      ],
+      "default": "TYPE_UNSPECIFIED"
+    },
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "rpcStatus": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    },
+    "v1GetJSONMetricsResponse": {
+      "type": "object",
+      "properties": {
+        "metrics": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1Metric"
+          }
+        }
+      },
+      "title": "Ответ для получения метрики"
+    },
+    "v1GetMetricResponse": {
+      "type": "object",
+      "properties": {
+        "delta": {
+          "type": "string",
+          "format": "int64"
+        },
+        "gvalue": {
+          "type": "number",
+          "format": "double"
+        }
+      },
+      "title": "Ответ для получения метрики"
+    },
+    "v1GetMetricsResponse": {
+      "type": "object",
+      "properties": {
+        "metrics": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1Metric"
+          }
+        }
+      },
+      "title": "Ответ для получения метрик"
+    },
+    "v1GetMetricsRootResponse": {
+      "type": "object",
+      "properties": {
+        "metric": {
+          "$ref": "#/definitions/v1Metric"
+        }
+      }
+    },
+    "v1Metric": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "type": {
+          "$ref": "#/definitions/metricsv1Type"
+        },
+        "delta": {
+          "type": "string",
+          "format": "int64"
+        },
+        "gvalue": {
+          "type": "number",
+          "format": "double"
+        }
+      },
+      "title": "Определение метрики"
+    },
+    "v1PingDBResponse": {
+      "type": "object",
+      "properties": {
+        "message": {
+          "type": "string"
+        }
+      },
+      "title": "Ответ для проверки соединения с базой данных"
+    },
+    "v1UpdateJSONMetricRequest": {
+      "type": "object",
+      "properties": {
+        "metric": {
+          "$ref": "#/definitions/v1Metric"
+        }
+      }
+    },
+    "v1UpdateJSONMetricResponse": {
+      "type": "object",
+      "properties": {
+        "metric": {
+          "$ref": "#/definitions/v1Metric"
+        }
+      }
+    },
+    "v1UpdateJSONMetricsRequest": {
+      "type": "object",
+      "properties": {
+        "metrics": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1Metric"
+          }
+        }
+      },
+      "title": "Запрос для обновления метрик через JSON"
+    },
+    "v1UpdateJSONMetricsResponse": {
+      "type": "object",
+      "properties": {
+        "metrics": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1Metric"
+          }
+        }
+      },
+      "title": "Ответ для обновления метрик через JSON"
+    },
+    "v1UpdateMetricResponse": {
+      "type": "object",
+      "properties": {
+        "metrics": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1Metric"
+          }
+        }
+      },
+      "title": "Ответ для обновления метрики"
+    }
+  }
+}

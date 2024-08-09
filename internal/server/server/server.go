@@ -1,107 +1,59 @@
 package server
 
 import (
+	"context"
+	"log"
 	"net/http"
-	"net/http/pprof"
-
-	"github.com/go-chi/chi/v5"
-
-	httpSwagger "github.com/swaggo/http-swagger"
-
-	_ "github.com/Arcadian-Sky/musthave-metrics/docs"
 
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/flags"
-	"github.com/Arcadian-Sky/musthave-metrics/internal/server/handler"
-	packmiddleware "github.com/Arcadian-Sky/musthave-metrics/internal/server/middleware"
+	appgrpc "github.com/Arcadian-Sky/musthave-metrics/internal/server/handler/grpc"
+	apphttp "github.com/Arcadian-Sky/musthave-metrics/internal/server/handler/http"
+	pb "github.com/Arcadian-Sky/musthave-metrics/internal/server/handler/protometrics"
+	"github.com/Arcadian-Sky/musthave-metrics/internal/server/router"
+	"github.com/Arcadian-Sky/musthave-metrics/internal/server/storage"
+	runtime "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
-// @title           API
-// @version         1.0
-// @openapi         3.1
-// @description     This is a sample server celler server.
-// @license.name  Apache 2.0
-// @license.url   http://www.apache.org/licenses/LICENSE-2.0.html
-
-// @host      localhost:8080
-// @BasePath  /
-
-// @externalDocs.description  OpenAPI
-// @externalDocs.url          https://swagger.io/resources/open-api/
-func InitRouter(handler handler.Handler, config flags.InitedFlags) chi.Router {
-	r := chi.NewRouter()
-	// r.Use(packmiddleware.Logger)
-
-	// r.Use(middleware.Logger)
-	// r.Use(packmiddleware.ContentTypeSet("application/json"))
-	// r.Use(middleware.RealIP)
-	// r.Use(middleware.Recoverer)
-	r.Use(packmiddleware.GzipMiddleware)
-	r.Use(packmiddleware.DecryptMiddleware(config))
-
-	r.Head("/", func(rw http.ResponseWriter, r *http.Request) {
-		r.Header.Set("Content-Type", "Content-Type: application/json")
-	})
-	// GET http://localhost:8080/value/counter/testSetGet163
-	// app.HandleRequest()
-	r.Get("/", handler.MetricsHandlerFunc)
-	r.Get("/ping", handler.PingDB)
-	r.Post("/updates", handler.UpdateJSONMetricsHandlerFunc)
-	r.Post("/updates/", handler.UpdateJSONMetricsHandlerFunc)
-
-	r.Route("/update", func(r chi.Router) {
-		r.Post("/", handler.UpdateJSONMetricHandlerFunc)
-		r.Route("/{type}", func(r chi.Router) {
-			r.Post("/", handler.UpdateMetricsHandlerFunc)
-			r.Post("/{name}", handler.UpdateMetricsHandlerFunc)
-			r.Post("/{name}/", handler.UpdateMetricsHandlerFunc)
-			r.Post("/{name}/{value}", handler.UpdateMetricsHandlerFunc)
-			r.Post("/{name}/{value}/", handler.UpdateMetricsHandlerFunc)
-			r.Get("/{name}/{value}/", handler.UpdateMetricsHandlerFunc)
-
-		})
-	})
-	r.Route("/value", func(r chi.Router) {
-		r.Post("/", handler.GetMetricsJSONHandlerFunc)
-		r.Get("/", handler.GetMetricHandlerFunc)
-		r.Route("/{type}", func(r chi.Router) {
-			r.Get("/", handler.GetMetricHandlerFunc)
-			r.Get("/{name}", handler.GetMetricHandlerFunc)
-			r.Get("/{name}/", handler.GetMetricHandlerFunc)
-		})
-	})
-
-	r.Get("/swagger/*", httpSwagger.Handler(
-		httpSwagger.URL("./doc.json"), // Ссылка на ваш swagger.json
-	))
-
-	r.Get("/debug/pprof/", pprof.Index)
-	r.Get("/debug/pprof/cmdline", pprof.Cmdline)
-	r.Get("/debug/pprof/profile", pprof.Profile)
-	r.Get("/debug/pprof/symbol", pprof.Symbol)
-	r.Get("/debug/pprof/trace", pprof.Trace)
-
-	// log.Fatal(http.ListenAndServe(flags.Parse(), r))
-	return r
+func InitializeTCP2HTTPServer(parsed *flags.InitedFlags, storeMetrics storage.MetricsStorage, ctx context.Context) *http.Server {
+	mux := runtime.NewServeMux()
+	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
+	err := pb.RegisterMetricsServiceHandlerFromEndpoint(ctx, mux, parsed.TEndpoint, opts)
+	if err != nil {
+		log.Fatalf("Failed to register gRPC Gateway handler: %v", err)
+	}
+	// Start HTTP server (and proxy calls to gRPC server endpoint)
+	httpserver := &http.Server{
+		Addr:    parsed.Endpoint,
+		Handler: mux,
+	}
+	return httpserver
 }
 
-// func InitPprof() chi.Router {
-// 	r := chi.NewRouter()
+func InitializeHTTPServer(parsed *flags.InitedFlags, storeMetrics storage.MetricsStorage) *http.Server {
+	vhandler := apphttp.NewHandler(storeMetrics, parsed)
+	httpserver := &http.Server{
+		Addr:    parsed.Endpoint,
+		Handler: router.InitRouter(*vhandler, *parsed),
+	}
+	return httpserver
+}
 
-// 	r.Get("/debug/pprof/", pprof.Index)
-// 	r.Get("/debug/pprof/cmdline", pprof.Cmdline)
-// 	r.Get("/debug/pprof/profile", pprof.Profile)
-// 	r.Get("/debug/pprof/symbol", pprof.Symbol)
-// 	r.Get("/debug/pprof/trace", pprof.Trace)
+func InitializeGRPCServer(parsed *flags.InitedFlags, storeMetrics storage.MetricsStorage) *grpc.Server {
+	metricsServer := appgrpc.NewServer(storeMetrics, parsed)
+	// создаём gRPC-сервер без зарегистрированной службы
+	grpcServer := grpc.NewServer()
+	// регистрируем сервис
+	pb.RegisterMetricsServiceServer(grpcServer, metricsServer)
 
-// 	return r
-// }
+	// ctx := context.Background()
+	// ctx, cancel := context.WithCancel(ctx)
+	// defer cancel()
 
-// func pprofHandler() http.Handler {
-// 	mux := http.NewServeMux()
-// 	mux.HandleFunc("/debug/pprof/", pprof.Index)
-// 	mux.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
-// 	mux.HandleFunc("/debug/pprof/profile", pprof.Profile)
-// 	mux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
-// 	mux.HandleFunc("/debug/pprof/trace", pprof.Trace)
-// 	return mux
-// }
+	// Создайте HTTP/gRPC Gateway сервер
+	// mux := runtime.NewServeMux()
+	// err := pb.RegisterMetricsServiceHandlerServer(ctx, mux, metricsServer)
+	return grpcServer
+
+}

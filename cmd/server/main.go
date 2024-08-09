@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"net"
 	"os"
 	"os/signal"
 	"syscall"
@@ -14,11 +15,11 @@ import (
 	"net/http"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
+	_ "google.golang.org/grpc/grpclog"
 
 	"github.com/pressly/goose/v3"
 
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/flags"
-	"github.com/Arcadian-Sky/musthave-metrics/internal/server/handler"
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/server"
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/storage"
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/storage/config"
@@ -77,13 +78,39 @@ func main() {
 		log.Fatal(err.Error())
 	}
 
-	httpserver := InitializeHTTPServer(parsed, storeMetrics)
+	fmt.Printf("Build version: %s\n", buildVersion)
+	fmt.Printf("Build date: %s\n", buildDate)
+	fmt.Printf("Build commit: %s\n", buildCommit)
+
+	if parsed.TCPEnable {
+		grpcserver := server.InitializeGRPCServer(parsed, storeMetrics)
+		go func() {
+			log.Println("Starting GRPC server...")
+
+			// определяем порт для сервера
+			listen, err := net.Listen("tcp", parsed.TEndpoint)
+			if err != nil {
+				log.Fatalf("GRPC failed to listen: %v", err)
+			}
+			// получаем запрос gRPC
+			if err := grpcserver.Serve(listen); err != nil {
+				log.Fatalf("GRPC failed to serve: %v", err)
+			}
+
+		}()
+	}
+
+	httpserver := server.InitializeHTTPServer(parsed, storeMetrics)
+	if parsed.TCPEnable {
+		ctx := context.Background()
+		ctx, cancel := context.WithCancel(ctx)
+		defer cancel()
+
+		httpserver = server.InitializeTCP2HTTPServer(parsed, storeMetrics, ctx)
+	}
 
 	go func() {
-		log.Println("Starting server...")
-		fmt.Printf("Build version: %s\n", buildVersion)
-		fmt.Printf("Build date: %s\n", buildDate)
-		fmt.Printf("Build commit: %s\n", buildCommit)
+		log.Println("Starting HTTP server...")
 		if err := httpserver.ListenAndServe(); err != http.ErrServerClosed {
 			log.Fatalf("Server failed: %v", err)
 		}
@@ -141,14 +168,6 @@ func InitializeConfig(storeMetrics storage.MetricsStorage, parsed *flags.InitedF
 }
 
 // Инициируем хендлеры
-func InitializeHTTPServer(parsed *flags.InitedFlags, storeMetrics storage.MetricsStorage) *http.Server {
-	vhandler := handler.NewHandler(storeMetrics, parsed)
-	httpserver := &http.Server{
-		Addr:    parsed.Endpoint,
-		Handler: server.InitRouter(*vhandler, *parsed),
-	}
-	return httpserver
-}
 
 func GracefulShutdown(httpserver *http.Server, memStore config.MementoStorage, memStoreOk bool, parsed *flags.InitedFlags) {
 	// Timeout for active connections to close

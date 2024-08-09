@@ -114,7 +114,64 @@ func TestGetDuration(t *testing.T) {
 	}
 }
 
-// TestGetCryptoKeyPathWithFatalLog тестирует метод GetCryptoKeyPath с учетом вызова log.Fatal
+func TestGetBool(t *testing.T) {
+	tests := []struct {
+		name        string
+		flagValue   bool
+		envValue    string
+		fileValue   bool
+		expected    bool
+		description string
+	}{
+		{
+			name:        "FlagValue set to true",
+			envValue:    "",
+			fileValue:   false,
+			flagValue:   true,
+			expected:    true,
+			description: "Should return true from flag",
+		},
+		{
+			name:        "EnvValue set to true",
+			envValue:    "true",
+			fileValue:   false,
+			flagValue:   false,
+			expected:    true,
+			description: "Should return true from env",
+		},
+		{
+			name:        "FileValue set to true",
+			envValue:    "",
+			fileValue:   true,
+			flagValue:   false,
+			expected:    true,
+			description: "Should return true from file",
+		},
+		{
+			name:        "AllValuesFalse",
+			envValue:    "",
+			fileValue:   false,
+			expected:    false,
+			flagValue:   false,
+			description: "Should return false as all are false",
+		},
+		{
+			name:        "EnvValue invalid format",
+			envValue:    "notabool",
+			fileValue:   true,
+			flagValue:   false,
+			expected:    true,
+			description: "Should return file value if env is invalid",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := getBool(tt.flagValue, tt.envValue, tt.fileValue, false)
+			assert.Equal(t, tt.expected, result, tt.description)
+		})
+	}
+}
 
 // TestGetServerAddress тестирует метод GetServerAddress
 func TestGetServerAddress(t *testing.T) {
