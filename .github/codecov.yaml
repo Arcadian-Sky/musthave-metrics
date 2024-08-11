@@ -10,6 +10,5 @@ coverage:
   - 'internal/agent/generated/protoagent/*'
   - 'internal/agent/generated/mocks/*'
   - 'gen/*'
-  - 'gen/proto*'
-  - 'gen/proto/api/metrics/*'
-  - 'gen/proto/api/metrics/v1/*'
+  - 'gen/proto/*'
+  - 'gen/proto/proto/api/metrics/v1/*'
