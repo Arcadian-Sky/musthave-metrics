@@ -26,8 +26,3 @@ proto/googleapi
 .idea
 .vscode
 .env
-
-# Игнорировать сгенерированные файлы protobuf
-*.pb.go
-*.pb.cc
-*.pb.h

@@ -50,6 +50,7 @@ func InitializeGRPCServer(parsed *flags.InitedFlags, storeMetrics storage.Metric
 	// регистрируем сервис
 	pb.RegisterMetricsServiceServer(grpcServer, metricsServer)
 	reflection.Register(grpcServer)
+
 	// ctx := context.Background()
 	// ctx, cancel := context.WithCancel(ctx)
 	// defer cancel()
