@@ -32,9 +32,9 @@ plugins:
     out: ./gen
     opt:
     - paths=source_relative
-  - remote: buf.build/connectrpc/go
-    out: ./gen
-    opt: paths=source_relative
+  # - remote: buf.build/connectrpc/go
+  #   out: ./gen
+  #   opt: paths=source_relative
   - local: protoc-gen-openapiv2
     out: ./gen
     opt: allow_repeated_fields_in_body=true
