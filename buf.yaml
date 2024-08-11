@@ -9,5 +9,5 @@ lint:
     - IMPORT_USED
   disallow_comment_ignores: true
 breaking:
-  except:
-    - EXTENSION_NO_DELETE
+  use:
+    - FILE
