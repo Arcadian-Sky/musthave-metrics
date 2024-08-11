@@ -8,12 +8,15 @@ import (
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/flags"
 	appgrpc "github.com/Arcadian-Sky/musthave-metrics/internal/server/handler/grpc"
 	apphttp "github.com/Arcadian-Sky/musthave-metrics/internal/server/handler/http"
-	pb "github.com/Arcadian-Sky/musthave-metrics/internal/server/handler/protometrics"
+
+	// pb "github.com/Arcadian-Sky/musthave-metrics/internal/server/handler/protometrics"
+	pb "github.com/Arcadian-Sky/musthave-metrics/gen/proto/api/metrics/v1"
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/router"
 	"github.com/Arcadian-Sky/musthave-metrics/internal/server/storage"
 	runtime "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/reflection"
 )
 
 func InitializeTCP2HTTPServer(parsed *flags.InitedFlags, storeMetrics storage.MetricsStorage, ctx context.Context) *http.Server {
@@ -46,7 +49,7 @@ func InitializeGRPCServer(parsed *flags.InitedFlags, storeMetrics storage.Metric
 	grpcServer := grpc.NewServer()
 	// регистрируем сервис
 	pb.RegisterMetricsServiceServer(grpcServer, metricsServer)
-
+	reflection.Register(grpcServer)
 	// ctx := context.Background()
 	// ctx, cancel := context.WithCancel(ctx)
 	// defer cancel()

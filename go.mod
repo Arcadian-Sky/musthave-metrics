@@ -25,7 +25,15 @@ require (
 	honnef.co/go/tools v0.4.7
 )
 
-require google.golang.org/genproto/googleapis/rpc v0.0.0-20240730163845-b1a4ccb954bf // indirect
+require (
+	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.32.0-20240221180331-f05a6f4403ce.1 // indirect
+	github.com/antlr4-go/antlr/v4 v4.13.0 // indirect
+	github.com/bufbuild/protovalidate-go v0.6.0 // indirect
+	github.com/google/cel-go v0.20.0 // indirect
+	github.com/stoewer/go-strcase v1.3.0 // indirect
+	golang.org/x/exp v0.0.0-20240325151524-a685a6edb6d8 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20240730163845-b1a4ccb954bf // indirect
+)
 
 require (
 	github.com/BurntSushi/toml v1.4.0 // indirect

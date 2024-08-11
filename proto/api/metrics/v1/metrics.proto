@@ -6,23 +6,53 @@ package proto.api.metrics.v1;
 
 import "google/api/annotations.proto";
 import "google/protobuf/empty.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "buf/validate/validate.proto";
+import "google/protobuf/wrappers.proto";
 
 option go_package = "internal/server/handler/protometrics";
+
+
+option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
+  info: {
+    title: "Metrics API";
+    version: "1.0";
+    description: "";
+    contact: {
+      name: "gRPC-Metrics Gateway project";
+      url: "https://github.com/grpc-ecosystem/grpc-gateway";
+      email: "none@example.com";
+    };
+    license: {
+      name: "BSD 3-Clause License";
+      url: "https://github.com/grpc-ecosystem/grpc-gateway/blob/main/LICENSE";
+    };
+  };
+  schemes: HTTPS;
+  consumes: "application/json";
+  produces: "application/json";
+};
+
 
 enum Type {
   TYPE_UNSPECIFIED = 0;
   TYPE_GAUGE = 1;
-  TYPE_CIUNTER = 2;
+  TYPE_COUNTER = 2;
 }
 
 // Определение метрики
 message Metric {
-  string id = 1;
+  string id = 1 [(buf.validate.field).required = true];
   Type type = 2;
-  oneof value {
+  oneof mvalue {
+    option (buf.validate.oneof).required = true;
     int64 delta = 3;
-    double gvalue = 4;
+    double value = 4;
   }
+}
+
+message UserResponse {
+  google.protobuf.StringValue result = 1;
 }
 
 message UpdateMetricRequest {
@@ -30,12 +60,9 @@ message UpdateMetricRequest {
   Type type = 2;
   string value = 3;
 }
-message GetMetricsRootResponse {
-  Metric metric = 1;
-}
 
 message UpdateJSONMetricRequest {
-  Metric metric = 1;
+  Metric metric = 1  [(buf.validate.field).required = true];
 }
 message UpdateJSONMetricResponse {
   Metric metric = 1;
@@ -45,10 +72,13 @@ message UpdateJSONMetricResponse {
 message GetMetricsResponse {
   repeated Metric metrics = 1;
 }
+message GetMetricsRootResponse {
+  repeated Metric metrics = 1;
+}
 
 // Запрос для обновления метрик через JSON
 message UpdateJSONMetricsRequest {
-  repeated Metric metrics = 1;
+  repeated Metric metrics = 1 [(buf.validate.field).required = true];
 }
 
 // Ответ для обновления метрик через JSON
@@ -63,15 +93,16 @@ message UpdateMetricResponse {
 
 // Запрос для получения метрики
 message GetMetricRequest {
-  Type type = 1;
-  string id = 2;
+  Type type = 1 [(buf.validate.field).required = true];
+  string id = 2 [(buf.validate.field).required = true];
 }
 
 // Ответ для получения метрики
 message GetMetricResponse {
-  oneof value {
+  oneof mvalue {
+    option (buf.validate.oneof).required = true;
     int64 delta = 1;
-    double gvalue = 2;
+    double value = 2;
   }
 }
 
@@ -94,6 +125,17 @@ service MetricsService {
   // Получает метрику
   rpc GetMetric(GetMetricRequest) returns (GetMetricResponse) {
     option (google.api.http) = {get: "/value/{type}/{id}"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get a metric.";
+      operation_id: "getMetric";
+      tags: "echo";
+      responses: {
+          key: "200"
+          value: {
+              description: "OK Success";
+          }
+      }
+    };
   }
 
   // Получает метрики

@@ -118,8 +118,6 @@ func Parse() *InitedFlags {
 		}
 	}
 
-	fmt.Printf("fileConfig: %v\n", fileConfig)
-
 	initedConfig.ConfigFilePath = getString(*configFileFlag, envConfigFilePath, "", "")
 	initedConfig.DBSettings = getString(*flagDBSettings, envRunDBSettings, fileConfig.DBSettings, "")
 	initedConfig.Endpoint = getString(*address, envRunAddr, fileConfig.Endpoint, ":8080")
@@ -145,7 +143,7 @@ func Parse() *InitedFlags {
 			initedConfig.TrustedSubnet = subnet
 		}
 	}
-
+	fmt.Printf("initedConfig: %v\n", initedConfig)
 	return &initedConfig
 }
 
