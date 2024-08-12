@@ -16,7 +16,10 @@ import (
 	"time"
 
 	"github.com/Arcadian-Sky/musthave-metrics/internal/agent/flags"
-	pb "github.com/Arcadian-Sky/musthave-metrics/internal/agent/generated/protoagent"
+	"github.com/Arcadian-Sky/musthave-metrics/internal/agent/models"
+
+	// pb "github.com/Arcadian-Sky/musthave-metrics/internal/agent/generated/protoagent"
+	pb "github.com/Arcadian-Sky/musthave-metrics/gen/proto/api/metrics/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
@@ -31,7 +34,7 @@ type Sender struct {
 	tcpEnabled    bool
 	tcpEndpoint   string
 	cryptoKey     *rsa.PublicKey
-	tcpClient     pb.AgentServiceClient
+	tcpClient     pb.MetricsServiceClient
 }
 
 func NewSender(config *flags.Config) *Sender {
@@ -58,7 +61,7 @@ func NewSender(config *flags.Config) *Sender {
 		defer conn.Close()
 
 		// Создание клиента gRPC
-		sender.tcpClient = pb.NewAgentServiceClient(conn)
+		sender.tcpClient = pb.NewMetricsServiceClient(conn)
 	}
 
 	return &sender
@@ -161,30 +164,35 @@ func (s *Sender) SendMetricJSONbyHTTP(m any, method string) error {
 }
 
 func (s *Sender) SendMetricJSONbyGRPC(m any, method string) error {
-	// Сериализация данных
-	jsonData, err := json.Marshal(m)
-	if err != nil {
-		return fmt.Errorf("error marshaling metrics: %w", err)
-	}
-
+	// fmt.Printf("m: %v\n", m)
+	// fmt.Printf("method: %v\n", method)
+	var metricData *pb.Metric
+	var metricsData []*pb.Metric
+	var req any
 	// Создание запроса
-	req := pb.MetricJSONRequest{
-		JsonString: string(jsonData),
-	}
-
-	if s.cryptoKey != nil {
-		// Шифруем данные
-		encryptedMessage, err := s.encryptMessage(jsonData, s.cryptoKey)
-		if err != nil {
-			return fmt.Errorf("error encrypting message: %w", err)
+	// Определение типа данных и создание соответствующего запроса
+	switch v := m.(type) {
+	case []models.Metrics:
+		// Преобразование среза моделей в срез pb.Metric
+		for _, metric := range v {
+			metricsData = append(metricsData, convertModelMetricsToRPCMetrics(&metric))
 		}
-		req.JsonString = string(encryptedMessage)
+		req = metricsData
+		// req = &pb.UpdateJSONMetricsRequest{Metrics: metricsData}
+	case models.Metrics:
+		// Преобразование одной модели в pb.Metric
+		metricData = convertModelMetricsToRPCMetrics(&v)
+		req = metricData
+		// req = &pb.UpdateJSONMetricRequest{Metric: metricData}
+	default:
+		return fmt.Errorf("unsupported type %T", v)
 	}
 
-	// Подпись сообщения
 	hashKey := s.getHash
 	md := metadata.New(map[string]string{})
-	if hashKey != "" {
+
+	if s.cryptoKey != nil && hashKey != "" {
+		jsonData, _ := json.Marshal(req)
 		h := hmac.New(sha256.New, []byte(hashKey))
 		h.Write(jsonData)
 		dst := h.Sum(nil)
@@ -196,11 +204,23 @@ func (s *Sender) SendMetricJSONbyGRPC(m any, method string) error {
 	// Создание контекста с метаданными
 	ctx := metadata.NewOutgoingContext(context.Background(), md)
 
-	// Отправка запроса
-	_, err = s.tcpClient.SendMetricJSON(ctx, &req)
-	if err != nil {
-		return fmt.Errorf("failed to send metric: %w", err)
+	switch method {
+	case UpdatePathOne:
+		_, err := s.tcpClient.UpdateJSONMetric(ctx, &pb.UpdateJSONMetricRequest{Metric: metricData})
+		if err != nil {
+			return fmt.Errorf("failed to send metric: %w", err)
+		}
+	case UpdatePathPack:
+		_, err := s.tcpClient.UpdateJSONMetrics(ctx, &pb.UpdateJSONMetricsRequest{Metrics: metricsData})
+		if err != nil {
+			return fmt.Errorf("failed to send metrics: %w", err)
+		}
+	default:
+		return fmt.Errorf("unsupported method %s", method)
 	}
+
+	// Отправка запроса
+	// _, err = s.tcpClient.UpdateJSONMetric(ctx, req)
 	return nil
 }
 
@@ -223,6 +243,7 @@ func (s *Sender) SendValueByHTTP(mType string, mName string, mValue interface{})
 
 	return nil
 }
+
 func (s *Sender) SendValueByGRPC(mType string, mName string, mValue interface{}) error {
 	// Преобразование mValue в строку
 	valueStr, ok := mValue.(string)
@@ -230,9 +251,9 @@ func (s *Sender) SendValueByGRPC(mType string, mName string, mValue interface{})
 		return fmt.Errorf("invalid value type: %T", mValue)
 	}
 
-	req := &pb.MetricRequest{
-		Type:  mType,
-		Name:  mName,
+	req := &pb.UpdateMetricRequest{
+		Id:    mName,
+		Type:  convertStringToMetricType(mType),
 		Value: valueStr,
 	}
 
@@ -240,11 +261,49 @@ func (s *Sender) SendValueByGRPC(mType string, mName string, mValue interface{})
 	defer cancel()
 
 	// Отправка метрики
-	resp, err := s.tcpClient.SendMetric(ctx, req)
+	resp, err := s.tcpClient.UpdateMetric(ctx, req)
 	if err != nil {
 		return fmt.Errorf("could not send metric: %v", err)
 	}
-
-	log.Printf("Metric sent: %s", resp.GetStatus())
+	fmt.Printf("Metric sent: %v\n", resp.GetMetrics())
 	return nil
+}
+
+func convertStringToMetricType(s string) pb.Type {
+	switch s {
+	case "gauge":
+		return pb.Type_TYPE_GAUGE
+	case "counter":
+		return pb.Type_TYPE_COUNTER
+	default:
+		return pb.Type_TYPE_UNSPECIFIED
+	}
+}
+
+func convertModelMetricsToRPCMetrics(metric *models.Metrics) *pb.Metric {
+	var pbMetric pb.Metric
+
+	// Установка идентификатора и типа метрики
+	pbMetric.Id = metric.ID
+	pbMetric.Type = convertStringToMetricType(metric.MType)
+
+	// Установка значения метрики в зависимости от типа
+	switch metric.MType {
+	case "counter":
+		if metric.Delta != nil {
+			pbMetric.Mvalue = &pb.Metric_Delta{
+				Delta: *metric.Delta,
+			}
+		}
+	case "gauge":
+		if metric.Value != nil {
+			pbMetric.Mvalue = &pb.Metric_Value{
+				Value: *metric.Value,
+			}
+		}
+	default:
+		fmt.Println("Unknown MetricType")
+	}
+
+	return &pbMetric
 }

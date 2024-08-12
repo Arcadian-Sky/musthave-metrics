@@ -12,4 +12,4 @@ coverage:
   - 'gen/*'
   - 'gen/proto/*'
   - 'gen/proto/api/metrics/v1/*'
-  - 'gen/proto/proto/api/metrics/v1/*'
+  - 'gen/mocks/api/metrics/v1/*'

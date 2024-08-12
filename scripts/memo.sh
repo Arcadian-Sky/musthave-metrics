@@ -14,5 +14,9 @@
 
 # mockgen -destination=internal/agent/generated/mocks/mock_agent.pb.go -source=internal/agent/generated/protoagent/agent.pb.go  -package=mocks
 # mockgen -destination=internal/agent/generated/mocks/mock_agent_grpc.pb.go -source=internal/agent/generated/protoagent/agent_grpc.pb.go  -package=mocks
-# buf lint
+
 # buf generate
+# buf lint
+# buf format -w 
+# mockgen -destination=gen/mocks/api/metrics/v1/metrics.pb.go -source=gen/proto/api/metrics/v1/metrics.pb.go  -package=mocks
+# mockgen -destination=gen/mocks/api/metrics/v1/metrics_grpc.pb.go -source=gen/proto/api/metrics/v1/metrics_grpc.pb.go  -package=mocks
