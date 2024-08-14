@@ -4,7 +4,6 @@ go 1.22
 
 require (
 	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.34.2-20240508200655-46a4cf4ba109.2
-	connectrpc.com/connect v1.11.0
 	github.com/DATA-DOG/go-sqlmock v1.5.2
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/fatih/errwrap v1.6.0
