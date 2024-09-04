@@ -175,8 +175,9 @@ func (m *MemStorage) UpdateMetric(ctx context.Context, mtype string, name string
 }
 
 func (m *MemStorage) UpdateJSONMetrics(ctx context.Context, metrics *[]models.Metrics) error {
-	// var metricType MetricType
-
+	for _, metric := range *metrics {
+		_ = m.UpdateJSONMetric(ctx, &metric)
+	}
 	return nil
 }
 
